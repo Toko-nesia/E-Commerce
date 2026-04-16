@@ -1,11 +1,32 @@
+# Zenbin — Cross-border E-Commerce (Indonesia → Japan)
 
-  # Next.js multi-page app
+A Next.js 15 application connecting Indonesian brands with customers in Japan.
 
-  This is a code bundle for Next.js multi-page app. The original project is available at https://www.figma.com/design/I268z90liTF7i4i1k3A9EB/Next.js-multi-page-app.
+## Getting Started
 
-  ## Running the code
+```bash
+npm install
+npm run dev
+```
 
-  Run `npm i` to install the dependencies.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-  Run `npm run dev` to start the development server.
-  
+## Tech Stack
+
+- **Framework**: Next.js 15 (App Router)
+- **Styling**: TailwindCSS v4
+- **UI Components**: shadcn/ui (Radix UI)
+- **Icons**: Lucide React
+
+## Project Structure
+
+```
+src/
+├── app/          # Next.js App Router pages & layout
+├── components/   # Shared components (layout, modals, ui)
+├── contexts/     # React contexts (auth)
+├── data/         # Hardcoded data (future: Supabase queries)
+├── lib/          # Supabase client placeholders
+├── middleware.ts  # Route protection
+└── types/        # TypeScript types (Supabase schema)
+```

@@ -1,13 +1,8 @@
-import { useState } from "react";
+"use client";
+
 import { Modal } from "./Modal";
 import { Plus } from "lucide-react";
-
-interface Address {
-  id: string;
-  name: string;
-  phone: string;
-  address: string;
-}
+import type { Address } from "@/types/database";
 
 interface AddressModalProps {
   isOpen: boolean;
@@ -24,7 +19,7 @@ export function AddressModal({ isOpen, onClose, addresses, selectedId, onSelect,
       <div className="p-8 pt-7">
         <h2 className="font-['Inter:Bold',sans-serif] font-bold text-[32px] text-black text-center tracking-[-0.96px]">Address</h2>
         <div className="mt-8 space-y-0">
-          {addresses.map((addr, i) => (
+          {addresses.map((addr) => (
             <div key={addr.id}>
               <div className="flex items-start py-5 cursor-pointer" onClick={() => { onSelect(addr.id); onClose(); }}>
                 <div className="flex-1">

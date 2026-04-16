@@ -1,3 +1,5 @@
+"use client";
+
 import { Modal } from "./Modal";
 import { MapPin, ChevronDown } from "lucide-react";
 
