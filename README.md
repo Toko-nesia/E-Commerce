@@ -1,5 +1,5 @@
 # Zenbinzu (ゼンビンズ)
-# Indonesia Japan Cross-border E-Commerce
+# Indonesian Products for Japan
 
 A Next.js 15 application connecting Indonesian brands with customers in Japan.
 
