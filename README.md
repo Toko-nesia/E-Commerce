@@ -1,4 +1,5 @@
-# Zenbin — Cross-border E-Commerce (Indonesia → Japan)
+# Zenbinzu (ゼンビンズ)
+# Indonesia Japan Cross-border E-Commerce
 
 A Next.js 15 application connecting Indonesian brands with customers in Japan.
 
