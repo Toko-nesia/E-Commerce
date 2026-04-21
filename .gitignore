@@ -3,6 +3,11 @@ node_modules
 /.pnp
 .pnp.*
 
+# code editor
+.vscode/
+.agents
+skills-lock.json
+
 # next.js
 /.next/
 /out/
