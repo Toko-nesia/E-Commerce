@@ -25,7 +25,10 @@ export default function CheckoutPage() {
       {/* Header */}
       <header className="bg-white h-24 flex items-center px-8 md:px-16 justify-between sticky top-0 z-40 w-full">
         <div className="flex items-center gap-4">
-          <Link href="/" className="font-['Inter:Bold',sans-serif] font-bold text-[20px] text-black tracking-[-0.6px] no-underline">LOREM IPSUM</Link>
+          <Link href="/" className="font-['Inter:Bold',sans-serif] font-bold text-[20px] text-black tracking-[-0.6px] no-underline flex items-center gap-2">
+            <span>ゼンビンズ</span>
+            <span className="text-[#ba2f2f]">Zenbins</span>
+          </Link>
           <div className="w-px h-[22px] bg-[#ba2f2f] rotate-0" />
           <span className="font-['Inter',sans-serif] text-[20px] text-black tracking-[-0.6px]">Checkout</span>
         </div>

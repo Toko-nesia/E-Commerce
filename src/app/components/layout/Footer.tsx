@@ -13,10 +13,11 @@ export function Footer() {
           <Link href="/shop" className="no-underline text-black">SHOP</Link>
         </nav>
         <p className="font-['Inter:Bold',sans-serif] font-bold text-[36px] text-black text-center tracking-[-1.08px]">
-          LOREM<br />IPSUM
+          <span className="text-[#ba2f2f]">Zenbins</span><br />
+          <span>ゼンビンズ</span>
         </p>
         <p className="font-['Inter',sans-serif] text-[20px] text-black tracking-[-0.6px]">
-          Copyright © 2026 Lorem Ipsum
+          Copyright © 2026 Zenbins
         </p>
       </div>
     </footer>

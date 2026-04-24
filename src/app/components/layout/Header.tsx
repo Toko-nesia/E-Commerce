@@ -17,8 +17,10 @@ export function Header() {
 
   return (
     <header className="bg-white h-24 flex items-center px-8 md:px-16 justify-between sticky top-0 z-50 w-full">
-      <Link href="/" className="font-['Inter:Bold',sans-serif] font-bold text-[20px] text-black tracking-[-0.6px] no-underline">
-        LOREM IPSUM
+      <Link href="/" className="font-['Inter:Bold',sans-serif] font-bold text-[20px] text-black tracking-[-0.6px] no-underline flex items-center gap-2">
+        <span>ゼンビンズ</span>
+        <span className="text-gray-400 font-normal">|</span>
+        <span className="text-[#ba2f2f]">Zenbins</span>
       </Link>
       <nav className="flex items-center gap-8">
         <Link href="/" className={`font-['Inter',sans-serif] text-[20px] text-black tracking-[-0.6px] no-underline ${isActive("/") && !isActive("/about") && !isActive("/shop") ? "font-bold" : ""}`}>

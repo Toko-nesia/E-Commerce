@@ -11,9 +11,14 @@ export default function HomePage() {
       <section className="relative h-[558px] w-full overflow-hidden">
         <img alt="" className="absolute h-[120.94%] left-0 max-w-none top-[-19.71%] w-full object-cover" src="/images/HomeBeforeLogin/ddf830bb09d6517538362b5457cbc8292017ec7e.png" />
         <div className="relative z-10 px-16 pt-32">
-          <h1 className="font-['Inter:Bold',sans-serif] font-bold text-[30px] text-white tracking-[-0.9px]">TITLE</h1>
-          <p className="font-['Inter',sans-serif] text-[25px] text-white tracking-[-0.75px] max-w-[601px] mt-2">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+          <h1 className="font-['Inter:Bold',sans-serif] font-bold text-[30px] text-white tracking-[-0.9px] flex items-center gap-3">
+            <span>ゼンビンズ</span>
+            <span className="text-gray-300 font-normal">|</span>
+            <span>Zenbins</span>
+          </h1>
+          <p className="font-['Inter',sans-serif] text-[25px] text-white tracking-[-0.75px] max-w-[601px] mt-2 leading-relaxed">
+            Membawa kebaikan Nusantara ke jantung Jepang.
+            Temukan produk Indonesia terbaik, langsung dari sumbernya, hanya di Zenbins (ゼンビンズ).
           </p>
         </div>
       </section>

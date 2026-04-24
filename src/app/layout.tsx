@@ -3,7 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
 
 export const metadata: Metadata = {
-  title: "Zenbin — Indonesian Products for Japan",
+  title: "ゼンビンズ | Zenbins — Indonesian Products for Japan",
   description:
     "Cross-border e-commerce platform connecting Indonesian brands with customers in Japan. Discover authentic Indonesian products delivered to your doorstep.",
 };
