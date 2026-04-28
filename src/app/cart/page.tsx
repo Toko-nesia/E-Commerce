@@ -20,7 +20,7 @@ export default function CartPage() {
   return (
     <PageWrapper>
       <div className="max-w-[1200px] mx-auto px-6 md:px-8 py-10">
-        <h1 className="font-bold text-[26px] text-[#511e0b] mb-8">
+        <h1 className="font-bold text-[28px] text-[#511e0b] mb-8">
           Keranjang Belanja
         </h1>
 
@@ -54,8 +54,8 @@ export default function CartPage() {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-[15px] text-black leading-snug line-clamp-2">{product.name}</p>
-                    <p className="text-[12px] text-[#A6A6A6] mt-0.5">{product.category}</p>
+            <p className="font-bold text-[15px] text-black leading-snug line-clamp-2">{product.name}</p>
+                    <p className="text-[13px] text-[#A6A6A6] mt-0.5">{product.category}</p>
                     <p className="font-bold text-[15px] text-[#511e0b] mt-1">{product.price}</p>
                   </div>
 
@@ -93,11 +93,11 @@ export default function CartPage() {
 
             {/* Order Summary */}
             <div className="w-full lg:w-[320px] shrink-0 bg-white rounded-xl shadow-sm border border-[#f0f0f0] p-6 lg:sticky lg:top-28">
-              <h2 className="font-bold text-[18px] text-black mb-4">Ringkasan Pesanan</h2>
+              <h2 className="font-bold text-[19px] text-black mb-4">Ringkasan Pesanan</h2>
 
               <div className="flex flex-col gap-2 mb-4">
                 {items.map(({ product, qty }) => (
-                  <div key={product.id} className="flex justify-between text-[13px]">
+                <div key={product.id} className="flex justify-between text-[13px]">
                     <span className="text-[#A6A6A6] line-clamp-1 max-w-[160px]">{product.name} ×{qty}</span>
                     <span className="text-black font-medium shrink-0 ml-2">{formatRp(product.price_raw * qty)}</span>
                   </div>
@@ -124,8 +124,8 @@ export default function CartPage() {
               </div>
 
               <div className="border-t border-[#EBEBEB] mt-4 pt-4 flex justify-between">
-                <span className="font-bold text-[16px] text-black">Total</span>
-                <span className="font-bold text-[16px] text-[#511e0b]">{formatRp(grandTotal)}</span>
+                <span className="font-bold text-[17px] text-black">Total</span>
+                <span className="font-bold text-[17px] text-[#511e0b]">{formatRp(grandTotal)}</span>
               </div>
 
               <Link

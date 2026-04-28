@@ -68,7 +68,7 @@ export default function AdminDashboardPage() {
             <thead>
               <tr className="border-b border-[#EBEBEB] bg-[#fafafa]">
                 {["No. Pesanan", "Pelanggan", "Produk", "Total", "Status", "Tanggal"].map((h) => (
-                  <th key={h} className="text-left text-[12px] font-medium text-[#A6A6A6] px-4 py-3 whitespace-nowrap">
+                  <th key={h} className="text-left text-[13px] font-medium text-[#A6A6A6] px-4 py-3 whitespace-nowrap">
                     {h}
                   </th>
                 ))}
@@ -84,7 +84,7 @@ export default function AdminDashboardPage() {
                   </td>
                   <td className="px-4 py-3 text-[13px] text-black whitespace-nowrap">{order.total}</td>
                   <td className="px-4 py-3">
-                    <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold ${STATUS_STYLES[order.status] ?? "bg-gray-100 text-gray-500"}`}>
+                    <span className={`inline-block px-2 py-0.5 rounded text-[12px] font-bold ${STATUS_STYLES[order.status] ?? "bg-gray-100 text-gray-500"}`}>
                       {order.status}
                     </span>
                   </td>

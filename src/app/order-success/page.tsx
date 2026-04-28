@@ -17,9 +17,9 @@ export default function OrderSuccessPage() {
       {/* Header */}
       <header className="bg-white h-20 flex items-center px-6 md:px-12 shadow-sm">
         <Link href="/" className="font-bold text-[18px] text-black tracking-tight no-underline flex items-center gap-2">
-          <span>ゼンビンズ</span>
+          <span>トコネシア</span>
           <span className="text-gray-300 font-normal">|</span>
-          <span className="text-[#ba2f2f]">Zenbins</span>
+          <span className="text-[#ba2f2f]">Tokonesia</span>
         </Link>
       </header>
 
@@ -36,7 +36,7 @@ export default function OrderSuccessPage() {
           {/* Title */}
           <h1 className="font-bold text-[26px] text-[#511e0b] mb-2">Pesanan Berhasil!</h1>
           <p className="text-[14px] text-[#a6a6a6] mb-6">
-            Terima kasih telah berbelanja di Zenbins. Pesananmu sedang diproses.
+            Terima kasih telah berbelanja di Tokonesia. Pesananmu sedang diproses.
           </p>
 
           {/* Order number */}
@@ -96,7 +96,7 @@ export default function OrderSuccessPage() {
       {/* Brand footer */}
       <div className="text-center py-6">
         <p className="text-[12px] text-[#a6a6a6]">
-          © 2026 Zenbins (ゼンビンズ) — Indonesian Products for Japan
+          © 2026 Tokonesia (トコネシア) — Indonesian Products for Japan
         </p>
       </div>
     </div>

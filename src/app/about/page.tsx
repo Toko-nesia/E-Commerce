@@ -32,7 +32,7 @@ export default function AboutPage() {
           <h2 className="font-bold text-[24px] md:text-[28px] text-[#090909] tracking-tight">
             Made in Indonesia, for You
           </h2>
-          <div className="text-[15px] text-[#555] mt-4 space-y-4 leading-relaxed">
+        <div className="text-[15px] text-[#555] mt-4 space-y-4 leading-relaxed">
             <p>
               This platform originates from Indonesia and is designed to support the global expansion
               of local products. As a cross-border e-commerce platform, we connect Indonesian brands
@@ -81,15 +81,16 @@ export default function AboutPage() {
         <div className="flex flex-wrap justify-center gap-8 md:gap-16 mt-10">
           {whyChooseUs.map((item) => (
             <div key={item.title} className="flex flex-col items-center max-w-[200px]">
-              <div className="relative w-[64px] h-[44px] overflow-hidden">
+              <div className="w-[64px] h-[64px] flex items-center justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  alt=""
-                  className={`absolute max-w-none ${item.iconStyle}`}
-                  src="/images/HomeBeforeLogin/61ed9253763e955d2f0a7c5290f2a40996acd534.png"
+                  alt={item.title}
+                  className="w-full h-full object-contain"
+                  src={item.icon}
                 />
               </div>
-              <h3 className="font-bold text-[14px] text-[#090909] text-center mt-3">{item.title}</h3>
-              <p className="text-[12px] text-[#555] text-center mt-1.5 leading-relaxed">{item.desc}</p>
+              <h3 className="font-bold text-[15px] text-[#090909] text-center mt-3">{item.title}</h3>
+              <p className="text-[13px] text-[#555] text-center mt-1.5 leading-relaxed">{item.desc}</p>
             </div>
           ))}
         </div>

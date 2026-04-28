@@ -61,8 +61,8 @@ export default function CheckoutPage() {
             href="/"
             className="font-bold text-[18px] text-black tracking-tight no-underline flex items-center gap-2"
           >
-            <span>ゼンビンズ</span>
-            <span className="text-[#ba2f2f]"> | Zenbins</span>
+            <span>トコネシア</span>
+            <span className="text-[#ba2f2f]"> | Tokonesia</span>
           </Link>
           <span className="text-[#ba2f2f] font-normal">|</span>
           <span className="text-[18px] text-black">Checkout</span>
@@ -74,7 +74,7 @@ export default function CheckoutPage() {
           </div>
           <div>
             <p className="text-[14px] text-black font-medium">Shop Protection</p>
-            <p className="text-[11px] text-[#a6a6a6]">Your purchase is secure and protected</p>
+            <p className="text-[12px] text-[#a6a6a6]">Your purchase is secure and protected</p>
           </div>
         </div>
       </header>
@@ -87,8 +87,7 @@ export default function CheckoutPage() {
           <div className="border border-[#511e0b] rounded-lg p-5 mt-3 relative bg-white">
             <p className="font-bold text-[16px] text-black">{currentAddress.name}</p>
             <p className="text-[14px] text-[#a6a6a6] mt-1">{currentAddress.phone}</p>
-            <p className="text-[14px] text-[#a6a6a6]">{currentAddress.address}</p>
-            <button
+            <p className="text-[14px] text-[#a6a6a6]">{currentAddress.address}</p>            <button
               onClick={() => setAddressModal(true)}
               className="absolute top-4 right-4 bg-transparent border-none cursor-pointer p-0 text-[#511e0b] hover:text-black transition-colors"
             >
@@ -174,7 +173,7 @@ export default function CheckoutPage() {
               </div>
             ))}
           </div>
-          <p className="text-[12px] text-[#df0000] mt-2">DDP (Delivered Duty Paid)</p>
+          <p className="text-[13px] text-[#df0000] mt-2">DDP (Delivered Duty Paid)</p>
 
           <div className="h-px bg-black/20 mt-6" />
 
@@ -186,7 +185,7 @@ export default function CheckoutPage() {
             ¥{grandTotalJpy.toLocaleString("ja-JP")}
           </p>
 
-          <p className="text-[12px] text-[#df0000] mt-4">
+          <p className="text-[13px] text-[#df0000] mt-4">
             Pajak impor dihitung dalam IDR dan dikonversi ke JPY berdasarkan nilai tukar terkini.
           </p>
 

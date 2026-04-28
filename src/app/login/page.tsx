@@ -28,12 +28,12 @@ export default function LoginPage() {
         </div>
         {/* Right: Form */}
         <div className="bg-white flex-1 p-16 flex flex-col justify-center min-h-[675px]">
-          <h1 className="font-['Inter:Bold',sans-serif] font-bold text-[24px] text-black">WELCOME!</h1>
-          <p className="font-['Inter',sans-serif] text-[14px] text-[#605850] mt-1">Login</p>
+          <h1 className="font-['Inter:Bold',sans-serif] font-bold text-[26px] text-black">WELCOME!</h1>
+          <p className="font-['Inter',sans-serif] text-[15px] text-[#605850] mt-1">Login</p>
 
           <form onSubmit={handleLogin} className="mt-10 space-y-6">
             <div>
-              <label className="font-['Manrope',sans-serif] text-[11px] text-[#605850] tracking-[1.1px] uppercase">EMAIL OR ADDRESS</label>
+              <label className="font-['Manrope',sans-serif] text-[12px] text-[#605850] tracking-[1.1px] uppercase">EMAIL OR ADDRESS</label>
               <input
                 type="email"
                 value={email}
@@ -44,8 +44,8 @@ export default function LoginPage() {
             </div>
             <div>
               <div className="flex justify-between">
-                <label className="font-['Manrope',sans-serif] text-[11px] text-[#605850] tracking-[1.1px] uppercase">PASSWORD</label>
-                <span className="font-['Manrope',sans-serif] text-[11px] text-[#a24141] capitalize cursor-pointer">Forgot Password?</span>
+                <label className="font-['Manrope',sans-serif] text-[12px] text-[#605850] tracking-[1.1px] uppercase">PASSWORD</label>
+                <span className="font-['Manrope',sans-serif] text-[12px] text-[#a24141] capitalize cursor-pointer">Forgot Password?</span>
               </div>
               <input
                 type="password"

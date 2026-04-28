@@ -73,7 +73,7 @@ export default function ProfilePage() {
               </button>
               <input ref={fileRef} type="file" accept="image/*" className="sr-only" onChange={handleAvatarChange} />
             </div>
-            <p className="font-bold text-[16px] text-black mt-3">{fullName}</p>
+            <p className="font-bold text-[17px] text-black mt-3">{fullName}</p>
             <p className="text-[13px] text-[#a6a6a6]">{email}</p>
           </div>
 
@@ -83,7 +83,7 @@ export default function ProfilePage() {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`shrink-0 md:w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border-none cursor-pointer text-left text-[13px] tracking-tight transition-colors ${
+                className={`shrink-0 md:w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border-none cursor-pointer text-left text-[14px] tracking-tight transition-colors ${
                   activeTab === item.id
                     ? "bg-[#511e0b] text-white font-bold"
                     : "bg-transparent text-black hover:bg-[#f5f0ea]"
@@ -95,7 +95,7 @@ export default function ProfilePage() {
             ))}
             <button
               onClick={() => logout()}
-              className="shrink-0 md:w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border-none cursor-pointer text-left text-[13px] text-[#df0000] bg-transparent hover:bg-red-50 md:mt-4"
+              className="shrink-0 md:w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border-none cursor-pointer text-left text-[14px] text-[#df0000] bg-transparent hover:bg-red-50 md:mt-4"
             >
               <LogOut size={15} className="shrink-0" />
               <span>Logout</span>
@@ -108,10 +108,10 @@ export default function ProfilePage() {
           {/* ── Profile Info ── */}
           {activeTab === "profile" && (
             <section>
-              <h2 className="font-bold text-[22px] text-black mb-6">Profil Saya</h2>
+              <h2 className="font-bold text-[24px] text-black mb-6">Profil Saya</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-[11px] text-[#a6a6a6] tracking-widest uppercase mb-1.5">Nama Lengkap</label>
+                  <label className="block text-[12px] text-[#a6a6a6] tracking-widest uppercase mb-1.5">Nama Lengkap</label>
                   <input
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
@@ -119,7 +119,7 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] text-[#a6a6a6] tracking-widest uppercase mb-1.5">Alamat Email</label>
+                  <label className="block text-[12px] text-[#a6a6a6] tracking-widest uppercase mb-1.5">Alamat Email</label>
                   <input
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -127,7 +127,7 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] text-[#a6a6a6] tracking-widest uppercase mb-1.5">Nomor Telepon</label>
+                  <label className="block text-[12px] text-[#a6a6a6] tracking-widest uppercase mb-1.5">Nomor Telepon</label>
                   <input
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
@@ -146,7 +146,7 @@ export default function ProfilePage() {
           {/* ── Order History ── */}
           {activeTab === "orders" && (
             <section>
-              <h2 className="font-bold text-[22px] text-black mb-6">Riwayat Pesanan</h2>
+              <h2 className="font-bold text-[24px] text-black mb-6">Riwayat Pesanan</h2>
               <div className="border border-[#d9d9d9] rounded-xl overflow-hidden">
                 <div className="grid grid-cols-5 bg-[#f5f5f5] px-5 py-3">
                   {["ID PESANAN", "TANGGAL", "STATUS", "TOTAL", "AKSI"].map((h) => (
@@ -155,9 +155,9 @@ export default function ProfilePage() {
                 </div>
                 {orderHistory.map((order) => (
                   <div key={order.id} className="grid grid-cols-5 px-5 py-4 border-t border-[#ececec] items-center hover:bg-gray-50 transition-colors">
-                    <span className="font-bold text-[13px] text-[#511e0b]">{order.id}</span>
+                    <span key={order.id} className="font-bold text-[13px] text-[#511e0b]">{order.id}</span>
                     <span className="text-[13px] text-black">{order.date}</span>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold w-fit ${STATUS_COLOR[order.status] ?? "bg-gray-100 text-gray-500"}`}>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[12px] font-bold w-fit ${STATUS_COLOR[order.status] ?? "bg-gray-100 text-gray-500"}`}>
                       {STATUS_LABEL[order.status] ?? order.status}
                     </span>
                     <span className="text-[13px] text-black">{order.total_price}</span>
@@ -181,7 +181,7 @@ export default function ProfilePage() {
           {activeTab === "addresses" && (
             <section>
               <div className="flex justify-between items-center mb-6">
-                <h2 className="font-bold text-[22px] text-black">Alamat Tersimpan</h2>
+                <h2 className="font-bold text-[24px] text-black">Alamat Tersimpan</h2>
                 <button className="flex items-center gap-1.5 text-[13px] text-[#511e0b] font-medium bg-transparent border border-[#511e0b] rounded-lg px-3 py-2 cursor-pointer hover:bg-[#faf5ee] transition-colors">
                   <Plus size={14} />
                   Tambah Alamat
@@ -197,7 +197,7 @@ export default function ProfilePage() {
                     <p className="text-[13px] text-[#a6a6a6] mt-0.5 leading-relaxed">{addr.address}</p>
                     <div className="flex items-center gap-1 mt-2">
                       <Phone size={11} className="text-[#a6a6a6]" />
-                      <span className="text-[12px] text-[#a6a6a6]">{addr.phone}</span>
+                      <span className="text-[13px] text-[#a6a6a6]">{addr.phone}</span>
                     </div>
 
                     {/* MoreVertical menu */}

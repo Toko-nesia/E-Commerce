@@ -19,9 +19,21 @@ export const trendingProducts = [
 
 // Home page "Why Choose Us" items
 export const whyChooseUs = [
-  { title: "Door-to-Door Delivery", desc: "Delivered straight to your doorstep. Your order will be carefully delivered from Indonesia to your address.", iconStyle: "h-[229.79%] left-[-14.26%] top-[-103.19%] w-[282.35%]" },
-  { title: "SECURE PAYMENT", desc: "Safe and secure transactions. Shop with confidence using trusted and protected payment methods.", iconStyle: "h-[243.79%] left-[-380.27%] top-[-22.8%] w-[512%]" },
-  { title: "ORDER TRACKING", desc: "Track your order anytime. Stay updated with real-time tracking from checkout to delivery.", iconStyle: "h-[222.22%] left-[-205.65%] top-[-101.65%] w-[417.39%]" },
+  {
+    title: "Door-to-Door Delivery",
+    desc: "Delivered straight to your doorstep. Your order will be carefully delivered from Indonesia to your address.",
+    icon: "/images/HomeBeforeLogin/hands.png",
+  },
+  {
+    title: "Secure Payment",
+    desc: "Safe and secure transactions. Shop with confidence using trusted and protected payment methods.",
+    icon: "/images/HomeBeforeLogin/payment.png",
+  },
+  {
+    title: "Order Tracking",
+    desc: "Track your order anytime. Stay updated with real-time tracking from checkout to delivery.",
+    icon: "/images/HomeBeforeLogin/carts.png",
+  },
 ];
 
 // About page brands grid

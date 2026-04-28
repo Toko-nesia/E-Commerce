@@ -52,9 +52,11 @@ export default function AdminLayout({
       <header className="fixed top-0 left-0 right-0 z-50 h-24 bg-white shadow-[0_2px_10px_rgba(0,0,0,0.25)] flex items-center">
         {/* Logo — aligns with sidebar width */}
         <div className="w-[211px] flex-shrink-0 flex items-center justify-center gap-1 px-4">
-          <span className="font-bold text-[18px] text-black">ゼンビンズ</span>
-          <span className="text-gray-300 font-light px-1">|</span>
-          <span className="font-bold text-[18px] text-[#BA2F2F]">Zenbins</span>
+          <Link href="/admin" className="flex items-center gap-1 no-underline">
+            <span className="font-bold text-[18px] text-black">トコネシア</span>
+            <span className="text-gray-300 font-light px-1">|</span>
+            <span className="font-bold text-[18px] text-[#BA2F2F]">Tokonesia</span>
+          </Link>
         </div>
 
         {/* Vertical red divider */}

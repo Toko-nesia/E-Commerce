@@ -4,7 +4,7 @@ import { AuthProvider } from "@/contexts/auth-context";
 import { CartProvider } from "@/contexts/cart-context";
 
 export const metadata: Metadata = {
-  title: "ゼンビンズ | Zenbins — Indonesian Products for Japan",
+  title: "トコネシア | Tokonesia — Indonesian Products for Japan",
   description:
     "Cross-border e-commerce platform connecting Indonesian brands with customers in Japan. Discover authentic Indonesian products delivered to your doorstep.",
 };

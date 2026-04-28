@@ -102,7 +102,7 @@ export default function ShopPage() {
           <div className="flex-1 min-w-0">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
               <div>
-                <h1 className="font-bold text-[28px] md:text-[32px] text-[#511e0b]">SEMUA PRODUK</h1>
+                <h1 className="font-bold text-[28px] md:text-[32px] text-[#511e0b]">Semua Produk</h1>
                 <p className="text-[13px] text-[#a6a6a6] mt-0.5">
                   Menampilkan {Math.min((currentPage - 1) * PRODUCTS_PER_PAGE + 1, filtered.length)}–{Math.min(currentPage * PRODUCTS_PER_PAGE, filtered.length)} dari {filtered.length} produk
                 </p>
@@ -133,7 +133,7 @@ export default function ShopPage() {
               </div>
             </div>
 
-            {/* Product Grid */}
+          {/* Product Grid */}
             {paginated.length === 0 ? (
               <div className="text-center py-24">
                 <p className="text-[#a6a6a6] text-[15px]">Produk tidak ditemukan untuk &ldquo;{searchQuery}&rdquo;</p>
@@ -145,23 +145,23 @@ export default function ShopPage() {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {paginated.map((p) => (
                   <Link href={`/product/${p.id}`} key={p.id} className="no-underline group">
-                    <div className="bg-white rounded-xl overflow-hidden border border-[#f0f0f0] hover:shadow-md transition-all duration-200 group-hover:-translate-y-0.5">
-                      <div className="relative w-full h-[180px] md:h-[205px] bg-[#f8f8f8] overflow-hidden">
+                    <div className="bg-white rounded-xl overflow-hidden border border-[#f0f0f0] hover:shadow-md transition-all duration-200 group-hover:-translate-y-0.5 flex flex-col h-full">
+                      <div className="relative w-full aspect-[4/3] bg-[#f8f8f8] overflow-hidden">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           alt={p.name}
-                          className={`absolute max-w-none object-cover pointer-events-none transition-transform duration-300 group-hover:scale-105 ${p.img_style || "inset-0 w-full h-full"}`}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                           src={p.image}
                         />
                         <div className={`absolute top-3 left-3 ${p.badge_color} ${p.badge_width || "w-14"} h-6 rounded-full shadow-sm flex items-center justify-center`}>
                           <span className="font-medium text-[12px] text-black">{p.badge}</span>
                         </div>
                       </div>
-                      <div className="p-3">
-                        <p className="text-[11px] text-[#a6a6a6] uppercase tracking-wider">{p.category}</p>
-                        <p className="font-bold text-[14px] text-black mt-1 line-clamp-2 leading-snug">{p.name}</p>
-                        <p className="font-bold text-[14px] text-[#511e0b] mt-1">{p.price}</p>
-                        <p className="text-[11px] text-[#a6a6a6] mt-0.5">Stok: {p.stock}</p>
+                      <div className="p-3 flex flex-col flex-1">
+                        <p className="text-[12px] text-[#a6a6a6] uppercase tracking-wider">{p.category}</p>
+                        <p className="font-bold text-[14px] text-black mt-1 line-clamp-2 leading-snug flex-1">{p.name}</p>
+                        <p className="font-bold text-[15px] text-[#511e0b] mt-1">{p.price}</p>
+                        <p className="text-[12px] text-[#a6a6a6] mt-0.5">Stok: {p.stock}</p>
                       </div>
                     </div>
                   </Link>

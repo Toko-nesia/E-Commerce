@@ -32,9 +32,9 @@ export function Header() {
         href="/"
         className="font-bold text-[18px] text-black tracking-tight no-underline flex items-center gap-2 shrink-0"
       >
-        <span>ゼンビンズ</span>
+        <span>トコネシア</span>
         <span className="text-gray-300 font-normal">|</span>
-        <span className="text-[#ba2f2f]">Zenbins</span>
+        <span className="text-[#ba2f2f]">Tokonesia</span>
       </Link>
 
       {/* Desktop Nav */}
