@@ -27,66 +27,147 @@ export function saveTrackingNumber(order: Order, resi: string): Order {
 // Mock data
 // =============================================================================
 
+// FedEx sandbox test tracking numbers (from FedEx developer docs):
+// 449044304137821 — "Shipment information sent to FedEx"
+// 149331877648230 — "Tendered"
+// 020207021381215 — "Picked up"
+// 403934084723025 — "Arrived at FedEx location"
+// 568838414941   — "At destination sort facility"
+// 039813852990618 — "Departed FedEx location"
+// 231300687629630 — "On FedEx vehicle for delivery"
+// 122816215025810 — "Delivered"
+
 const MOCK_TRACK_RESPONSE: FedExTrackingResponse = {
   transactionId: "mock-transaction-001",
   output: {
     completeTrackResults: [
       {
-        trackingNumber: "7489234651200",
+        trackingNumber: "020207021381215",
         trackResults: [
           {
             trackingNumberInfo: {
-              trackingNumber: "7489234651200",
+              trackingNumber: "020207021381215",
               carrierCode: "FDXE",
             },
             latestStatusDetail: {
               code: "IT",
               derivedCode: "IT",
               statusByLocale: "In Transit",
-              description: "In Transit",
-              scanLocation: { city: "Tokyo", countryCode: "JP", countryName: "Japan" },
+              description: "In transit — package departed origin facility",
+              scanLocation: { city: "Jakarta", countryCode: "ID", countryName: "Indonesia" },
             },
             dateAndTimes: [
-              { type: "SHIP", dateTime: "2026-10-13T09:00:00+07:00" },
-              { type: "ESTIMATED_DELIVERY", dateTime: "2026-10-20T18:00:00+09:00" },
+              { type: "SHIP", dateTime: "2026-10-10T08:30:00+07:00" },
+              { type: "ESTIMATED_DELIVERY", dateTime: "2026-10-18T18:00:00+09:00" },
+              { type: "ACTUAL_PICKUP", dateTime: "2026-10-10T10:15:00+07:00" },
             ],
             scanEvents: [
               {
-                date: "2026-10-12T10:00:00+07:00",
+                date: "2026-10-10T08:30:00+07:00",
                 eventType: "OC",
                 eventDescription: "Shipment information sent to FedEx",
                 derivedStatus: "Label Created",
                 derivedStatusCode: "OC",
-                scanLocation: { city: "Solo", countryCode: "ID", countryName: "Indonesia" },
+                scanLocation: { city: "Solo", stateOrProvinceCode: "JT", countryCode: "ID", countryName: "Indonesia" },
               },
               {
-                date: "2026-10-12T14:30:00+07:00",
+                date: "2026-10-10T10:15:00+07:00",
                 eventType: "PU",
                 eventDescription: "Picked up",
                 derivedStatus: "Picked Up",
                 derivedStatusCode: "PU",
-                scanLocation: { city: "Solo", countryCode: "ID", countryName: "Indonesia" },
+                scanLocation: { city: "Solo", stateOrProvinceCode: "JT", countryCode: "ID", countryName: "Indonesia" },
               },
               {
-                date: "2026-10-13T09:00:00+07:00",
+                date: "2026-10-10T16:45:00+07:00",
+                eventType: "AR",
+                eventDescription: "Arrived at FedEx hub",
+                derivedStatus: "In Transit",
+                derivedStatusCode: "IT",
+                scanLocation: { city: "Jakarta", stateOrProvinceCode: "JK", countryCode: "ID", countryName: "Indonesia" },
+              },
+              {
+                date: "2026-10-11T02:30:00+07:00",
                 eventType: "DP",
                 eventDescription: "Departed FedEx hub",
+                derivedStatus: "In Transit",
+                derivedStatusCode: "IT",
+                scanLocation: { city: "Jakarta", stateOrProvinceCode: "JK", countryCode: "ID", countryName: "Indonesia" },
+              },
+              {
+                date: "2026-10-11T09:00:00+07:00",
+                eventType: "CC",
+                eventDescription: "International shipment release — Import",
                 derivedStatus: "In Transit",
                 derivedStatusCode: "IT",
                 scanLocation: { city: "Jakarta", countryCode: "ID", countryName: "Indonesia" },
               },
               {
-                date: "2026-10-14T22:00:00+09:00",
-                eventType: "IT",
-                eventDescription: "In transit",
+                date: "2026-10-12T06:20:00+09:00",
+                eventType: "AR",
+                eventDescription: "Arrived at FedEx location",
+                derivedStatus: "In Transit",
+                derivedStatusCode: "IT",
+                scanLocation: { city: "Narita", stateOrProvinceCode: "12", countryCode: "JP", countryName: "Japan" },
+              },
+              {
+                date: "2026-10-12T11:00:00+09:00",
+                eventType: "CC",
+                eventDescription: "Clearance in progress",
                 derivedStatus: "In Transit",
                 derivedStatusCode: "IT",
                 scanLocation: { city: "Narita", countryCode: "JP", countryName: "Japan" },
               },
+              {
+                date: "2026-10-13T08:15:00+09:00",
+                eventType: "CC",
+                eventDescription: "Custom clearance completed",
+                derivedStatus: "In Transit",
+                derivedStatusCode: "IT",
+                scanLocation: { city: "Narita", countryCode: "JP", countryName: "Japan" },
+              },
+              {
+                date: "2026-10-13T14:30:00+09:00",
+                eventType: "DP",
+                eventDescription: "Departed FedEx location",
+                derivedStatus: "In Transit",
+                derivedStatusCode: "IT",
+                scanLocation: { city: "Narita", countryCode: "JP", countryName: "Japan" },
+              },
+              {
+                date: "2026-10-14T07:00:00+09:00",
+                eventType: "AR",
+                eventDescription: "At local FedEx facility",
+                derivedStatus: "In Transit",
+                derivedStatusCode: "IT",
+                scanLocation: { city: "Tokyo", stateOrProvinceCode: "13", countryCode: "JP", countryName: "Japan" },
+              },
             ],
+            deliveryDetails: {
+              deliveryToday: false,
+            },
+            packageDetails: {
+              physicalPackagingType: "YOUR_PACKAGING",
+              sequenceNumber: "1",
+              count: "1",
+              weightAndDimensions: {
+                weight: [{ unit: "KG", value: "22.5" }],
+              },
+            },
             serviceDetail: {
-              description: "FedEx International Priority",
-              type: "INTERNATIONAL_PRIORITY",
+              description: "FedEx International Economy",
+              shortDescription: "FedEx International Economy",
+              type: "INTERNATIONAL_ECONOMY",
+            },
+            originLocation: {
+              locationContactAndAddress: {
+                address: { city: "Solo", stateOrProvinceCode: "JT", countryCode: "ID", countryName: "Indonesia" },
+              },
+            },
+            destinationLocation: {
+              locationContactAndAddress: {
+                address: { city: "Tokyo", stateOrProvinceCode: "13", countryCode: "JP", countryName: "Japan" },
+              },
             },
           },
         ],
