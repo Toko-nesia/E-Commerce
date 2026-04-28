@@ -11,6 +11,7 @@ export interface Product {
   name: string;
   category: string;
   price: string;
+  price_raw: number;
   badge: string;
   badge_color: string;
   badge_width?: string;
@@ -18,7 +19,7 @@ export interface Product {
   img_style?: string;
   description?: string;
   specifications?: Record<string, string>;
-  stock?: number;
+  stock: number;
   weight_kg?: number;
   created_at?: string;
 }
