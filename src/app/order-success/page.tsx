@@ -13,7 +13,7 @@ export default function OrderSuccessPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#faf5ee] flex flex-col">
+    <div className="min-h-screen bg-[#FDF9F5] flex flex-col">
       {/* Header */}
       <header className="bg-white h-20 flex items-center px-6 md:px-12 shadow-sm">
         <Link href="/" className="font-bold text-[18px] text-black tracking-tight no-underline flex items-center gap-2">
@@ -41,7 +41,7 @@ export default function OrderSuccessPage() {
 
           {/* Order number */}
           {orderNumber && (
-            <div className="bg-[#faf5ee] rounded-xl px-6 py-4 mb-6">
+            <div className="bg-[#FDF9F5] rounded-xl px-6 py-4 mb-6">
               <p className="text-[12px] text-[#6b6b6b] uppercase tracking-wider mb-1">Nomor Pesanan</p>
               <p className="font-bold text-[22px] text-[#511e0b]">{orderNumber}</p>
             </div>

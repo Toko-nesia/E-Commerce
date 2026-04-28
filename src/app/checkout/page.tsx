@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Shield, Check, Edit3 } from "lucide-react";
+import { Footer } from "../components/layout/Footer";
 import { PaymentOptionModal } from "../components/modals/PaymentOptionModal";
 import { AddressModal } from "../components/modals/AddressModal";
 import { EditAddressModal } from "../components/modals/EditAddressModal";
@@ -137,7 +138,7 @@ export default function CheckoutPage() {
         </div>
 
         {/* Right Column - Order Summary */}
-        <div className="w-full lg:w-[440px] bg-[#efefef] p-6 md:p-10 lg:min-h-[calc(100vh-80px)]">
+        <div className="w-full lg:w-[440px] bg-[#FDF9F5] shadow-sm border border-[#e0e0e0] p-6 md:p-10 lg:min-h-[calc(100vh-80px)]">
           <h2 className="font-bold text-[22px] text-[#511e0b]">Pesanan</h2>
 
           {/* Cart Items */}
@@ -218,6 +219,11 @@ export default function CheckoutPage() {
         onSave={() => {}}
         initialData={{ name: currentAddress.name, phone: currentAddress.phone, fullAddress: currentAddress.address, details: "" }}
       />
+
+      {/* Footer — desktop only */}
+      <div className="hidden lg:block">
+        <Footer />
+      </div>
     </div>
   );
 }

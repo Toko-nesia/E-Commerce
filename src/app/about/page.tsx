@@ -69,7 +69,7 @@ export default function AboutPage() {
       </section>
 
       {/* Why Choose Us */}
-      <section className="py-12 md:py-16 px-6 md:px-16 bg-[#faf5ee]">
+      <section className="py-12 md:py-16 px-6 md:px-16 bg-[#FDF9F5]">
         <h2 className="text-center font-bold text-[24px] md:text-[28px] text-[#090909] tracking-tight">
           WHY CHOOSE US
         </h2>

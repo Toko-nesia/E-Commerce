@@ -18,7 +18,7 @@ export default function CartPage() {
   const grandTotal = totalPrice + shipping + serviceFee + importTax;
 
   return (
-    <PageWrapper>
+    <PageWrapper mobileFooter={false}>
       <div className="max-w-[1200px] mx-auto px-6 md:px-8 py-10">
         <h1 className="font-bold text-[28px] text-[#511e0b] mb-8">
           Keranjang Belanja
@@ -92,7 +92,7 @@ export default function CartPage() {
             </div>
 
             {/* Order Summary */}
-            <div className="w-full lg:w-[320px] shrink-0 bg-[#FAF5EE] rounded-xl shadow-sm border border-[#e0e0e0] p-6 lg:sticky lg:top-28">
+            <div className="w-full lg:w-[320px] shrink-0 bg-[#FDF9F5] rounded-xl shadow-sm border border-[#e0e0e0] p-6 lg:sticky lg:top-28">
               <h2 className="font-bold text-[19px] text-black mb-4">Ringkasan Pesanan</h2>
 
               <div className="flex flex-col gap-2 mb-4">

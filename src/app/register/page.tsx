@@ -17,7 +17,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="bg-[#faf5ee] min-h-screen flex items-center justify-center p-4">
+    <div className="bg-[#FDF9F5] min-h-screen flex items-center justify-center p-4">
       <div className="flex max-w-[906px] w-full shadow-lg">
         <div className="hidden md:block w-[448px] h-[675px] relative overflow-hidden">
           <img alt="" className="absolute h-[148.01%] left-[-111.31%] max-w-none top-[-23.71%] w-[396.5%]" src="/images/Register/fbb1676fb1e714ce082c8512433c9a5517bce894.png" />
@@ -29,20 +29,20 @@ export default function RegisterPage() {
           <form onSubmit={handleRegister} className="mt-8 space-y-5">
             <div>
               <label className="font-['Manrope',sans-serif] text-[12px] text-[#605850] tracking-[1.1px] uppercase">Full Name</label>
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Febri" className="w-full mt-2 bg-[#faf5ee] border border-[#d8d0c8] rounded-[8px] px-4 py-3 font-['Manrope',sans-serif] text-[14px] placeholder-[rgba(154,144,136,0.5)] outline-none" />
+              <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Febri" className="w-full mt-2 bg-[#FDF9F5] border border-[#d8d0c8] rounded-[8px] px-4 py-3 font-['Manrope',sans-serif] text-[14px] placeholder-[rgba(154,144,136,0.5)] outline-none" />
             </div>
             <div>
               <label className="font-['Manrope',sans-serif] text-[12px] text-[#605850] tracking-[1.1px] uppercase">Email Address</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Febri@gmail.com" className="w-full mt-2 bg-[#faf5ee] border border-[#d8d0c8] rounded-[8px] px-4 py-3 font-['Manrope',sans-serif] text-[14px] placeholder-[rgba(154,144,136,0.5)] outline-none" />
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Febri@gmail.com" className="w-full mt-2 bg-[#FDF9F5] border border-[#d8d0c8] rounded-[8px] px-4 py-3 font-['Manrope',sans-serif] text-[14px] placeholder-[rgba(154,144,136,0.5)] outline-none" />
             </div>
             <div className="flex gap-4">
               <div className="flex-1">
                 <label className="font-['Manrope',sans-serif] text-[12px] text-[#605850] tracking-[1.1px] uppercase">Password</label>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full mt-2 bg-[#faf5ee] border border-[#d8d0c8] rounded-[8px] px-4 py-3 font-['Manrope',sans-serif] text-[14px] placeholder-[rgba(154,144,136,0.5)] outline-none" />
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full mt-2 bg-[#FDF9F5] border border-[#d8d0c8] rounded-[8px] px-4 py-3 font-['Manrope',sans-serif] text-[14px] placeholder-[rgba(154,144,136,0.5)] outline-none" />
               </div>
               <div className="flex-1">
                 <label className="font-['Manrope',sans-serif] text-[12px] text-[#605850] tracking-[1.1px] uppercase">Confirm</label>
-                <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="••••••••" className="w-full mt-2 bg-[#faf5ee] border border-[#d8d0c8] rounded-[8px] px-4 py-3 font-['Manrope',sans-serif] text-[14px] placeholder-[rgba(47,37,29,0.5)] outline-none" />
+                <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="••••••••" className="w-full mt-2 bg-[#FDF9F5] border border-[#d8d0c8] rounded-[8px] px-4 py-3 font-['Manrope',sans-serif] text-[14px] placeholder-[rgba(47,37,29,0.5)] outline-none" />
               </div>
             </div>
             <button type="submit" className="w-full bg-[#511e0b] text-white rounded-[8px] h-[53px] font-['Manrope',sans-serif] text-[14px] tracking-[1.4px] uppercase shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] cursor-pointer border-none hover:bg-[#3d1608] transition-colors">
@@ -56,7 +56,7 @@ export default function RegisterPage() {
             <div className="flex-1 h-px bg-[#deadad]" />
           </div>
 
-          <button className="w-full mt-4 bg-[#faf5ee] rounded-[8px] h-[53px] font-['Manrope',sans-serif] text-[14px] text-[#798698] tracking-[1.4px] uppercase shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] cursor-pointer border-none hover:bg-[#f0e8dc] transition-colors">
+          <button className="w-full mt-4 bg-[#FDF9F5] rounded-[8px] h-[53px] font-['Manrope',sans-serif] text-[14px] text-[#798698] tracking-[1.4px] uppercase shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] cursor-pointer border-none hover:bg-[#f0e8dc] transition-colors">
             GOOGLE
           </button>
 

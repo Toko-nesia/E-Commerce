@@ -28,7 +28,7 @@ export default function AdminDashboardPage() {
 
   const stats = [
     { label: "Total Produk", value: totalProducts, icon: Package, color: "bg-blue-50 text-blue-600" },
-    { label: "Total Pesanan", value: totalOrders, icon: ShoppingBag, color: "bg-[#faf5ee] text-[#511e0b]" },
+    { label: "Total Pesanan", value: totalOrders, icon: ShoppingBag, color: "bg-[#FDF9F5] text-[#511e0b]" },
     { label: "Pesanan Baru", value: newOrders, icon: TrendingUp, color: "bg-[#FFF3CD] text-[#FBBE48]" },
     { label: "Kategori", value: totalCategories, icon: Tag, color: "bg-green-50 text-[#15a15b]" },
   ];

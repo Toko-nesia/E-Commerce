@@ -20,7 +20,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="bg-[#faf5ee] min-h-screen flex items-center justify-center p-4">
+    <div className="bg-[#FDF9F5] min-h-screen flex items-center justify-center p-4">
       <div className="flex max-w-[906px] w-full shadow-lg">
         {/* Left: Decorative Pattern */}
         <div className="hidden md:block w-[448px] h-[675px] relative overflow-hidden">
@@ -39,7 +39,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Febri@gmail.com"
-                className="w-full mt-2 bg-[#faf5ee] border border-[#d8d0c8] rounded-[8px] px-4 py-3 font-['Manrope',sans-serif] text-[14px] text-[#9a9088] placeholder-[rgba(154,144,136,0.5)] outline-none"
+                className="w-full mt-2 bg-[#FDF9F5] border border-[#d8d0c8] rounded-[8px] px-4 py-3 font-['Manrope',sans-serif] text-[14px] text-[#9a9088] placeholder-[rgba(154,144,136,0.5)] outline-none"
               />
             </div>
             <div>
@@ -52,7 +52,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full mt-2 bg-[#faf5ee] border border-[#d8d0c8] rounded-[8px] px-4 py-3 font-['Manrope',sans-serif] text-[14px] text-[#9a9088] placeholder-[rgba(154,144,136,0.5)] outline-none"
+                className="w-full mt-2 bg-[#FDF9F5] border border-[#d8d0c8] rounded-[8px] px-4 py-3 font-['Manrope',sans-serif] text-[14px] text-[#9a9088] placeholder-[rgba(154,144,136,0.5)] outline-none"
               />
             </div>
 
@@ -67,7 +67,7 @@ export default function LoginPage() {
             <div className="flex-1 h-px bg-[#deadad]" />
           </div>
 
-          <button className="w-full mt-4 bg-[#faf5ee] rounded-[8px] h-[53px] font-['Manrope',sans-serif] text-[14px] text-[#798698] tracking-[1.4px] uppercase shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] cursor-pointer border-none hover:bg-[#f0e8dc] transition-colors">
+          <button className="w-full mt-4 bg-[#FDF9F5] rounded-[8px] h-[53px] font-['Manrope',sans-serif] text-[14px] text-[#798698] tracking-[1.4px] uppercase shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] cursor-pointer border-none hover:bg-[#f0e8dc] transition-colors">
             GOOGLE
           </button>
 

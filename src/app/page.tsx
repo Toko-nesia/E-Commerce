@@ -43,7 +43,7 @@ export default function HomePage() {
       </section>
 
       {/* Trending Now */}
-      <section className="bg-[#faf5ee] py-10 md:py-12 px-8 md:px-16">
+      <section className="bg-[#FDF9F5] py-10 md:py-12 px-8 md:px-16">
         <p className="text-center text-[13px] text-[#511e0b] tracking-widest uppercase">
           POPULAR PRODUCT
         </p>
