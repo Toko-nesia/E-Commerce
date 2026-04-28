@@ -24,238 +24,6 @@ export function saveTrackingNumber(order: Order, resi: string): Order {
 }
 
 // =============================================================================
-// Mock data
-// =============================================================================
-
-// FedEx sandbox test tracking numbers (from FedEx developer docs):
-// 449044304137821 — "Shipment information sent to FedEx"
-// 149331877648230 — "Tendered"
-// 020207021381215 — "Picked up"
-// 403934084723025 — "Arrived at FedEx location"
-// 568838414941   — "At destination sort facility"
-// 039813852990618 — "Departed FedEx location"
-// 231300687629630 — "On FedEx vehicle for delivery"
-// 122816215025810 — "Delivered"
-
-const MOCK_TRACK_RESPONSE: FedExTrackingResponse = {
-  transactionId: "mock-transaction-001",
-  output: {
-    completeTrackResults: [
-      {
-        trackingNumber: "020207021381215",
-        trackResults: [
-          {
-            trackingNumberInfo: {
-              trackingNumber: "020207021381215",
-              carrierCode: "FDXE",
-            },
-            latestStatusDetail: {
-              code: "IT",
-              derivedCode: "IT",
-              statusByLocale: "In Transit",
-              description: "In transit — package departed origin facility",
-              scanLocation: { city: "Jakarta", countryCode: "ID", countryName: "Indonesia" },
-            },
-            dateAndTimes: [
-              { type: "SHIP", dateTime: "2026-10-10T08:30:00+07:00" },
-              { type: "ESTIMATED_DELIVERY", dateTime: "2026-10-18T18:00:00+09:00" },
-              { type: "ACTUAL_PICKUP", dateTime: "2026-10-10T10:15:00+07:00" },
-            ],
-            scanEvents: [
-              {
-                date: "2026-10-10T08:30:00+07:00",
-                eventType: "OC",
-                eventDescription: "Shipment information sent to FedEx",
-                derivedStatus: "Label Created",
-                derivedStatusCode: "OC",
-                scanLocation: { city: "Solo", stateOrProvinceCode: "JT", countryCode: "ID", countryName: "Indonesia" },
-              },
-              {
-                date: "2026-10-10T10:15:00+07:00",
-                eventType: "PU",
-                eventDescription: "Picked up",
-                derivedStatus: "Picked Up",
-                derivedStatusCode: "PU",
-                scanLocation: { city: "Solo", stateOrProvinceCode: "JT", countryCode: "ID", countryName: "Indonesia" },
-              },
-              {
-                date: "2026-10-10T16:45:00+07:00",
-                eventType: "AR",
-                eventDescription: "Arrived at FedEx hub",
-                derivedStatus: "In Transit",
-                derivedStatusCode: "IT",
-                scanLocation: { city: "Jakarta", stateOrProvinceCode: "JK", countryCode: "ID", countryName: "Indonesia" },
-              },
-              {
-                date: "2026-10-11T02:30:00+07:00",
-                eventType: "DP",
-                eventDescription: "Departed FedEx hub",
-                derivedStatus: "In Transit",
-                derivedStatusCode: "IT",
-                scanLocation: { city: "Jakarta", stateOrProvinceCode: "JK", countryCode: "ID", countryName: "Indonesia" },
-              },
-              {
-                date: "2026-10-11T09:00:00+07:00",
-                eventType: "CC",
-                eventDescription: "International shipment release — Import",
-                derivedStatus: "In Transit",
-                derivedStatusCode: "IT",
-                scanLocation: { city: "Jakarta", countryCode: "ID", countryName: "Indonesia" },
-              },
-              {
-                date: "2026-10-12T06:20:00+09:00",
-                eventType: "AR",
-                eventDescription: "Arrived at FedEx location",
-                derivedStatus: "In Transit",
-                derivedStatusCode: "IT",
-                scanLocation: { city: "Narita", stateOrProvinceCode: "12", countryCode: "JP", countryName: "Japan" },
-              },
-              {
-                date: "2026-10-12T11:00:00+09:00",
-                eventType: "CC",
-                eventDescription: "Clearance in progress",
-                derivedStatus: "In Transit",
-                derivedStatusCode: "IT",
-                scanLocation: { city: "Narita", countryCode: "JP", countryName: "Japan" },
-              },
-              {
-                date: "2026-10-13T08:15:00+09:00",
-                eventType: "CC",
-                eventDescription: "Custom clearance completed",
-                derivedStatus: "In Transit",
-                derivedStatusCode: "IT",
-                scanLocation: { city: "Narita", countryCode: "JP", countryName: "Japan" },
-              },
-              {
-                date: "2026-10-13T14:30:00+09:00",
-                eventType: "DP",
-                eventDescription: "Departed FedEx location",
-                derivedStatus: "In Transit",
-                derivedStatusCode: "IT",
-                scanLocation: { city: "Narita", countryCode: "JP", countryName: "Japan" },
-              },
-              {
-                date: "2026-10-14T07:00:00+09:00",
-                eventType: "AR",
-                eventDescription: "At local FedEx facility",
-                derivedStatus: "In Transit",
-                derivedStatusCode: "IT",
-                scanLocation: { city: "Tokyo", stateOrProvinceCode: "13", countryCode: "JP", countryName: "Japan" },
-              },
-            ],
-            deliveryDetails: {
-              deliveryToday: false,
-            },
-            packageDetails: {
-              physicalPackagingType: "YOUR_PACKAGING",
-              sequenceNumber: "1",
-              count: "1",
-              weightAndDimensions: {
-                weight: [{ unit: "KG", value: "22.5" }],
-              },
-            },
-            serviceDetail: {
-              description: "FedEx International Economy",
-              shortDescription: "FedEx International Economy",
-              type: "INTERNATIONAL_ECONOMY",
-            },
-            originLocation: {
-              locationContactAndAddress: {
-                address: { city: "Solo", stateOrProvinceCode: "JT", countryCode: "ID", countryName: "Indonesia" },
-              },
-            },
-            destinationLocation: {
-              locationContactAndAddress: {
-                address: { city: "Tokyo", stateOrProvinceCode: "13", countryCode: "JP", countryName: "Japan" },
-              },
-            },
-          },
-        ],
-      },
-    ],
-  },
-};
-
-const MOCK_POSTAL_RESPONSE: FedExPostalValidationResponse = {
-  transactionId: "mock-postal-001",
-  output: {
-    resolvedAddresses: [
-      {
-        city: "Tokyo",
-        stateOrProvinceCode: "13",
-        postalCode: "100-0001",
-        countryCode: "JP",
-        countryName: "Japan",
-        classification: "MIXED",
-        residential: false,
-      },
-    ],
-  },
-};
-
-const MOCK_RATES_RESPONSE: FedExRatesResponse = {
-  transactionId: "mock-rates-001",
-  output: {
-    rateReplyDetails: [
-      {
-        serviceType: "INTERNATIONAL_PRIORITY",
-        serviceName: "FedEx International Priority",
-        ratedShipmentDetails: [
-          {
-            rateType: "LIST",
-            totalNetCharge: { amount: 85.5, currency: "USD" },
-            totalBaseCharge: { amount: 75.0, currency: "USD" },
-          },
-        ],
-        operationalDetail: {
-          transitDays: "3",
-          deliveryDay: "THURSDAY",
-          deliveryDate: "2026-10-16T18:00:00",
-        },
-      },
-    ],
-  },
-};
-
-const MOCK_AVAILABILITY_RESPONSE: FedExServiceAvailabilityResponse = {
-  transactionId: "mock-availability-001",
-  output: {
-    serviceOptions: [
-      {
-        serviceType: "INTERNATIONAL_PRIORITY",
-        serviceName: "FedEx International Priority",
-        transitTime: "3",
-        deliveryDate: "2026-10-16",
-        deliveryDay: "THURSDAY",
-      },
-    ],
-  },
-};
-
-const MOCK_LOCATION_RESPONSE: FedExLocationResponse = {
-  transactionId: "mock-location-001",
-  output: {
-    matchedLocations: [
-      {
-        locationId: "ID-SOLO-001",
-        locationType: "FEDEX_OFFICE",
-        locationContactAndAddress: {
-          address: {
-            streetLines: ["Jl. Slamet Riyadi No. 1"],
-            city: "Solo",
-            postalCode: "57100",
-            countryCode: "ID",
-            countryName: "Indonesia",
-          },
-          contact: { companyName: "FedEx Office Solo", phoneNumber: "+62-271-000000" },
-        },
-        distance: { value: 2.5, units: "KM" },
-      },
-    ],
-  },
-};
-
-// =============================================================================
 // OAuth2 token helper
 // =============================================================================
 
@@ -327,13 +95,7 @@ export async function getShippingRate(
   totalWeightKg: number
 ): Promise<ShippingRateResult> {
   if (!hasRateCredentials()) {
-    // Return mock data when credentials are not configured
-    return {
-      shippingCost: MOCK_RATES_RESPONSE.output!.rateReplyDetails![0]
-        .ratedShipmentDetails![0].totalNetCharge!.amount * USD_TO_IDR,
-      serviceName: "FedEx International Economy",
-      estimatedDelivery: "5-7 business days",
-    };
+    throw new Error("FedEx Rate API credentials not configured. Set FEDEX_CLIENT_ID, FEDEX_CLIENT_SECRET, and FEDEX_ACCOUNT_NUMBER.");
   }
 
   const baseUrl = FEDEX_BASE_URL();
@@ -417,7 +179,7 @@ export async function getShippingRate(
 
 export const FedExService = {
   async trackShipment(trackingNumber: string): Promise<FedExTrackingResponse> {
-    if (!hasCredentials()) return Promise.resolve(MOCK_TRACK_RESPONSE);
+    if (!hasCredentials()) throw new Error("FedEx Tracking API credentials not configured. Set FEDEX_API_KEY and FEDEX_SECRET_KEY.");
     const token = await fetchOAuthToken();
     const res = await fetch("https://apis.fedex.com/track/v1/trackingnumbers", {
       method: "POST",
@@ -432,7 +194,7 @@ export const FedExService = {
   },
 
   async validatePostalCode(postalCode: string, countryCode: string, carrierCode?: string): Promise<FedExPostalValidationResponse> {
-    if (!hasCredentials()) return Promise.resolve(MOCK_POSTAL_RESPONSE);
+    if (!hasCredentials()) throw new Error("FedEx API credentials not configured. Set FEDEX_API_KEY and FEDEX_SECRET_KEY.");
     const token = await fetchOAuthToken();
     const res = await fetch("https://apis.fedex.com/postalcode/v1/validatepostalcode", {
       method: "POST",
@@ -444,7 +206,7 @@ export const FedExService = {
   },
 
   async getRatesAndTransitTimes(request: FedExRateRequest): Promise<FedExRatesResponse> {
-    if (!hasCredentials()) return Promise.resolve(MOCK_RATES_RESPONSE);
+    if (!hasCredentials()) throw new Error("FedEx API credentials not configured. Set FEDEX_API_KEY and FEDEX_SECRET_KEY.");
     const token = await fetchOAuthToken();
     const res = await fetch("https://apis.fedex.com/rate/v1/rates/quotes", {
       method: "POST",
@@ -456,7 +218,7 @@ export const FedExService = {
   },
 
   async checkServiceAvailability(originPostal: string, destPostal: string, originCountry: string, destCountry: string): Promise<FedExServiceAvailabilityResponse> {
-    if (!hasCredentials()) return Promise.resolve(MOCK_AVAILABILITY_RESPONSE);
+    if (!hasCredentials()) throw new Error("FedEx API credentials not configured. Set FEDEX_API_KEY and FEDEX_SECRET_KEY.");
     const token = await fetchOAuthToken();
     const res = await fetch("https://apis.fedex.com/availability/v1/packageandserviceoptions", {
       method: "POST",
@@ -473,7 +235,7 @@ export const FedExService = {
   },
 
   async searchLocations(postalCode: string, countryCode: string, radiusKm?: number): Promise<FedExLocationResponse> {
-    if (!hasCredentials()) return Promise.resolve(MOCK_LOCATION_RESPONSE);
+    if (!hasCredentials()) throw new Error("FedEx API credentials not configured. Set FEDEX_API_KEY and FEDEX_SECRET_KEY.");
     const token = await fetchOAuthToken();
     const res = await fetch("https://apis.fedex.com/location/v1/locations", {
       method: "POST",
