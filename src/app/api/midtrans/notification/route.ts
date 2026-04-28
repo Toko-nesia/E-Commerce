@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     const notification = await req.json();
 
     // Verify notification authenticity with Midtrans
-    const statusResponse = await coreApi.transaction.notification(notification);
+    const statusResponse = await (coreApi as any).transaction.notification(notification);
 
     const {
       order_id: midtransOrderId,

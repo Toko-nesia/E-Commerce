@@ -50,7 +50,7 @@ export default function AdminRefundsPage() {
         `)
         .order("created_at", { ascending: false });
       if (fetchError) throw fetchError;
-      setRefunds((data as RefundRow[]) ?? []);
+      setRefunds((data as unknown as RefundRow[]) ?? []);
     } catch {
       setError("Failed to load refund requests. Please try again.");
     } finally {
