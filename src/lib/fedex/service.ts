@@ -178,6 +178,9 @@ const MOCK_LOCATION_RESPONSE: FedExLocationResponse = {
 // OAuth2 token helper
 // =============================================================================
 
+const FEDEX_BASE_URL = () =>
+  process.env.FEDEX_API_URL ?? "https://apis-sandbox.fedex.com";
+
 async function fetchOAuthToken(): Promise<string> {
   const apiKey = process.env.FEDEX_API_KEY!;
   const secretKey = process.env.FEDEX_SECRET_KEY!;
@@ -195,8 +198,136 @@ async function fetchOAuthToken(): Promise<string> {
   return data.access_token as string;
 }
 
+/** OAuth2 token using FEDEX_CLIENT_ID / FEDEX_CLIENT_SECRET env vars */
+async function fetchRateOAuthToken(): Promise<string> {
+  const baseUrl = FEDEX_BASE_URL();
+  const res = await fetch(`${baseUrl}/oauth/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: process.env.FEDEX_CLIENT_ID!,
+      client_secret: process.env.FEDEX_CLIENT_SECRET!,
+    }),
+  });
+  if (!res.ok) throw new Error(`FedEx OAuth failed: ${res.status}`);
+  const data = await res.json();
+  return data.access_token as string;
+}
+
 function hasCredentials(): boolean {
   return !!(process.env.FEDEX_API_KEY && process.env.FEDEX_SECRET_KEY);
+}
+
+function hasRateCredentials(): boolean {
+  return !!(
+    process.env.FEDEX_CLIENT_ID &&
+    process.env.FEDEX_CLIENT_SECRET &&
+    process.env.FEDEX_ACCOUNT_NUMBER
+  );
+}
+
+// Fixed USD → IDR conversion rate
+const USD_TO_IDR = 16000;
+
+export interface ShippingRateResult {
+  shippingCost: number;
+  serviceName: string;
+  estimatedDelivery: string;
+}
+
+/**
+ * Get shipping rate from Solo, Indonesia (57100, ID) to the given recipient.
+ * Returns cost in IDR.
+ */
+export async function getShippingRate(
+  recipientPostalCode: string,
+  recipientCountryCode: string,
+  totalWeightKg: number
+): Promise<ShippingRateResult> {
+  if (!hasRateCredentials()) {
+    // Return mock data when credentials are not configured
+    return {
+      shippingCost: MOCK_RATES_RESPONSE.output!.rateReplyDetails![0]
+        .ratedShipmentDetails![0].totalNetCharge!.amount * USD_TO_IDR,
+      serviceName: "FedEx International Economy",
+      estimatedDelivery: "5-7 business days",
+    };
+  }
+
+  const baseUrl = FEDEX_BASE_URL();
+  const token = await fetchRateOAuthToken();
+
+  const rateRequest: FedExRateRequest = {
+    accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER! },
+    requestedShipment: {
+      shipper: { address: { postalCode: "57100", countryCode: "ID" } },
+      recipient: {
+        address: {
+          postalCode: recipientPostalCode,
+          countryCode: recipientCountryCode,
+        },
+      },
+      pickupType: "DROPOFF_AT_FEDEX_LOCATION",
+      serviceType: "INTERNATIONAL_ECONOMY",
+      packagingType: "YOUR_PACKAGING",
+      requestedPackageLineItems: [
+        { weight: { units: "KG", value: totalWeightKg } },
+      ],
+    },
+    rateRequestType: ["LIST"],
+    returnTransitTimes: true,
+  };
+
+  const res = await fetch(`${baseUrl}/rate/v1/rates/quotes`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      "X-locale": "en_US",
+    },
+    body: JSON.stringify(rateRequest),
+  });
+
+  if (!res.ok) {
+    throw new Error(`FedEx Rate API failed: ${res.status}`);
+  }
+
+  const data: FedExRatesResponse = await res.json();
+  const details = data.output?.rateReplyDetails;
+
+  if (!details || details.length === 0) {
+    throw new Error("No rate details returned from FedEx");
+  }
+
+  // Prefer INTERNATIONAL_ECONOMY, fall back to first available
+  const preferred =
+    details.find((d) => d.serviceType === "INTERNATIONAL_ECONOMY") ??
+    details[0];
+
+  const ratedDetail = preferred.ratedShipmentDetails?.find(
+    (r) => r.rateType === "LIST"
+  ) ?? preferred.ratedShipmentDetails?.[0];
+
+  const amountUsd = ratedDetail?.totalNetCharge?.amount ?? 0;
+  const shippingCost = Math.round(amountUsd * USD_TO_IDR);
+
+  const deliveryDate =
+    preferred.operationalDetail?.deliveryDate ??
+    preferred.commit?.commitTimestamp ??
+    "";
+  const transitDays = preferred.operationalDetail?.transitDays;
+  const estimatedDelivery = deliveryDate
+    ? deliveryDate.split("T")[0]
+    : transitDays
+    ? `${transitDays} business days`
+    : "Contact FedEx for details";
+
+  return {
+    shippingCost,
+    serviceName: preferred.serviceName ?? preferred.serviceType,
+    estimatedDelivery,
+  };
 }
 
 // =============================================================================

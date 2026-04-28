@@ -1,7 +1,40 @@
 "use client";
 
 import { PageWrapper } from "../components/layout/PageWrapper";
-import { aboutBrands, whyChooseUs } from "@/data/brands";
+import { resolveImagePath } from "@/lib/image-paths";
+import type { Brand } from "@/types/database";
+
+// Static UI config — About page brands grid
+const aboutBrands: Brand[] = [
+  { img: resolveImagePath("/images/AboutTermsConditions/2cf0ec628e6de9ae4c083a513dadb4e05b432496.png"), width: 150, height: 150, name: "Indofood" },
+  { img: resolveImagePath("/images/AboutTermsConditions/96b1b0bf8f394affd2422778a1b39a7160fd8e20.png"), width: 236, height: 49, name: "Polytron" },
+  { img: resolveImagePath("/images/AboutTermsConditions/0ebb731ac0cc6130f95d969c3462755df0f575c4.png"), width: 168, height: 101, name: "Tolak Angin", overflow: true, style: "h-[166.67%] left-0 top-[-34.07%] w-full" },
+  { img: resolveImagePath("/images/AboutTermsConditions/9c2cbcb162ec328557257d0c9252f91311bf0dd2.png"), width: 225, height: 117, name: "Brand", overflow: true, style: "h-[230.28%] left-[-11.07%] top-[-103.84%] w-[212.62%]" },
+  { img: resolveImagePath("/images/AboutTermsConditions/20e3dc0c2ba546b3900c0769482bcf364276dde1.png"), width: 192, height: 56, name: "Aerostreet" },
+  { img: resolveImagePath("/images/AboutTermsConditions/96809bd8d5a7fa1f5a01c4a20039fe9445e37373.png"), width: 235, height: 67, name: "Brand", overflow: true, style: "h-[646.71%] left-[-45.69%] top-[-361.08%] w-[324.87%]" },
+  { img: resolveImagePath("/images/AboutTermsConditions/01a99087ec101d10593a676d342682bba131c6ee.png"), width: 176, height: 94, name: "Mie Sedaap" },
+  { img: resolveImagePath("/images/AboutTermsConditions/c0fd69c570c85dce51ea76e90ea7746f9ef12432.png"), width: 186, height: 104, name: "Kopiko" },
+  { img: resolveImagePath("/images/AboutTermsConditions/a825c5a8cda7c3112115b33b7b4f84b9ec65f494.png"), width: 169, height: 92, name: "Sari Roti", overflow: true, style: "h-[235.29%] left-[-14.1%] top-[-67.06%] w-[128.21%]" },
+];
+
+// Static UI config — Why Choose Us section
+const whyChooseUs = [
+  {
+    title: "Door-to-Door Delivery",
+    desc: "Delivered straight to your doorstep. Your order will be carefully delivered from Indonesia to your address.",
+    icon: resolveImagePath("/images/HomeBeforeLogin/hands.png"),
+  },
+  {
+    title: "Secure Payment",
+    desc: "Safe and secure transactions. Shop with confidence using trusted and protected payment methods.",
+    icon: resolveImagePath("/images/HomeBeforeLogin/payment.png"),
+  },
+  {
+    title: "Order Tracking",
+    desc: "Track your order anytime. Stay updated with real-time tracking from checkout to delivery.",
+    icon: resolveImagePath("/images/HomeBeforeLogin/carts.png"),
+  },
+];
 
 export default function AboutPage() {
   return (
@@ -11,7 +44,7 @@ export default function AboutPage() {
         <img
           alt=""
           className="absolute h-[110.43%] left-0 max-w-none top-[-8.79%] w-full object-cover"
-          src="/images/AboutTermsConditions/5e342d0667a9577578f0e6b7fd827dad0dec2006.png"
+          src={resolveImagePath("/images/AboutTermsConditions/5e342d0667a9577578f0e6b7fd827dad0dec2006.png")}
         />
         <div className="relative z-10 text-center px-6">
           <p className="text-[14px] text-white tracking-[0.1em] uppercase">A FEW WORDS</p>
@@ -25,7 +58,7 @@ export default function AboutPage() {
           <img
             alt=""
             className="absolute h-[131.23%] left-[-2.58%] max-w-none top-[-13.06%] w-[105.21%]"
-            src="/images/AboutTermsConditions/f4843ce4c490da459963aa8592808b498345d492.png"
+            src={resolveImagePath("/images/AboutTermsConditions/f4843ce4c490da459963aa8592808b498345d492.png")}
           />
         </div>
         <div>

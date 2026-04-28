@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { resolveImagePath } from "@/lib/image-paths";
 
 export default function CompleteDataPage() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function CompleteDataPage() {
     <div className="bg-[#FDF9F5] min-h-screen flex items-center justify-center p-4">
       <div className="flex max-w-[906px] w-full shadow-lg">
         <div className="hidden md:block w-[448px] h-[675px] relative overflow-hidden">
-          <img alt="" className="absolute h-[148.01%] left-[-111.31%] max-w-none top-[-23.71%] w-[396.5%]" src="/images/CompleteTheData/fbb1676fb1e714ce082c8512433c9a5517bce894.png" />
+          <img alt="" className="absolute h-[148.01%] left-[-111.31%] max-w-none top-[-23.71%] w-[396.5%]" src={resolveImagePath("/images/CompleteTheData/fbb1676fb1e714ce082c8512433c9a5517bce894.png")} />
         </div>
         <div className="bg-white flex-1 p-16 flex flex-col justify-center min-h-[675px]">
           <h1 className="font-['Inter:Bold',sans-serif] font-bold text-[26px] text-black">COMPLETE THE DATA</h1>

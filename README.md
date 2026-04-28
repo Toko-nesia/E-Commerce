@@ -7,12 +7,15 @@ Cross-border e-commerce platform connecting Indonesian brands with customers in 
 
 ## Getting Started
 
-```bash
-npm install
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+1. Copy `.env.example` to `.env.local` and fill in all values
+2. Run the image upload script (one-time):
+   ```bash
+   node scripts/upload-images.mjs
+   ```
+3. Start the dev server:
+   ```bash
+   npm run dev
+   ```
 
 ---
 
@@ -24,11 +27,44 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | Language | TypeScript 5 |
 | Styling | Tailwind CSS v4 |
 | UI Components | Radix UI + MUI |
-| Icons | Lucide React |
-| Animations | Motion |
-| Forms | React Hook Form |
-| State | React Context API |
-| Backend (planned) | Supabase (Auth + DB + Storage) |
+| Backend | Supabase (Auth + PostgreSQL + Storage) |
+| Payment | Midtrans Snap |
+| Shipping | FedEx Rate API |
+| Exchange Rate | ExchangeRate-API |
+
+---
+
+## Environment Variables
+
+See `.env.example` for all required variables:
+
+- `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY`
+- `MIDTRANS_SERVER_KEY` / `NEXT_PUBLIC_MIDTRANS_CLIENT_KEY`
+- `FEDEX_CLIENT_ID` / `FEDEX_CLIENT_SECRET` / `FEDEX_ACCOUNT_NUMBER` / `FEDEX_API_URL`
+- `EXCHANGE_RATE_API_KEY`
+
+---
+
+## Demo Credentials
+
+| Role | Email | Password |
+|---|---|---|
+| Admin | admin@tokonesia.com | Admin123! |
+| User | haruka@example.com | User123! |
+| User | keiko@example.com | User123! |
+
+---
+
+## One-Time Setup
+
+After setting env vars, run the image upload script to migrate images from `public/images/` to Supabase Storage:
+
+```bash
+node scripts/upload-images.mjs
+```
+
+Then enable the custom access token hook in Supabase Dashboard:
+**Authentication → Hooks → Custom Access Token** → select `public.custom_access_token_hook`
 
 ---
 
@@ -37,64 +73,32 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ```
 src/
 ├── app/
-│   ├── admin/          # Admin dashboard (products, orders, categories)
-│   ├── cart/           # Shopping cart
-│   ├── checkout/       # Checkout flow
-│   ├── complete-data/  # Post-register data completion
-│   ├── login/          # Authentication
-│   ├── register/       # User registration
-│   ├── profile/        # User profile & order history
+│   ├── admin/          # Admin dashboard (products, orders, categories, users, refunds)
+│   ├── api/            # API routes (Midtrans, FedEx, exchange rate)
+│   ├── cart/           # Shopping cart (weight-based checkout gate)
+│   ├── checkout/       # Checkout (FedEx shipping + exchange rate)
+│   ├── profile/        # User profile, order history, addresses
 │   ├── shop/           # Product listing & filtering
 │   ├── product/[id]/   # Product detail
-│   ├── about/          # About & Terms
-│   ├── order-success/  # Order confirmation
-│   └── components/     # Shared: layout, modals, ui
-├── contexts/           # AuthContext, CartContext
-├── data/               # Mock data (products, orders, addresses, etc.)
-├── lib/supabase/       # Supabase client placeholders (browser + server)
-├── middleware.ts        # Route protection (ready for Supabase)
-└── types/database.ts   # TypeScript interfaces mirroring DB schema
+│   └── components/     # Shared layout, modals, UI
+├── contexts/           # AuthContext (Supabase), CartContext
+├── lib/                # Supabase clients, FedEx, utilities
+├── middleware.ts        # Route protection + role-based access
+└── types/database.ts   # TypeScript interfaces
+supabase/
+├── functions/          # Edge Functions (refresh-exchange-rate)
+└── migrations/         # Database migrations
+scripts/
+├── upload-images.mjs   # Upload public/images/ to Supabase Storage
+└── seed-products-categories-brands.sql  # Re-seed products/categories/brands
 ```
 
 ---
 
-## Pages
+## Running Tests
 
-| Route | Description |
-|---|---|
-| `/` | Homepage — hero, trending products, new product, why choose us |
-| `/shop` | Product listing with search, filter by category, sort |
-| `/product/[id]` | Product detail with specs, description, shipping info |
-| `/cart` | Cart management with order summary |
-| `/checkout` | Checkout with address, shipping, payment selection |
-| `/order-success` | Order confirmation |
-| `/login` | Login |
-| `/register` | Register |
-| `/complete-data` | Complete profile after registration |
-| `/profile` | Profile, order history, saved addresses |
-| `/about` | About us, brand partners, terms & conditions |
-| `/admin` | Admin dashboard |
-| `/admin/products` | Manage products |
-| `/admin/orders` | Manage orders |
-| `/admin/categories` | Manage categories |
+```bash
+npx vitest run
+```
 
----
-
-## Current Status
-
-- **Auth**: Mock implementation (always succeeds) — ready to swap with Supabase Auth
-- **Data**: Hardcoded in `src/data/` — ready to swap with Supabase queries
-- **Cart**: Persisted to `localStorage`
-- **Backend**: Supabase client files exist but commented out, pending env vars
-
-### To activate Supabase
-
-1. `npm install @supabase/supabase-js @supabase/ssr`
-2. Set env vars:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=...
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-   ```
-3. Uncomment code in `src/lib/supabase/client.ts` and `src/lib/supabase/server.ts`
-4. Uncomment middleware redirects in `src/middleware.ts`
-5. Replace mock logic in `src/contexts/auth-context.tsx`
+62 property-based tests covering all correctness properties.

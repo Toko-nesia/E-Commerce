@@ -1,17 +1,36 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Search, Plus, AlertTriangle } from "lucide-react";
-import { products as initialProducts } from "@/data/products";
-import { categories } from "@/data/categories";
+import { createClient } from "@/lib/supabase/client";
+import { resolveImagePath } from "@/lib/image-paths";
+import type { Product, Category } from "@/types/database";
 
 export default function ProductsPage() {
-  const [productList, setProductList] = useState(initialProducts);
+  const [productList, setProductList] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const supabase = createClient();
+    async function fetchData() {
+      setLoading(true);
+      const [prodRes, catRes] = await Promise.all([
+        supabase.from("products").select("*"),
+        supabase.from("categories").select("*"),
+      ]);
+      if (prodRes.data) setProductList(prodRes.data as Product[]);
+      if (catRes.data) setCategories(catRes.data as Category[]);
+      setLoading(false);
+    }
+    fetchData();
+  }, []);
 
   const filtered = useMemo(() => {
     return productList.filter((p) => {
@@ -21,8 +40,19 @@ export default function ProductsPage() {
     });
   }, [productList, search, selectedCategory]);
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (confirmDeleteId === null) return;
+    setDeleteError(null);
+    const supabase = createClient();
+    const { error } = await supabase.from("products").delete().eq("id", confirmDeleteId);
+    if (error) {
+      if (error.code === "23503") {
+        setDeleteError("Cannot delete product: it has existing orders");
+      } else {
+        setDeleteError("Failed to delete product. Please try again.");
+      }
+      return;
+    }
     setProductList((prev) => prev.filter((p) => p.id !== confirmDeleteId));
     setConfirmDeleteId(null);
   };
@@ -114,7 +144,7 @@ export default function ProductsPage() {
                     <div className="flex items-center gap-3">
                       <div className="relative w-[82px] h-[82px] flex-shrink-0 rounded overflow-hidden border border-[#d0d0d0] bg-gray-50">
                         <Image
-                          src={p.image}
+                          src={resolveImagePath(p.image)}
                           alt={p.name}
                           fill
                           className="object-contain"
@@ -178,7 +208,7 @@ export default function ProductsPage() {
       {confirmDeleteId !== null && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={() => setConfirmDeleteId(null)}
+          onClick={() => { setConfirmDeleteId(null); setDeleteError(null); }}
         >
           <div
             className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 p-6"
@@ -193,10 +223,13 @@ export default function ProductsPage() {
             <p className="text-[13px] text-[#6b6b6b] leading-relaxed">
               Are you sure you want to delete this product? This action cannot be undone.
             </p>
+            {deleteError && (
+              <p className="mt-3 text-[13px] text-[#DF0000] font-medium">{deleteError}</p>
+            )}
             <div className="flex gap-3 mt-6">
               <button
                 type="button"
-                onClick={() => setConfirmDeleteId(null)}
+                onClick={() => { setConfirmDeleteId(null); setDeleteError(null); }}
                 className="flex-1 border border-[#d0d0d0] text-black text-[13px] font-medium rounded-lg py-2.5 hover:bg-gray-50 transition-colors bg-white cursor-pointer"
               >
                 Cancel

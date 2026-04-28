@@ -1,8 +1,26 @@
 "use client";
 
-import { useState } from "react";
 import { Modal } from "./Modal";
-import { paymentMethods } from "@/data/payment-methods";
+import { CreditCard, QrCode, Wallet, Building2 } from "lucide-react";
+import type { MidtransPaymentType, PaymentMethod } from "@/types/database";
+
+const paymentMethods: PaymentMethod[] = [
+  { id: "bank_transfer", name: "Bank Transfer (BCA/BNI/Mandiri)", type: "bank_transfer", description: "Virtual account transfer" },
+  { id: "qris", name: "QRIS", type: "qris", description: "Scan QR with any e-wallet" },
+  { id: "credit_card", name: "Credit / Debit Card", type: "credit_card", description: "Visa, Mastercard, JCB" },
+  { id: "gopay", name: "GoPay", type: "gopay", description: "Pay with GoPay balance" },
+  { id: "shopeepay", name: "ShopeePay", type: "shopeepay", description: "Pay with ShopeePay" },
+];
+
+const PAYMENT_ICONS: Record<MidtransPaymentType, typeof CreditCard> = {
+  bank_transfer: Building2,
+  qris: QrCode,
+  credit_card: CreditCard,
+  gopay: Wallet,
+  shopeepay: Wallet,
+  cstore: Building2,
+  echannel: Building2,
+};
 
 interface PaymentOptionModalProps {
   isOpen: boolean;
@@ -12,79 +30,43 @@ interface PaymentOptionModalProps {
 }
 
 export function PaymentOptionModal({ isOpen, onClose, selected, onSelect }: PaymentOptionModalProps) {
-  const [activeDetail, setActiveDetail] = useState<string | null>(null);
-
-  const handleSelect = (id: string) => {
-    onSelect(id);
-    setActiveDetail(id);
-  };
-
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div className="p-6 pt-5">
-        <h2 className="font-bold text-[18px] text-black text-center">Payment Option</h2>
-        <div className="mt-6 space-y-0">
-          {paymentMethods.map((method, i) => (
-            <div key={method.id}>
-              <div
-                className="flex items-center py-4 cursor-pointer"
-                onClick={() => handleSelect(method.id)}
-              >
-                <div className="bg-[#e0e0e0] border-[#511e0b] border border-solid rounded-lg w-[80px] h-[48px] flex items-center justify-center shrink-0">
-                  <span className="text-[11px] font-semibold text-[#511e0b] text-center leading-tight px-1">
-                    {method.type === "bank_transfer" ? "Bank\nTransfer" : "QRIS"}
-                  </span>
+        <h2 className="font-bold text-[18px] text-black text-center">Payment Method</h2>
+        <p className="text-[13px] text-[#6b6b6b] text-center mt-1">
+          Processed securely via Midtrans
+        </p>
+        <div className="mt-5 space-y-0">
+          {paymentMethods.map((method, i) => {
+            const Icon = PAYMENT_ICONS[method.type] ?? Wallet;
+            return (
+              <div key={method.id}>
+                <div
+                  className="flex items-center py-4 cursor-pointer"
+                  onClick={() => { onSelect(method.id); onClose(); }}
+                >
+                  <div className="bg-[#e0e0e0] border-[#511e0b] border border-solid rounded-lg w-[48px] h-[48px] flex items-center justify-center shrink-0">
+                    <Icon size={20} className="text-[#511e0b]" />
+                  </div>
+                  <div className="ml-4 flex-1">
+                    <p className="text-[14px] text-black font-medium">{method.name}</p>
+                    {method.description && (
+                      <p className="text-[12px] text-[#6b6b6b] mt-0.5">{method.description}</p>
+                    )}
+                  </div>
+                  <div className="w-[20px] h-[20px] rounded-full border-2 border-black flex items-center justify-center shrink-0">
+                    {selected === method.id && <div className="w-[10px] h-[10px] rounded-full bg-black" />}
+                  </div>
                 </div>
-                <p className="text-[14px] text-black ml-4 flex-1">{method.name}</p>
-                <div className="w-[20px] h-[20px] rounded-full border-2 border-black flex items-center justify-center">
-                  {selected === method.id && <div className="w-[10px] h-[10px] rounded-full bg-black" />}
-                </div>
+                {i < paymentMethods.length - 1 && <div className="h-px bg-[#511e0b] opacity-15" />}
               </div>
-
-              {/* Bank Transfer details */}
-              {method.type === "bank_transfer" && activeDetail === method.id && (
-                <div className="mb-4 ml-[96px] bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <p className="text-[13px] font-semibold text-black mb-2">Account Details</p>
-                  <div className="space-y-1 text-[13px] text-gray-700">
-                    <div className="flex gap-2">
-                      <span className="w-[100px] text-gray-500">Bank</span>
-                      <span>: BCA</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <span className="w-[100px] text-gray-500">Account No.</span>
-                      <span>: 1234567890</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <span className="w-[100px] text-gray-500">Account Name</span>
-                      <span>: Tokonesia Indonesia</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* QRIS details */}
-              {method.type === "qris" && activeDetail === method.id && (
-                <div className="mb-4 ml-[96px] flex flex-col items-start gap-3">
-                  <div className="w-[120px] h-[120px] bg-gray-200 rounded-lg flex items-center justify-center">
-                    <span className="text-[13px] text-gray-500 font-medium">QR Code</span>
-                  </div>
-                  <p className="text-[12px] text-gray-600 max-w-[240px]">
-                    Scan the QR code using your digital wallet app (GoPay, OVO, Dana, etc.)
-                  </p>
-                </div>
-              )}
-
-              {i < paymentMethods.length - 1 && <div className="h-px bg-[#511e0b] opacity-30" />}
-            </div>
-          ))}
+            );
+          })}
         </div>
-
-        <button
-          className="mt-4 w-full bg-[#511e0b] text-white font-semibold py-3 rounded-lg text-[14px]"
-          onClick={onClose}
-        >
-          Confirm
-        </button>
+        <p className="text-[11px] text-[#6b6b6b] text-center mt-4">
+          All payment methods are available when you click Pay Now.
+        </p>
       </div>
     </Modal>
   );

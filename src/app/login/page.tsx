@@ -4,18 +4,23 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
+import { resolveImagePath } from "@/lib/image-paths";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     const result = await login(email, password);
     if (result.success) {
       router.push("/");
+    } else {
+      setError(result.error || "Login failed");
     }
   };
 
@@ -24,7 +29,7 @@ export default function LoginPage() {
       <div className="flex max-w-[906px] w-full shadow-lg">
         {/* Left: Decorative Pattern */}
         <div className="hidden md:block w-[448px] h-[675px] relative overflow-hidden">
-          <img alt="" className="absolute h-[148.01%] left-[-111.31%] max-w-none top-[-23.71%] w-[396.5%]" src="/images/Login/fbb1676fb1e714ce082c8512433c9a5517bce894.png" />
+          <img alt="" className="absolute h-[148.01%] left-[-111.31%] max-w-none top-[-23.71%] w-[396.5%]" src={resolveImagePath("/images/Login/fbb1676fb1e714ce082c8512433c9a5517bce894.png")} />
         </div>
         {/* Right: Form */}
         <div className="bg-white flex-1 p-16 flex flex-col justify-center min-h-[675px]">
@@ -56,8 +61,15 @@ export default function LoginPage() {
               />
             </div>
 
-            <button type="submit" className="w-full bg-[#511e0b] text-white rounded-[8px] h-[53px] font-['Manrope',sans-serif] text-[14px] tracking-[1.4px] uppercase shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex items-center justify-center gap-2 cursor-pointer hover:bg-[#3d1608] transition-colors">
-              LOGIN →
+            {error && (
+              <p className="text-[#a24141] font-['Manrope',sans-serif] text-[13px] text-center">{error}</p>
+            )}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-[#511e0b] text-white rounded-[8px] h-[53px] font-['Manrope',sans-serif] text-[14px] tracking-[1.4px] uppercase shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex items-center justify-center gap-2 cursor-pointer hover:bg-[#3d1608] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isLoading ? "Loading..." : "LOGIN →"}
             </button>
           </form>
 

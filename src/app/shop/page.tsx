@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { PageWrapper } from "../components/layout/PageWrapper";
-import { Search, ChevronDown, SlidersHorizontal } from "lucide-react";
-import { products } from "@/data/products";
-import { categories } from "@/data/categories";
+import { Search, ChevronDown, SlidersHorizontal, RefreshCw } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { resolveImagePath } from "@/lib/image-paths";
+import type { Product, Category } from "@/types/database";
 
 const PRODUCTS_PER_PAGE = 9;
 
@@ -18,11 +19,43 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 ];
 
 export default function ShopPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("relevance");
   const [currentPage, setCurrentPage] = useState(1);
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+
+      const [productsRes, categoriesRes] = await Promise.all([
+        supabase.from("products").select("*"),
+        supabase.from("categories").select("*"),
+      ]);
+
+      if (productsRes.error) throw new Error(productsRes.error.message);
+      if (categoriesRes.error) throw new Error(categoriesRes.error.message);
+
+      setProducts(productsRes.data ?? []);
+      setCategories(categoriesRes.data ?? []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const filtered = useMemo(() => {
     let result = products.filter((p) => {
@@ -34,7 +67,7 @@ export default function ShopPage() {
     else if (sortBy === "price-desc") result = [...result].sort((a, b) => b.price_raw - a.price_raw);
 
     return result;
-  }, [searchQuery, sortBy]);
+  }, [products, searchQuery, sortBy]);
 
   const totalPages = Math.ceil(filtered.length / PRODUCTS_PER_PAGE);
   const paginated = filtered.slice((currentPage - 1) * PRODUCTS_PER_PAGE, currentPage * PRODUCTS_PER_PAGE);
@@ -45,6 +78,25 @@ export default function ShopPage() {
   };
 
   const currentSortLabel = SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? "Relevance";
+
+  if (error) {
+    return (
+      <PageWrapper>
+        <div className="max-w-[1200px] mx-auto px-6 md:px-8 py-8">
+          <div className="text-center py-24">
+            <p className="text-[#6b6b6b] text-[15px] mb-4">Something went wrong: {error}</p>
+            <button
+              onClick={fetchData}
+              className="inline-flex items-center gap-2 bg-[#511e0b] text-white text-[14px] font-bold px-5 py-2.5 rounded-lg hover:bg-[#3d1608] transition-colors border-none cursor-pointer"
+            >
+              <RefreshCw size={14} />
+              Retry
+            </button>
+          </div>
+        </div>
+      </PageWrapper>
+    );
+  }
 
   return (
     <PageWrapper>
@@ -78,23 +130,33 @@ export default function ShopPage() {
             {/* Categories */}
             <div className="mt-6 border-r-2 border-[#791111] pr-4">
               <h3 className="font-bold text-[16px] text-[#511e0b] mb-3 uppercase tracking-wide">Categories</h3>
-              <Link
-                href="/shop"
-                className="block text-[14px] font-bold text-[#511e0b] no-underline py-1.5 hover:text-[#3d1608]"
-                onClick={() => setMobileSidebarOpen(false)}
-              >
-                All <span className="text-[#fbbe48]">({products.length})</span>
-              </Link>
-              {categories.map((c) => (
-                <Link
-                  key={c.slug}
-                  href={`/shop/category/${c.slug}`}
-                  className="block text-[14px] text-[#511e0b] no-underline py-1.5 hover:font-medium transition-all"
-                  onClick={() => setMobileSidebarOpen(false)}
-                >
-                  {c.name} <span className="text-[#fbbe48]">({c.count})</span>
-                </Link>
-              ))}
+              {loading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-5 bg-gray-200 rounded animate-pulse w-3/4" />
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <Link
+                    href="/shop"
+                    className="block text-[14px] font-bold text-[#511e0b] no-underline py-1.5 hover:text-[#3d1608]"
+                    onClick={() => setMobileSidebarOpen(false)}
+                  >
+                    All <span className="text-[#fbbe48]">({products.length})</span>
+                  </Link>
+                  {categories.map((c) => (
+                    <Link
+                      key={c.slug}
+                      href={`/shop/category/${c.slug}`}
+                      className="block text-[14px] text-[#511e0b] no-underline py-1.5 hover:font-medium transition-all"
+                      onClick={() => setMobileSidebarOpen(false)}
+                    >
+                      {c.name} <span className="text-[#fbbe48]">({c.count})</span>
+                    </Link>
+                  ))}
+                </>
+              )}
             </div>
           </aside>
 
@@ -103,9 +165,11 @@ export default function ShopPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
               <div>
                 <h1 className="font-bold text-[28px] md:text-[32px] text-[#511e0b]">All Products</h1>
-                <p className="text-[13px] text-[#6b6b6b] mt-0.5">
-                  Showing {Math.min((currentPage - 1) * PRODUCTS_PER_PAGE + 1, filtered.length)}–{Math.min(currentPage * PRODUCTS_PER_PAGE, filtered.length)} of {filtered.length} products
-                </p>
+                {!loading && (
+                  <p className="text-[13px] text-[#6b6b6b] mt-0.5">
+                    Showing {Math.min((currentPage - 1) * PRODUCTS_PER_PAGE + 1, filtered.length)}–{Math.min(currentPage * PRODUCTS_PER_PAGE, filtered.length)} of {filtered.length} products
+                  </p>
+                )}
               </div>
 
               {/* Sort dropdown */}
@@ -133,8 +197,21 @@ export default function ShopPage() {
               </div>
             </div>
 
-          {/* Product Grid */}
-            {paginated.length === 0 ? (
+            {/* Product Grid */}
+            {loading ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="bg-white rounded-xl overflow-hidden border border-[#e0e0e0] animate-pulse">
+                    <div className="w-full aspect-[4/3] bg-gray-200" />
+                    <div className="p-3 space-y-2">
+                      <div className="h-3 bg-gray-200 rounded w-1/3" />
+                      <div className="h-4 bg-gray-200 rounded w-3/4" />
+                      <div className="h-4 bg-gray-200 rounded w-1/2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : paginated.length === 0 ? (
               <div className="text-center py-24">
                 <p className="text-[#6b6b6b] text-[15px]">No products found for &ldquo;{searchQuery}&rdquo;</p>
                 <button onClick={() => handleSearch("")} className="mt-3 text-[#511e0b] underline text-[13px] bg-transparent border-none cursor-pointer">
@@ -151,7 +228,7 @@ export default function ShopPage() {
                         <img
                           alt={p.name}
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          src={p.image}
+                          src={resolveImagePath(p.image)}
                         />
                         <div className={`absolute top-3 left-3 ${p.badge_color} ${p.badge_width || "w-14"} h-6 rounded-full shadow-sm flex items-center justify-center`}>
                           <span className="font-medium text-[12px] text-black">{p.badge}</span>
@@ -170,7 +247,7 @@ export default function ShopPage() {
             )}
 
             {/* Pagination */}
-            {totalPages > 1 && (
+            {!loading && totalPages > 1 && (
               <div className="flex items-center gap-2 mt-8">
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}

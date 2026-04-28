@@ -1,71 +1,164 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { createClient } from "@/lib/supabase/client";
 import type { User } from "@/types/database";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
 // =============================================================================
-// Auth Context — mock implementation
-// Future: Replace with Supabase Auth (supabase.auth.getUser(), onAuthStateChange, etc.)
+// Auth Context — Supabase Auth implementation
 // =============================================================================
 
 interface AuthContextType {
   user: User | null;
   isLoggedIn: boolean;
   isLoading: boolean;
+  role: string | null;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock user for development
-const MOCK_USER: User = {
-  id: "mock-user-1",
-  email: "Febri@gmail.com",
-  full_name: "Febri",
-  phone: "081140755",
-  avatar_url: "/images/ProfilePage/d4699efb0b0581a2c8ec625c4639f0d9a00865fa.png",
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const login = useCallback(async (_email: string, _password: string) => {
+  const supabase = createClient();
+
+  // Fetch profile from profiles table to get role, phone, avatar_url
+  const fetchProfile = useCallback(async (userId: string, email: string, fullName: string) => {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name, email, phone, avatar_url, role")
+      .eq("id", userId)
+      .single();
+
+    if (profile) {
+      setUser({
+        id: userId,
+        email: profile.email || email,
+        full_name: profile.full_name || fullName,
+        phone: profile.phone || undefined,
+        avatar_url: profile.avatar_url || undefined,
+        role: profile.role || "user",
+      });
+      setRole(profile.role || "user");
+    } else {
+      // Fallback if profile not found yet (trigger may not have fired)
+      setUser({
+        id: userId,
+        email,
+        full_name: fullName,
+        role: "user",
+      });
+      setRole("user");
+    }
+  }, [supabase]);
+
+  // Listen to auth state changes
+  useEffect(() => {
+    // Check initial session
+    const initSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const meta = session.user.user_metadata;
+          await fetchProfile(
+            session.user.id,
+            session.user.email || "",
+            meta?.full_name || ""
+          );
+        }
+      } catch {
+        // Session check failed, user remains null
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event: AuthChangeEvent, session: Session | null) => {
+        if (event === "SIGNED_IN" && session?.user) {
+          const meta = session.user.user_metadata;
+          await fetchProfile(
+            session.user.id,
+            session.user.email || "",
+            meta?.full_name || ""
+          );
+        } else if (event === "SIGNED_OUT") {
+          setUser(null);
+          setRole(null);
+        }
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [supabase, fetchProfile]);
+
+  const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Future: const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-      // Mock: always succeeds
-      setUser(MOCK_USER);
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        return { success: false, error: error.message };
+      }
       return { success: true };
     } catch {
       return { success: false, error: "Login failed" };
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [supabase]);
 
-  const register = useCallback(async (name: string, email: string, _password: string) => {
+  const register = useCallback(async (name: string, email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Future: const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } })
-      setUser({ ...MOCK_USER, full_name: name, email });
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: name } },
+      });
+      if (error) {
+        return { success: false, error: error.message };
+      }
       return { success: true };
     } catch {
       return { success: false, error: "Registration failed" };
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [supabase]);
 
   const logout = useCallback(async () => {
-    // Future: await supabase.auth.signOut()
+    await supabase.auth.signOut();
     setUser(null);
-  }, []);
+    setRole(null);
+  }, [supabase]);
+
+  const resetPassword = useCallback(async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      return { success: true };
+    } catch {
+      return { success: false, error: "Password reset request failed" };
+    }
+  }, [supabase]);
 
   return (
-    <AuthContext.Provider value={{ user, isLoggedIn: !!user, isLoading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, isLoggedIn: !!user, isLoading, role, login, register, logout, resetPassword }}
+    >
       {children}
     </AuthContext.Provider>
   );

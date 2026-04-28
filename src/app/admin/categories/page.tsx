@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, AlertTriangle, X } from "lucide-react";
-import { categories as initialCategories } from "@/data/categories";
+import { createClient } from "@/lib/supabase/client";
 import type { Category } from "@/types/database";
 
 type ModalMode = "add" | "edit" | null;
@@ -19,14 +19,26 @@ const inputClass =
   "w-full border border-[#d0d0d0] rounded px-3 py-2 text-[14px] outline-none focus:border-[#511E0B] transition-colors placeholder:text-[#6b6b6b]";
 
 export default function CategoriesPage() {
-  const [catList, setCatList] = useState<Category[]>(initialCategories);
+  const [catList, setCatList] = useState<Category[]>([]);
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [editingCat, setEditingCat] = useState<Category | null>(null);
   const [deleteSlug, setDeleteSlug] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Form state
   const [formName, setFormName] = useState("");
   const [formCount, setFormCount] = useState("");
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    const supabase = createClient();
+    const { data } = await supabase.from("categories").select("*").order("name");
+    if (data) setCatList(data as Category[]);
+  };
 
   const openAdd = () => {
     setFormName("");
@@ -45,28 +57,51 @@ export default function CategoriesPage() {
   const closeModal = () => {
     setModalMode(null);
     setEditingCat(null);
+    setSaveError(null);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const slug = editingCat ? editingCat.slug : slugify(formName);
+    setSaveError(null);
+    const supabase = createClient();
     const count = parseInt(formCount) || 0;
 
-    if (modalMode === "add") {
-      setCatList((prev) => [...prev, { name: formName, slug, count }]);
-    } else if (modalMode === "edit" && editingCat) {
-      setCatList((prev) =>
-        prev.map((c) =>
-          c.slug === editingCat.slug ? { ...c, name: formName, count } : c,
-        ),
-      );
+    try {
+      if (modalMode === "add") {
+        const slug = slugify(formName);
+        const { error } = await supabase
+          .from("categories")
+          .insert({ name: formName.trim(), slug, count });
+        if (error) throw error;
+      } else if (modalMode === "edit" && editingCat) {
+        const { error } = await supabase
+          .from("categories")
+          .update({ name: formName.trim(), count })
+          .eq("slug", editingCat.slug);
+        if (error) throw error;
+      }
+      await fetchCategories();
+      closeModal();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to save category.";
+      setSaveError(msg);
     }
-    closeModal();
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleteSlug) return;
-    setCatList((prev) => prev.filter((c) => c.slug !== deleteSlug));
+    setDeleteError(null);
+    const supabase = createClient();
+    const { error } = await supabase.from("categories").delete().eq("slug", deleteSlug);
+    if (error) {
+      if (error.code === "23503") {
+        setDeleteError("Cannot delete: products reference this category");
+      } else {
+        setDeleteError("Failed to delete category. Please try again.");
+      }
+      return;
+    }
+    await fetchCategories();
     setDeleteSlug(null);
   };
 
@@ -178,6 +213,9 @@ export default function CategoriesPage() {
             </div>
 
             <form onSubmit={handleSave} className="flex flex-col gap-4">
+              {saveError && (
+                <p className="text-[13px] text-[#DF0000]">{saveError}</p>
+              )}
               {/* Nama */}
               <div>
                 <label className="block font-bold text-[13px] text-black mb-1.5">
@@ -237,7 +275,7 @@ export default function CategoriesPage() {
       {deleteSlug !== null && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={() => setDeleteSlug(null)}
+          onClick={() => { setDeleteSlug(null); setDeleteError(null); }}
         >
           <div
             className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 p-6"
@@ -252,10 +290,13 @@ export default function CategoriesPage() {
             <p className="text-[13px] text-[#6b6b6b] leading-relaxed">
               Are you sure you want to delete this category? This action cannot be undone.
             </p>
+            {deleteError && (
+              <p className="mt-3 text-[13px] text-[#DF0000] font-medium">{deleteError}</p>
+            )}
             <div className="flex gap-3 mt-6">
               <button
                 type="button"
-                onClick={() => setDeleteSlug(null)}
+                onClick={() => { setDeleteSlug(null); setDeleteError(null); }}
                 className="flex-1 border border-[#d0d0d0] text-black text-[13px] font-medium rounded-lg py-2.5 hover:bg-gray-50 transition-colors bg-white cursor-pointer"
               >
                 Cancel

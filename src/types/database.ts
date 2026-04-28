@@ -45,6 +45,7 @@ export interface User {
   full_name: string;
   phone?: string;
   avatar_url?: string;
+  role?: string;
   created_at?: string;
 }
 
@@ -57,6 +58,8 @@ export interface Address {
   address: string;
   full_address?: string;
   details?: string;
+  postal_code?: string;
+  country_code?: string;
   is_default?: boolean;
 }
 
@@ -67,11 +70,21 @@ export interface Order {
   status: "BARU" | "DIPROSES" | "DIKIRIM" | "SELESAI" | "DIBATALKAN";
   status_color: string;
   total_price: string;
+  total_price_raw?: number;
+  shipping_cost?: number;
+  service_fee?: number;
+  note?: string;
   items?: OrderItem[];
   created_at?: string;
   tracking_number?: string;
-  payment_method?: "bank_transfer" | "qris";
   estimated_delivery?: string;
+  cancel_reason?: string;
+  // Midtrans payment fields
+  payment_method?: MidtransPaymentType;
+  midtrans_order_id?: string;
+  midtrans_transaction_id?: string;
+  payment_status?: MidtransPaymentStatus;
+  payment_url?: string;
 }
 
 export interface OrderItem {
@@ -82,10 +95,102 @@ export interface OrderItem {
   price: string;
 }
 
-export interface PaymentMethod {
-  id: "bank_transfer" | "qris";
+export interface ExchangeRate {
+  id: number;
+  base_currency: string;
+  target_currency: string;
+  rate: number;
+  updated_at: string;
+}
+
+export interface RefundRequest {
+  id: string;
+  order_id: string;
+  user_id: string;
+  refund_method: string;
+  account_number: string;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  admin_note?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// =============================================================================
+// Midtrans Payment Types
+// =============================================================================
+
+export type MidtransPaymentType =
+  | "bank_transfer"
+  | "qris"
+  | "credit_card"
+  | "gopay"
+  | "shopeepay"
+  | "cstore"
+  | "echannel";
+
+export type MidtransPaymentStatus =
+  | "pending"
+  | "settlement"
+  | "capture"
+  | "deny"
+  | "cancel"
+  | "expire"
+  | "failure"
+  | "refund";
+
+export interface MidtransTransactionDetails {
+  order_id: string;
+  gross_amount: number;
+}
+
+export interface MidtransCustomerDetails {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface MidtransItemDetail {
+  id: string;
+  price: number;
+  quantity: number;
   name: string;
-  type: "bank_transfer" | "qris";
+}
+
+export interface MidtransSnapRequest {
+  transaction_details: MidtransTransactionDetails;
+  customer_details?: MidtransCustomerDetails;
+  item_details?: MidtransItemDetail[];
+  credit_card?: { secure: boolean };
+  enabled_payments?: MidtransPaymentType[];
+}
+
+export interface MidtransSnapResponse {
+  token: string;
+  redirect_url: string;
+}
+
+export interface MidtransNotification {
+  transaction_time: string;
+  transaction_status: string;
+  transaction_id: string;
+  status_message: string;
+  status_code: string;
+  signature_key: string;
+  payment_type: string;
+  order_id: string;
+  merchant_id: string;
+  gross_amount: string;
+  fraud_status?: string;
+  currency: string;
+}
+
+export interface PaymentMethod {
+  id: MidtransPaymentType;
+  name: string;
+  type: MidtransPaymentType;
+  description?: string;
 }
 
 export interface ShippingOption {

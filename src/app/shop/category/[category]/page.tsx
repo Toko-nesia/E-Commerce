@@ -1,11 +1,12 @@
 "use client";
 
-import { use, useState, useMemo } from "react";
+import { use, useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { PageWrapper } from "../../../components/layout/PageWrapper";
-import { Search, ChevronDown } from "lucide-react";
-import { products } from "@/data/products";
-import { categories, getCategoryBySlug } from "@/data/categories";
+import { Search, ChevronDown, RefreshCw } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { resolveImagePath } from "@/lib/image-paths";
+import type { Product, Category } from "@/types/database";
 
 type SortOption = "relevansi" | "harga-asc" | "harga-desc";
 
@@ -20,8 +21,26 @@ export default function ShopCategoryPage({ params }: { params: Promise<{ categor
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("relevansi");
   const [showSortMenu, setShowSortMenu] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const activeCategory = getCategoryBySlug(category);
+  useEffect(() => {
+    const supabase = createClient();
+    async function fetchData() {
+      setLoading(true);
+      const [prodRes, catRes] = await Promise.all([
+        supabase.from("products").select("*"),
+        supabase.from("categories").select("*"),
+      ]);
+      if (prodRes.data) setProducts(prodRes.data as Product[]);
+      if (catRes.data) setCategories(catRes.data as Category[]);
+      setLoading(false);
+    }
+    fetchData();
+  }, []);
+
+  const activeCategory = categories.find((c) => c.slug === category);
 
   const filteredProducts = useMemo(() => {
     let result = products.filter((p) => {
@@ -35,10 +54,21 @@ export default function ShopCategoryPage({ params }: { params: Promise<{ categor
     else if (sortBy === "harga-desc") result = [...result].sort((a, b) => b.price_raw - a.price_raw);
 
     return result;
-  }, [searchQuery, sortBy, activeCategory]);
+  }, [products, searchQuery, sortBy, activeCategory]);
 
   const title = activeCategory ? activeCategory.name.toUpperCase() : "SEMUA PRODUK";
   const currentSortLabel = SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? "Relevansi";
+
+  if (loading) {
+    return (
+      <PageWrapper>
+        <div className="flex items-center justify-center py-24">
+          <RefreshCw size={24} className="animate-spin text-[#511e0b]" />
+          <span className="ml-3 text-[15px] text-[#6b6b6b]">Loading products...</span>
+        </div>
+      </PageWrapper>
+    );
+  }
 
   return (
     <PageWrapper>
@@ -126,7 +156,7 @@ export default function ShopCategoryPage({ params }: { params: Promise<{ categor
                       <img
                         alt={p.name}
                         className={`absolute max-w-none object-cover pointer-events-none transition-transform duration-300 group-hover:scale-105 ${p.img_style || "inset-0 w-full h-full"}`}
-                        src={p.image}
+                        src={resolveImagePath(p.image)}
                       />
                       <div className={`absolute top-3 left-3 ${p.badge_color} ${p.badge_width || "w-14"} h-6 rounded-full shadow-sm flex items-center justify-center`}>
                         <span className="font-medium text-[12px] text-black">{p.badge}</span>

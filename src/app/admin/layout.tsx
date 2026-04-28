@@ -8,6 +8,8 @@ import {
   Package,
   ShoppingBag,
   Tag,
+  RotateCcw,
+  Users,
   ChevronDown,
   ChevronRight,
   Menu,
@@ -20,6 +22,8 @@ const breadcrumbMap: Record<string, string> = {
   "/admin/products/add": "Beranda > Produk > Tambah Produk Baru",
   "/admin/orders": "Beranda > Pesanan Masuk",
   "/admin/categories": "Beranda > Kategori",
+  "/admin/refunds": "Beranda > Refund Requests",
+  "/admin/users": "Beranda > Users",
 };
 
 function getAdminBreadcrumb(pathname: string): string {
@@ -90,6 +94,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <Link href="/admin/categories" className={`flex items-center gap-3 px-5 py-3 text-[14px] transition-colors hover:bg-gray-50 no-underline ${isActive("/admin/categories") ? "font-bold text-[#511E0B]" : "text-gray-700"}`}>
         <Tag size={18} className={isActive("/admin/categories") ? "text-[#511E0B]" : "text-gray-500"} />
         <span>Kategori</span>
+      </Link>
+
+      <Link href="/admin/refunds" className={`flex items-center gap-3 px-5 py-3 text-[14px] transition-colors hover:bg-gray-50 no-underline ${isActive("/admin/refunds") ? "font-bold text-[#511E0B]" : "text-gray-700"}`}>
+        <RotateCcw size={18} className={isActive("/admin/refunds") ? "text-[#511E0B]" : "text-gray-500"} />
+        <span>Refunds</span>
+      </Link>
+
+      <Link href="/admin/users" className={`flex items-center gap-3 px-5 py-3 text-[14px] transition-colors hover:bg-gray-50 no-underline ${isActive("/admin/users") ? "font-bold text-[#511E0B]" : "text-gray-700"}`}>
+        <Users size={18} className={isActive("/admin/users") ? "text-[#511E0B]" : "text-gray-500"} />
+        <span>Users</span>
       </Link>
     </nav>
   );

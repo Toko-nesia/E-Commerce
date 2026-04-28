@@ -1,12 +1,13 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import { PageWrapper } from "../../components/layout/PageWrapper";
 import { Truck, MapPin, Box, ChevronRight, Minus, Plus, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { AddToCartPopup } from "../../components/modals/AddToCartPopup";
 import { ShippingDetailModal } from "../../components/modals/ShippingDetailModal";
-import { getProductById } from "@/data/products";
+import { createClient } from "@/lib/supabase/client";
+import { resolveImagePath } from "@/lib/image-paths";
 import { useCart } from "@/contexts/cart-context";
 import type { Product } from "@/types/database";
 
@@ -17,13 +18,67 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [showCartPopup, setShowCartPopup] = useState(false);
   const [showShippingModal, setShowShippingModal] = useState(false);
 
-  const productData = getProductById(parseInt(id));
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!productData) {
+  useEffect(() => {
+    async function fetchProduct() {
+      setLoading(true);
+      setError(null);
+      try {
+        const supabase = createClient();
+        const { data, error: queryError } = await supabase
+          .from("products")
+          .select("*")
+          .eq("id", parseInt(id))
+          .single();
+
+        if (queryError) throw new Error(queryError.message);
+        if (!data) throw new Error("Product not found");
+
+        setProduct(data as Product);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load product");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchProduct();
+  }, [id]);
+
+  // Loading state
+  if (loading) {
+    return (
+      <PageWrapper>
+        <div className="max-w-[1200px] mx-auto px-6 md:px-8 py-8">
+          <div className="animate-pulse">
+            <div className="h-4 w-32 bg-gray-200 rounded mb-6" />
+            <div className="flex flex-col md:flex-row gap-8 md:gap-12">
+              <div className="w-full md:w-[380px] md:h-[380px] h-[280px] bg-gray-200 rounded-lg" />
+              <div className="flex-1 space-y-4">
+                <div className="h-4 w-24 bg-gray-200 rounded" />
+                <div className="h-8 w-3/4 bg-gray-200 rounded" />
+                <div className="h-8 w-40 bg-gray-200 rounded" />
+                <div className="h-4 w-32 bg-gray-200 rounded" />
+                <div className="h-10 w-full bg-gray-200 rounded mt-8" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </PageWrapper>
+    );
+  }
+
+  // Error / not found state
+  if (error || !product) {
     return (
       <PageWrapper>
         <div className="max-w-[1200px] mx-auto px-6 py-24 text-center">
-          <p className="text-2xl font-bold text-[#511e0b] mb-4">Produk tidak ditemukan</p>
+          <p className="text-2xl font-bold text-[#511e0b] mb-4">
+            {error || "Produk tidak ditemukan"}
+          </p>
           <Link href="/shop" className="text-[#511e0b] underline text-[15px]">
             ← Kembali ke toko
           </Link>
@@ -32,31 +87,19 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  // productData may be a detailed product or basic Product — handle both
-  const product = productData as {
-    id: number;
-    name: string;
-    category: string;
-    price: string;
-    price_raw: number;
-    image: string;
-    stock: number;
-    specifications?: [string, string][];
-    description?: { text: string; features: string[] };
-    shipping?: { origin: string; minWeight: string; airPrice: string; estimatedDelivery: string };
-  };
+  // Parse specifications from jsonb (Record<string, string>) into [label, value][] pairs
+  const specifications: [string, string][] = product.specifications
+    ? Object.entries(product.specifications)
+    : [
+        ["Stok", String(product.stock)],
+        ["Kondisi", "New"],
+      ];
 
-  const specifications = product.specifications ?? [
-    ["Stok", String(product.stock)],
-    ["Kondisi", "New"],
-  ];
+  // Description is stored as plain text in Supabase
+  const descriptionText = product.description || "Produk berkualitas dari Indonesia.";
 
-  const description = product.description ?? {
-    text: "Produk berkualitas dari Indonesia.",
-    features: [],
-  };
-
-  const shipping = product.shipping ?? {
+  // Default shipping info (will be replaced by FedEx in a later task)
+  const shipping = {
     origin: "Indonesia",
     minWeight: "5 kg",
     airPrice: "Rp350.000",
@@ -70,14 +113,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       category: product.category,
       price: product.price,
       price_raw: product.price_raw,
-      badge: "",
-      badge_color: "bg-white",
+      badge: product.badge || "",
+      badge_color: product.badge_color || "bg-white",
       image: product.image,
       stock: product.stock,
     };
     addToCart(cartProduct, qty);
     setShowCartPopup(true);
   };
+
+  const imageSrc = resolveImagePath(product.image);
 
   return (
     <PageWrapper>
@@ -92,7 +137,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         <div className="flex flex-col md:flex-row gap-8 md:gap-12">
           <div className="w-full md:w-[380px] md:h-[380px] h-[280px] overflow-hidden shrink-0 rounded-lg bg-[#f8f8f8]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img alt={product.name} className="w-full h-full object-cover" src={product.image} />
+            <img alt={product.name} className="w-full h-full object-cover" src={imageSrc} />
           </div>
 
           <div className="flex-1">
@@ -167,14 +212,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         <div className="mt-10">
           <h2 className="font-bold text-[19px] text-[#511e0b]">Deskripsi Produk</h2>
           <div className="text-[14px] text-gray-700 mt-4 leading-relaxed">
-            <p>{description.text}</p>
-            {description.features.length > 0 && (
-              <ul className="list-disc ml-5 mt-3 space-y-1.5">
-                {description.features.map((f) => (
-                  <li key={f}>{f}</li>
-                ))}
-              </ul>
-            )}
+            <p>{descriptionText}</p>
           </div>
         </div>
 
@@ -184,7 +222,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           <div className="mt-4 space-y-4">
             <div className="flex items-start gap-3">
               <MapPin size={18} className="text-[#6b6b6b] mt-0.5 shrink-0" />
-              <p className="text-[14px] text-gray-700">Dikirim dari <span className="font-medium text-[#511e0b]">{shipping.origin}</span></p>            </div>
+              <p className="text-[14px] text-gray-700">Dikirim dari <span className="font-medium text-[#511e0b]">{shipping.origin}</span></p>
+            </div>
             <div className="flex items-start gap-3">
               <Box size={18} className="text-[#6b6b6b] mt-0.5 shrink-0" />
               <div>

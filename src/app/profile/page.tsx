@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { PageWrapper } from "../components/layout/PageWrapper";
-import { User, MapPin, FileText, LogOut, Phone, Plus, MoreVertical, Eye, Edit3, X, Camera } from "lucide-react";
-import { savedAddresses } from "@/data/addresses";
-import { orderHistory } from "@/data/orders";
+import { User, MapPin, FileText, LogOut, Phone, Plus, MoreVertical, Eye, Edit3, X, Camera, Star, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { TrackingModal } from "../components/modals/TrackingModal";
+import { createClient } from "@/lib/supabase/client";
+import { resolveImagePath } from "@/lib/image-paths";
+import type { Address, Order } from "@/types/database";
 
 type Tab = "profile" | "orders" | "addresses";
 
@@ -29,28 +30,337 @@ const STATUS_COLOR: Record<string, string> = {
 export default function ProfilePage() {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("profile");
-  const [fullName, setFullName] = useState(user?.full_name ?? "Febri");
-  const [email, setEmail] = useState(user?.email ?? "Febri@gmail.com");
-  const [phoneNumber, setPhoneNumber] = useState(user?.phone ?? "081140755");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Profile loading/saving state
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMessage, setProfileMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
   // Order detail modal
-  const [selectedOrder, setSelectedOrder] = useState<typeof orderHistory[0] | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   // Tracking modal
-  const [trackingOrder, setTrackingOrder] = useState<typeof orderHistory[0] | null>(null);
+  const [trackingOrder, setTrackingOrder] = useState<Order | null>(null);
   const [showTrackingModal, setShowTrackingModal] = useState(false);
 
   // Refund modal
-  const [refundOrder, setRefundOrder] = useState<typeof orderHistory[0] | null>(null);
+  const [refundOrder, setRefundOrder] = useState<Order | null>(null);
   const [refundMethod, setRefundMethod] = useState<"bank_transfer" | "ewallet">("bank_transfer");
   const [refundAccount, setRefundAccount] = useState("");
   const [refundReason, setRefundReason] = useState("");
   const [refundSubmitted, setRefundSubmitted] = useState(false);
+  const [refundLoading, setRefundLoading] = useState(false);
+  const [refundError, setRefundError] = useState<string | null>(null);
 
-  // Address dropdown
+  // Cancellation state
+  const [showCancelInput, setShowCancelInput] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+
+  // Address state
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [addressesLoading, setAddressesLoading] = useState(false);
+  const [addressError, setAddressError] = useState<string | null>(null);
+  const [addressSaving, setAddressSaving] = useState(false);
   const [openAddressMenu, setOpenAddressMenu] = useState<string | null>(null);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // Address form fields
+  const [addrLabel, setAddrLabel] = useState("");
+  const [addrName, setAddrName] = useState("");
+  const [addrPhone, setAddrPhone] = useState("");
+  const [addrAddress, setAddrAddress] = useState("");
+  const [addrPostalCode, setAddrPostalCode] = useState("");
+  const [addrCountryCode, setAddrCountryCode] = useState("JP");
+
+  // Order history state
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersError, setOrdersError] = useState<string | null>(null);
+
+  const supabase = createClient();
+
+  // Load profile data from Supabase on mount
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!user?.id) {
+        setProfileLoading(false);
+        return;
+      }
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("full_name, email, phone, avatar_url")
+          .eq("id", user.id)
+          .single();
+        if (error) throw error;
+        if (data) {
+          setFullName(data.full_name || "");
+          setEmail(data.email || "");
+          setPhoneNumber(data.phone || "");
+          if (data.avatar_url) {
+            setAvatarPreview(data.avatar_url);
+          }
+        }
+      } catch {
+        // Fallback to auth context data
+        setFullName(user.full_name || "");
+        setEmail(user.email || "");
+        setPhoneNumber(user.phone || "");
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+    loadProfile();
+  }, [user?.id, supabase, user?.full_name, user?.email, user?.phone]);
+
+  // Save profile changes to Supabase
+  const handleSaveProfile = async () => {
+    if (!user?.id) return;
+    setProfileSaving(true);
+    setProfileMessage(null);
+    try {
+      let avatarUrl: string | undefined;
+
+      // Upload avatar if a new file was selected
+      if (avatarFile) {
+        const filePath = `${user.id}/avatar.png`;
+        const { error: uploadError } = await supabase.storage
+          .from("avatars")
+          .upload(filePath, avatarFile, { upsert: true });
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from("avatars")
+          .getPublicUrl(filePath);
+        avatarUrl = urlData.publicUrl;
+      }
+
+      // Update profile in database
+      const updatePayload: { full_name: string; phone: string; avatar_url?: string } = {
+        full_name: fullName.trim(),
+        phone: phoneNumber.trim(),
+      };
+      if (avatarUrl) {
+        updatePayload.avatar_url = avatarUrl;
+      }
+
+      const { error } = await supabase
+        .from("profiles")
+        .update(updatePayload)
+        .eq("id", user.id);
+      if (error) throw error;
+
+      setProfileMessage({ type: "success", text: "Profile updated successfully!" });
+      setAvatarFile(null);
+    } catch {
+      setProfileMessage({ type: "error", text: "Failed to save profile. Please try again." });
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  // Fetch addresses from Supabase
+  const fetchAddresses = useCallback(async () => {
+    if (!user?.id) return;
+    setAddressesLoading(true);
+    setAddressError(null);
+    try {
+      const { data, error } = await supabase
+        .from("addresses")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setAddresses(data || []);
+    } catch {
+      setAddressError("Failed to load addresses. Please try again.");
+    } finally {
+      setAddressesLoading(false);
+    }
+  }, [user?.id, supabase]);
+
+  useEffect(() => {
+    if (activeTab === "addresses" && user?.id) {
+      fetchAddresses();
+    }
+  }, [activeTab, user?.id, fetchAddresses]);
+
+  const fetchOrders = useCallback(async () => {
+    if (!user?.id) return;
+    setOrdersLoading(true);
+    setOrdersError(null);
+    try {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setOrders(data || []);
+    } catch {
+      setOrdersError("Failed to load orders. Please try again.");
+    } finally {
+      setOrdersLoading(false);
+    }
+  }, [user?.id, supabase]);
+
+  useEffect(() => {
+    if (activeTab === "orders" && user?.id) {
+      fetchOrders();
+    }
+  }, [activeTab, user?.id, fetchOrders]);
+
+  const resetAddressForm = () => {
+    setAddrLabel("");
+    setAddrName("");
+    setAddrPhone("");
+    setAddrAddress("");
+    setAddrPostalCode("");
+    setAddrCountryCode("JP");
+    setEditingAddress(null);
+  };
+
+  const openCreateForm = () => {
+    resetAddressForm();
+    setShowAddressForm(true);
+  };
+
+  const openEditForm = (addr: Address) => {
+    setAddrLabel(addr.label || "");
+    setAddrName(addr.name);
+    setAddrPhone(addr.phone);
+    setAddrAddress(addr.address);
+    setAddrPostalCode(addr.postal_code || "");
+    setAddrCountryCode(addr.country_code || "JP");
+    setEditingAddress(addr);
+    setShowAddressForm(true);
+    setOpenAddressMenu(null);
+  };
+
+  const handleSaveAddress = async () => {
+    if (!user?.id || !addrName.trim() || !addrPhone.trim() || !addrAddress.trim()) return;
+    setAddressSaving(true);
+    setAddressError(null);
+    try {
+      const payload = {
+        user_id: user.id,
+        label: addrLabel.trim() || null,
+        name: addrName.trim(),
+        phone: addrPhone.trim(),
+        address: addrAddress.trim(),
+        postal_code: addrPostalCode.trim() || null,
+        country_code: addrCountryCode.trim() || "JP",
+      };
+
+      if (editingAddress) {
+        const { error } = await supabase
+          .from("addresses")
+          .update(payload)
+          .eq("id", editingAddress.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("addresses")
+          .insert(payload);
+        if (error) throw error;
+      }
+
+      setShowAddressForm(false);
+      resetAddressForm();
+      await fetchAddresses();
+    } catch {
+      setAddressError(editingAddress ? "Failed to update address." : "Failed to create address.");
+    } finally {
+      setAddressSaving(false);
+    }
+  };
+
+  const handleDeleteAddress = async (id: string) => {
+    setAddressSaving(true);
+    setAddressError(null);
+    try {
+      const { error } = await supabase
+        .from("addresses")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+      setDeleteConfirmId(null);
+      await fetchAddresses();
+    } catch {
+      setAddressError("Failed to delete address.");
+    } finally {
+      setAddressSaving(false);
+    }
+  };
+
+  const handleSetDefault = async (id: string) => {
+    if (!user?.id) return;
+    setAddressSaving(true);
+    setAddressError(null);
+    setOpenAddressMenu(null);
+    try {
+      // First, set all user's addresses to non-default
+      const { error: clearError } = await supabase
+        .from("addresses")
+        .update({ is_default: false })
+        .eq("user_id", user.id);
+      if (clearError) throw clearError;
+
+      // Then set the selected one as default
+      const { error: setError } = await supabase
+        .from("addresses")
+        .update({ is_default: true })
+        .eq("id", id);
+      if (setError) throw setError;
+
+      await fetchAddresses();
+    } catch {
+      setAddressError("Failed to set default address.");
+    } finally {
+      setAddressSaving(false);
+    }
+  };
+
+  const handleCancelOrder = async () => {
+    if (!selectedOrder || !cancelReason.trim()) return;
+    if (selectedOrder.status !== "BARU") {
+      setCancelError("Only new orders can be cancelled");
+      return;
+    }
+    setCancelLoading(true);
+    setCancelError(null);
+    try {
+      const { error } = await supabase
+        .from("orders")
+        .update({ status: "DIBATALKAN", cancel_reason: cancelReason.trim() })
+        .eq("id", selectedOrder.id);
+      if (error) throw error;
+      // Refresh orders list
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === selectedOrder.id ? { ...o, status: "DIBATALKAN" as const, cancel_reason: cancelReason.trim() } : o
+        )
+      );
+      setSelectedOrder(null);
+      setShowCancelInput(false);
+      setCancelReason("");
+    } catch {
+      setCancelError("Failed to cancel order. Please try again.");
+    } finally {
+      setCancelLoading(false);
+    }
+  };
 
   const sidebarItems = [
     { icon: User, label: "My Profile", id: "profile" as Tab },
@@ -60,7 +370,10 @@ export default function ProfilePage() {
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) setAvatarPreview(URL.createObjectURL(file));
+    if (file) {
+      setAvatarPreview(URL.createObjectURL(file));
+      setAvatarFile(file);
+    }
   };
 
   return (
@@ -75,7 +388,7 @@ export default function ProfilePage() {
                 <img
                   alt="Avatar"
                   className="w-full h-full object-cover"
-                  src={avatarPreview ?? "/images/ProfilePage/d4699efb0b0581a2c8ec625c4639f0d9a00865fa.png"}
+                  src={avatarPreview ?? resolveImagePath("/images/ProfilePage/d4699efb0b0581a2c8ec625c4639f0d9a00865fa.png")}
                 />
               </div>
               <button
@@ -123,37 +436,58 @@ export default function ProfilePage() {
           {activeTab === "profile" && (
             <section>
               <h2 className="font-bold text-[24px] text-black mb-6">My Profile</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-[12px] text-[#6b6b6b] tracking-widest uppercase mb-1.5">Full Name</label>
-                  <input
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="w-full border border-[#b0b0b0] rounded-lg px-4 py-3 text-[14px] text-black outline-none focus:border-[#511e0b] transition-colors"
-                  />
+
+              {profileMessage && (
+                <div className={`mb-4 p-3 rounded-lg text-[13px] ${profileMessage.type === "success" ? "bg-green-50 border border-green-200 text-green-700" : "bg-red-50 border border-red-200 text-[#df0000]"}`}>
+                  {profileMessage.text}
                 </div>
-                <div>
-                  <label className="block text-[12px] text-[#6b6b6b] tracking-widest uppercase mb-1.5">Email Address</label>
-                  <input
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full border border-[#b0b0b0] rounded-lg px-4 py-3 text-[14px] text-black outline-none focus:border-[#511e0b] transition-colors"
-                  />
+              )}
+
+              {profileLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 size={24} className="animate-spin text-[#511e0b]" />
+                  <span className="ml-2 text-[14px] text-[#6b6b6b]">Loading profile...</span>
                 </div>
-                <div>
-                  <label className="block text-[12px] text-[#6b6b6b] tracking-widest uppercase mb-1.5">Phone Number</label>
-                  <input
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    className="w-full border border-[#b0b0b0] rounded-lg px-4 py-3 text-[14px] text-black outline-none focus:border-[#511e0b] transition-colors"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end mt-6">
-                <button className="bg-[#511e0b] text-white rounded-lg px-6 py-2.5 text-[14px] font-bold border-none cursor-pointer hover:bg-[#3d1608] transition-colors">
-                  Save Changes
-                </button>
-              </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <label className="block text-[12px] text-[#6b6b6b] tracking-widest uppercase mb-1.5">Full Name</label>
+                      <input
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className="w-full border border-[#b0b0b0] rounded-lg px-4 py-3 text-[14px] text-black outline-none focus:border-[#511e0b] transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[12px] text-[#6b6b6b] tracking-widest uppercase mb-1.5">Email Address</label>
+                      <input
+                        value={email}
+                        disabled
+                        className="w-full border border-[#b0b0b0] rounded-lg px-4 py-3 text-[14px] text-black outline-none bg-gray-50 cursor-not-allowed"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[12px] text-[#6b6b6b] tracking-widest uppercase mb-1.5">Phone Number</label>
+                      <input
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        className="w-full border border-[#b0b0b0] rounded-lg px-4 py-3 text-[14px] text-black outline-none focus:border-[#511e0b] transition-colors"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end mt-6">
+                    <button
+                      onClick={handleSaveProfile}
+                      disabled={profileSaving}
+                      className="bg-[#511e0b] text-white rounded-lg px-6 py-2.5 text-[14px] font-bold border-none cursor-pointer hover:bg-[#3d1608] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {profileSaving && <Loader2 size={16} className="animate-spin" />}
+                      Save Changes
+                    </button>
+                  </div>
+                </>
+              )}
             </section>
           )}
 
@@ -161,46 +495,69 @@ export default function ProfilePage() {
           {activeTab === "orders" && (
             <section>
               <h2 className="font-bold text-[24px] text-black mb-6">Order History</h2>
-              <div className="border border-[#b0b0b0] rounded-xl overflow-hidden">
-                <div className="grid grid-cols-6 bg-[#f5f5f5] px-5 py-3">
-                  {["ORDER ID", "DATE", "STATUS", "TRACKING", "TOTAL", "ACTION"].map((h) => (
-                    <span key={h} className="font-bold text-[11px] text-[#6b6b6b] tracking-wider">{h}</span>
-                  ))}
+
+              {ordersError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-[#df0000]">
+                  {ordersError}
+                  <button onClick={fetchOrders} className="ml-2 underline font-medium bg-transparent border-none cursor-pointer text-[#df0000]">Retry</button>
                 </div>
-                {orderHistory.map((order) => (
-                  <div key={order.id} className="grid grid-cols-6 px-5 py-4 border-t border-[#d5d5d5] items-center hover:bg-gray-50 transition-colors">
-                    <span className="font-bold text-[13px] text-[#511e0b]">{order.id}</span>
-                    <span className="text-[13px] text-black">{order.date}</span>
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[12px] font-bold w-fit ${STATUS_COLOR[order.status] ?? "bg-gray-100 text-gray-500"}`}>
-                      {order.status === "DIKIRIM" && <span className="text-blue-500 text-[10px]">●</span>}
-                      {STATUS_LABEL[order.status] ?? order.status}
-                    </span>
-                    <span className="text-[13px]">
-                      {order.tracking_number ? (
-                        <button
-                          onClick={() => { setTrackingOrder(order); setShowTrackingModal(true); }}
-                          className="bg-transparent border border-[#511e0b] text-[#511e0b] rounded px-2 py-1 text-[11px] font-medium cursor-pointer hover:bg-[#faf5ee] transition-colors"
-                        >
-                          Track Package
-                        </button>
-                      ) : (
-                        <span className="text-[#9b9b9b]">Awaiting shipment</span>
-                      )}
-                    </span>
-                    <span className="text-[13px] text-black">{order.total_price}</span>
-                    <button
-                      onClick={() => setSelectedOrder(order)}
-                      className="bg-transparent border-none cursor-pointer p-0 w-fit hover:text-[#511e0b] transition-colors text-[#6b6b6b]"
-                      aria-label="View details"
-                    >
-                      <Eye size={18} />
-                    </button>
+              )}
+
+              {ordersLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 size={24} className="animate-spin text-[#511e0b]" />
+                  <span className="ml-2 text-[14px] text-[#6b6b6b]">Loading orders...</span>
+                </div>
+              ) : (
+                <div className="border border-[#b0b0b0] rounded-xl overflow-hidden">
+                  <div className="grid grid-cols-6 bg-[#f5f5f5] px-5 py-3">
+                    {["ORDER ID", "DATE", "STATUS", "TRACKING", "TOTAL", "ACTION"].map((h) => (
+                      <span key={h} className="font-bold text-[11px] text-[#6b6b6b] tracking-wider">{h}</span>
+                    ))}
                   </div>
-                ))}
-                {orderHistory.length === 0 && (
-                  <div className="px-5 py-12 text-center text-[13px] text-[#6b6b6b]">No orders yet.</div>
-                )}
-              </div>
+                  {orders.map((order) => {
+                    const displayId = order.midtrans_order_id
+                      ? `#${order.midtrans_order_id}`
+                      : `#${order.id.slice(0, 8).toUpperCase()}`;
+                    const displayDate = order.created_at
+                      ? new Date(order.created_at).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })
+                      : "—";
+                    return (
+                      <div key={order.id} className="grid grid-cols-6 px-5 py-4 border-t border-[#d5d5d5] items-center hover:bg-gray-50 transition-colors">
+                        <span className="font-bold text-[13px] text-[#511e0b]">{displayId}</span>
+                        <span className="text-[13px] text-black">{displayDate}</span>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[12px] font-bold w-fit ${STATUS_COLOR[order.status] ?? "bg-gray-100 text-gray-500"}`}>
+                          {order.status === "DIKIRIM" && <span className="text-blue-500 text-[10px]">●</span>}
+                          {STATUS_LABEL[order.status] ?? order.status}
+                        </span>
+                        <span className="text-[13px]">
+                          {order.tracking_number ? (
+                            <button
+                              onClick={() => { setTrackingOrder(order); setShowTrackingModal(true); }}
+                              className="bg-transparent border border-[#511e0b] text-[#511e0b] rounded px-2 py-1 text-[11px] font-medium cursor-pointer hover:bg-[#faf5ee] transition-colors"
+                            >
+                              Track Package
+                            </button>
+                          ) : (
+                            <span className="text-[#9b9b9b]">Awaiting shipment</span>
+                          )}
+                        </span>
+                        <span className="text-[13px] text-black">{order.total_price}</span>
+                        <button
+                          onClick={() => setSelectedOrder(order)}
+                          className="bg-transparent border-none cursor-pointer p-0 w-fit hover:text-[#511e0b] transition-colors text-[#6b6b6b]"
+                          aria-label="View details"
+                        >
+                          <Eye size={18} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                  {orders.length === 0 && (
+                    <div className="px-5 py-12 text-center text-[13px] text-[#6b6b6b]">No orders yet.</div>
+                  )}
+                </div>
+              )}
             </section>
           )}
 
@@ -209,48 +566,91 @@ export default function ProfilePage() {
             <section>
               <div className="flex justify-between items-center mb-6">
                 <h2 className="font-bold text-[24px] text-black">Saved Addresses</h2>
-                <button className="flex items-center gap-1.5 text-[13px] text-[#511e0b] font-medium bg-transparent border border-[#511e0b] rounded-lg px-3 py-2 cursor-pointer hover:bg-[#faf5ee] transition-colors">
+                <button
+                  onClick={openCreateForm}
+                  className="flex items-center gap-1.5 text-[13px] text-[#511e0b] font-medium bg-transparent border border-[#511e0b] rounded-lg px-3 py-2 cursor-pointer hover:bg-[#faf5ee] transition-colors"
+                >
                   <Plus size={14} />
                   Add Address
                 </button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {savedAddresses.map((addr) => (
-                  <div key={addr.id} className="border border-[#b0b0b0] rounded-xl p-5 relative">
-                    <div className="flex items-center gap-2 mb-3 pr-8">
-                      <span className="bg-[#511e0b] text-white px-2 py-0.5 rounded text-[10px] font-bold tracking-wider">{addr.label}</span>
-                    </div>
-                    <p className="font-medium text-[15px] text-black">{addr.name}</p>
-                    <p className="text-[13px] text-[#6b6b6b] mt-0.5 leading-relaxed">{addr.address}</p>
-                    <div className="flex items-center gap-1 mt-2">
-                      <Phone size={11} className="text-[#6b6b6b]" />
-                      <span className="text-[13px] text-[#6b6b6b]">{addr.phone}</span>
-                    </div>
 
-                    {/* MoreVertical menu */}
-                    <div className="absolute top-4 right-4">
-                      <button
-                        onClick={() => setOpenAddressMenu(openAddressMenu === addr.id ? null : addr.id)}
-                        className="text-[#6b6b6b] hover:text-black transition-colors bg-transparent border-none cursor-pointer p-0"
-                      >
-                        <MoreVertical size={16} />
-                      </button>
-                      {openAddressMenu === addr.id && (
-                        <div className="absolute right-0 top-6 bg-white border border-[#d5d5d5] rounded-lg shadow-lg z-10 min-w-[120px] overflow-hidden">
-                          <button className="w-full text-left px-4 py-2.5 text-[13px] text-black hover:bg-[#f5f0ea] flex items-center gap-2 bg-transparent border-none cursor-pointer">
-                            <Edit3 size={13} />
-                            Edit
-                          </button>
-                          <button className="w-full text-left px-4 py-2.5 text-[13px] text-[#df0000] hover:bg-red-50 flex items-center gap-2 bg-transparent border-none cursor-pointer">
-                            <X size={13} />
-                            Delete
-                          </button>
-                        </div>
+              {addressError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-[13px] text-[#df0000]">
+                  {addressError}
+                  <button onClick={fetchAddresses} className="ml-2 underline font-medium bg-transparent border-none cursor-pointer text-[#df0000]">Retry</button>
+                </div>
+              )}
+
+              {addressesLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 size={24} className="animate-spin text-[#511e0b]" />
+                  <span className="ml-2 text-[14px] text-[#6b6b6b]">Loading addresses...</span>
+                </div>
+              ) : addresses.length === 0 ? (
+                <div className="text-center py-12 text-[13px] text-[#6b6b6b]">No saved addresses yet.</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {addresses.map((addr) => (
+                    <div key={addr.id} className={`border rounded-xl p-5 relative ${addr.is_default ? "border-[#511e0b]" : "border-[#b0b0b0]"}`}>
+                      <div className="flex items-center gap-2 mb-3 pr-8">
+                        {addr.label && (
+                          <span className="bg-[#511e0b] text-white px-2 py-0.5 rounded text-[10px] font-bold tracking-wider">{addr.label}</span>
+                        )}
+                        {addr.is_default && (
+                          <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold">DEFAULT</span>
+                        )}
+                      </div>
+                      <p className="font-medium text-[15px] text-black">{addr.name}</p>
+                      <p className="text-[13px] text-[#6b6b6b] mt-0.5 leading-relaxed">{addr.address}</p>
+                      {addr.postal_code && (
+                        <p className="text-[12px] text-[#6b6b6b] mt-0.5">{addr.postal_code}, {addr.country_code || "JP"}</p>
                       )}
+                      <div className="flex items-center gap-1 mt-2">
+                        <Phone size={11} className="text-[#6b6b6b]" />
+                        <span className="text-[13px] text-[#6b6b6b]">{addr.phone}</span>
+                      </div>
+
+                      {/* MoreVertical menu */}
+                      <div className="absolute top-4 right-4">
+                        <button
+                          onClick={() => setOpenAddressMenu(openAddressMenu === addr.id ? null : addr.id)}
+                          className="text-[#6b6b6b] hover:text-black transition-colors bg-transparent border-none cursor-pointer p-0"
+                        >
+                          <MoreVertical size={16} />
+                        </button>
+                        {openAddressMenu === addr.id && (
+                          <div className="absolute right-0 top-6 bg-white border border-[#d5d5d5] rounded-lg shadow-lg z-10 min-w-[140px] overflow-hidden">
+                            {!addr.is_default && (
+                              <button
+                                onClick={() => handleSetDefault(addr.id)}
+                                className="w-full text-left px-4 py-2.5 text-[13px] text-black hover:bg-[#f5f0ea] flex items-center gap-2 bg-transparent border-none cursor-pointer"
+                              >
+                                <Star size={13} />
+                                Set as Default
+                              </button>
+                            )}
+                            <button
+                              onClick={() => openEditForm(addr)}
+                              className="w-full text-left px-4 py-2.5 text-[13px] text-black hover:bg-[#f5f0ea] flex items-center gap-2 bg-transparent border-none cursor-pointer"
+                            >
+                              <Edit3 size={13} />
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => { setDeleteConfirmId(addr.id); setOpenAddressMenu(null); }}
+                              className="w-full text-left px-4 py-2.5 text-[13px] text-[#df0000] hover:bg-red-50 flex items-center gap-2 bg-transparent border-none cursor-pointer"
+                            >
+                              <X size={13} />
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </section>
           )}
         </div>
@@ -258,18 +658,18 @@ export default function ProfilePage() {
 
       {/* Order Detail Modal */}
       {selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setSelectedOrder(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => { setSelectedOrder(null); setShowCancelInput(false); setCancelReason(""); setCancelError(null); }}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-[440px] p-8" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-bold text-[18px] text-black">Order Details</h3>
-              <button onClick={() => setSelectedOrder(null)} className="text-[#6b6b6b] hover:text-black bg-transparent border-none cursor-pointer p-0">
+              <button onClick={() => { setSelectedOrder(null); setShowCancelInput(false); setCancelReason(""); setCancelError(null); }} className="text-[#6b6b6b] hover:text-black bg-transparent border-none cursor-pointer p-0">
                 <X size={20} />
               </button>
             </div>
             <div className="space-y-3">
               {[
-                ["Order ID", selectedOrder.id],
-                ["Date", selectedOrder.date],
+                ["Order ID", selectedOrder.midtrans_order_id ? `#${selectedOrder.midtrans_order_id}` : `#${selectedOrder.id.slice(0, 8).toUpperCase()}`],
+                ["Date", selectedOrder.created_at ? new Date(selectedOrder.created_at).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "—"],
                 ["Status", STATUS_LABEL[selectedOrder.status] ?? selectedOrder.status],
                 ["Total", selectedOrder.total_price],
                 ...(selectedOrder.tracking_number ? [["Tracking No.", selectedOrder.tracking_number]] : []),
@@ -281,9 +681,59 @@ export default function ProfilePage() {
                 </div>
               ))}
             </div>
+
+            {/* Cancel section for BARU orders */}
+            {selectedOrder.status === "BARU" && (
+              <div className="mt-5">
+                {!showCancelInput ? (
+                  <button
+                    onClick={() => { setShowCancelInput(true); setCancelError(null); }}
+                    className="w-full border border-[#df0000] text-[#df0000] rounded-lg py-2.5 font-bold text-[14px] border-solid cursor-pointer hover:bg-red-50 transition-colors bg-transparent"
+                  >
+                    Cancel Order
+                  </button>
+                ) : (
+                  <div className="space-y-3">
+                    <label className="block text-[12px] font-bold text-black">Cancellation Reason *</label>
+                    <textarea
+                      value={cancelReason}
+                      onChange={(e) => setCancelReason(e.target.value)}
+                      placeholder="Please provide a reason for cancellation..."
+                      rows={3}
+                      className="w-full border border-[#b0b0b0] rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#511e0b] resize-none"
+                    />
+                    {cancelError && (
+                      <p className="text-[12px] text-[#df0000]">{cancelError}</p>
+                    )}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { setShowCancelInput(false); setCancelReason(""); setCancelError(null); }}
+                        className="flex-1 py-2.5 rounded-lg text-[13px] font-medium border border-[#b0b0b0] bg-white text-black cursor-pointer hover:bg-gray-50 transition-colors"
+                      >
+                        Back
+                      </button>
+                      <button
+                        onClick={handleCancelOrder}
+                        disabled={cancelLoading || !cancelReason.trim()}
+                        className="flex-1 py-2.5 rounded-lg text-[13px] font-medium border-none bg-[#df0000] text-white cursor-pointer hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {cancelLoading && <Loader2 size={14} className="animate-spin" />}
+                        Confirm Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Deny cancellation for non-BARU, non-DIBATALKAN orders */}
+            {selectedOrder.status !== "BARU" && selectedOrder.status !== "DIBATALKAN" && (
+              <p className="mt-4 text-[12px] text-[#9b9b9b] text-center">Only new orders can be cancelled</p>
+            )}
+
             <button
-              onClick={() => setSelectedOrder(null)}
-              className="w-full mt-6 bg-[#511e0b] text-white rounded-lg py-3 font-bold text-[14px] border-none cursor-pointer hover:bg-[#3d1608] transition-colors"
+              onClick={() => { setSelectedOrder(null); setShowCancelInput(false); setCancelReason(""); setCancelError(null); }}
+              className="w-full mt-4 bg-[#511e0b] text-white rounded-lg py-3 font-bold text-[14px] border-none cursor-pointer hover:bg-[#3d1608] transition-colors"
             >
               Close
             </button>
@@ -295,7 +745,10 @@ export default function ProfilePage() {
                   setRefundAccount("");
                   setRefundReason("");
                   setRefundMethod("bank_transfer");
+                  setRefundError(null);
                   setSelectedOrder(null);
+                  setShowCancelInput(false);
+                  setCancelReason("");
                 }}
                 className="w-full mt-2 border border-[#df0000] text-[#df0000] rounded-lg py-3 font-bold text-[14px] border-solid cursor-pointer hover:bg-red-50 transition-colors bg-transparent"
               >
@@ -393,18 +846,157 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
+                {refundError && (
+                  <p className="mt-3 text-[12px] text-[#df0000]">{refundError}</p>
+                )}
+
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (!refundReason.trim() || !refundAccount.trim()) return;
-                    setRefundSubmitted(true);
+                    if (!user?.id || !refundOrder?.id) return;
+                    setRefundLoading(true);
+                    setRefundError(null);
+                    try {
+                      const { error } = await supabase
+                        .from("refund_requests")
+                        .insert({
+                          order_id: refundOrder.id,
+                          user_id: user.id,
+                          refund_method: refundMethod,
+                          account_number: refundAccount.trim(),
+                          reason: refundReason.trim(),
+                          status: "pending",
+                        });
+                      if (error) throw error;
+                      setRefundSubmitted(true);
+                    } catch {
+                      setRefundError("Failed to submit refund request. Please try again.");
+                    } finally {
+                      setRefundLoading(false);
+                    }
                   }}
-                  disabled={!refundReason.trim() || !refundAccount.trim()}
-                  className="w-full mt-6 bg-[#511e0b] text-white rounded-lg py-3 font-bold text-[14px] border-none cursor-pointer hover:bg-[#3d1608] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!refundReason.trim() || !refundAccount.trim() || refundLoading}
+                  className="w-full mt-6 bg-[#511e0b] text-white rounded-lg py-3 font-bold text-[14px] border-none cursor-pointer hover:bg-[#3d1608] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
+                  {refundLoading && <Loader2 size={16} className="animate-spin" />}
                   Submit Request
                 </button>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Address Form Modal */}
+      {showAddressForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => { setShowAddressForm(false); resetAddressForm(); }}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-[460px] p-8" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-bold text-[18px] text-black">{editingAddress ? "Edit Address" : "Add New Address"}</h3>
+              <button onClick={() => { setShowAddressForm(false); resetAddressForm(); }} className="text-[#6b6b6b] hover:text-black bg-transparent border-none cursor-pointer p-0">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[12px] font-bold text-black mb-1.5">Label (optional)</label>
+                <input
+                  type="text"
+                  value={addrLabel}
+                  onChange={(e) => setAddrLabel(e.target.value)}
+                  placeholder="e.g. HOME, OFFICE"
+                  className="w-full border border-[#b0b0b0] rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#511e0b]"
+                />
+              </div>
+              <div>
+                <label className="block text-[12px] font-bold text-black mb-1.5">Recipient Name *</label>
+                <input
+                  type="text"
+                  value={addrName}
+                  onChange={(e) => setAddrName(e.target.value)}
+                  placeholder="Full name"
+                  className="w-full border border-[#b0b0b0] rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#511e0b]"
+                />
+              </div>
+              <div>
+                <label className="block text-[12px] font-bold text-black mb-1.5">Phone *</label>
+                <input
+                  type="text"
+                  value={addrPhone}
+                  onChange={(e) => setAddrPhone(e.target.value)}
+                  placeholder="e.g. +81 90-1234-5678"
+                  className="w-full border border-[#b0b0b0] rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#511e0b]"
+                />
+              </div>
+              <div>
+                <label className="block text-[12px] font-bold text-black mb-1.5">Address *</label>
+                <textarea
+                  value={addrAddress}
+                  onChange={(e) => setAddrAddress(e.target.value)}
+                  placeholder="Full street address"
+                  rows={2}
+                  className="w-full border border-[#b0b0b0] rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#511e0b] resize-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[12px] font-bold text-black mb-1.5">Postal Code</label>
+                  <input
+                    type="text"
+                    value={addrPostalCode}
+                    onChange={(e) => setAddrPostalCode(e.target.value)}
+                    placeholder="e.g. 107-8420"
+                    className="w-full border border-[#b0b0b0] rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#511e0b]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-bold text-black mb-1.5">Country Code</label>
+                  <input
+                    type="text"
+                    value={addrCountryCode}
+                    onChange={(e) => setAddrCountryCode(e.target.value)}
+                    placeholder="JP"
+                    className="w-full border border-[#b0b0b0] rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#511e0b]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={handleSaveAddress}
+              disabled={addressSaving || !addrName.trim() || !addrPhone.trim() || !addrAddress.trim()}
+              className="w-full mt-6 bg-[#511e0b] text-white rounded-lg py-3 font-bold text-[14px] border-none cursor-pointer hover:bg-[#3d1608] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {addressSaving && <Loader2 size={16} className="animate-spin" />}
+              {editingAddress ? "Update Address" : "Save Address"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setDeleteConfirmId(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-[360px] p-8 text-center" onClick={(e) => e.stopPropagation()}>
+            <p className="font-bold text-[16px] text-black mb-2">Delete Address?</p>
+            <p className="text-[13px] text-[#6b6b6b] mb-6">This action cannot be undone.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirmId(null)}
+                className="flex-1 py-2.5 rounded-lg text-[13px] font-medium border border-[#b0b0b0] bg-white text-black cursor-pointer hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteAddress(deleteConfirmId)}
+                disabled={addressSaving}
+                className="flex-1 py-2.5 rounded-lg text-[13px] font-medium border-none bg-[#df0000] text-white cursor-pointer hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {addressSaving && <Loader2 size={14} className="animate-spin" />}
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}

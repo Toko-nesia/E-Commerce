@@ -10,12 +10,10 @@ function formatRp(amount: number): string {
 }
 
 export default function CartPage() {
-  const { items, updateQty, removeFromCart, totalPrice } = useCart();
+  const { items, updateQty, removeFromCart, totalPrice, totalWeight, canCheckout } = useCart();
 
-  const shipping = 350000;
-  const serviceFee = 46000;
-  const importTax = Math.round(totalPrice * 0.33);
-  const grandTotal = totalPrice + shipping + serviceFee + importTax;
+  const serviceFee = Math.round(totalPrice * 0.01);
+  const subtotalWithFee = totalPrice + serviceFee;
 
   return (
     <PageWrapper mobileFooter={false}>
@@ -111,29 +109,44 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between text-[13px]">
                   <span className="text-[#6b6b6b]">Air shipping</span>
-                  <span className="text-black">{formatRp(shipping)}</span>
+                  <span className="text-[#6b6b6b] italic">Calculated at checkout</span>
                 </div>
                 <div className="flex justify-between text-[13px]">
-                  <span className="text-[#6b6b6b]">Service fee</span>
+                  <span className="text-[#6b6b6b]">Service fee (1%)</span>
                   <span className="text-black">{formatRp(serviceFee)}</span>
-                </div>
-                <div className="flex justify-between text-[13px]">
-                  <span className="text-[#6b6b6b]">Import tax (est.)</span>
-                  <span className="text-black">{formatRp(importTax)}</span>
                 </div>
               </div>
 
               <div className="border-t border-[#d0d0d0] mt-4 pt-4 flex justify-between">
-                <span className="font-bold text-[17px] text-black">Total</span>
-                <span className="font-bold text-[17px] text-[#511e0b]">{formatRp(grandTotal)}</span>
+                <span className="font-bold text-[17px] text-black">Subtotal</span>
+                <span className="font-bold text-[17px] text-[#511e0b]">{formatRp(subtotalWithFee)}</span>
               </div>
 
-              <Link
-                href="/checkout"
-                className="block w-full mt-4 bg-[#511e0b] text-white text-center rounded-lg py-3 font-bold text-[15px] no-underline hover:bg-[#3d1608] transition-colors"
-              >
-                Checkout
-              </Link>
+              <div className="mt-3 text-[12px] text-[#6b6b6b]">
+                Total weight: {totalWeight.toFixed(1)} kg
+              </div>
+
+              {!canCheckout && (
+                <p className="mt-2 text-[12px] text-[#DF0000]">
+                  Minimum order weight is 21 kg. Add {(21 - totalWeight).toFixed(1)} kg more to checkout.
+                </p>
+              )}
+
+              {canCheckout ? (
+                <Link
+                  href="/checkout"
+                  className="block w-full mt-4 bg-[#511e0b] text-white text-center rounded-lg py-3 font-bold text-[15px] no-underline hover:bg-[#3d1608] transition-colors"
+                >
+                  Checkout
+                </Link>
+              ) : (
+                <button
+                  disabled
+                  className="block w-full mt-4 bg-[#b0b0b0] text-white text-center rounded-lg py-3 font-bold text-[15px] cursor-not-allowed"
+                >
+                  Checkout
+                </button>
+              )}
 
               <Link
                 href="/shop"

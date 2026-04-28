@@ -66,11 +66,10 @@ export default function OrderSuccessPage() {
 
           {/* Payment Instructions */}
           <div className="bg-[#f8f8f8] rounded-xl p-4 text-left mb-6">
-            <p className="text-[11px] text-[#6b6b6b] uppercase tracking-wider mb-2">Payment Instructions</p>
-            <p className="text-[13px] font-medium text-black mb-1">Transfer to BCA account:</p>
-            <p className="text-[13px] text-[#6b6b6b]">Account No.: <span className="font-medium text-black">1234567890</span></p>
-            <p className="text-[13px] text-[#6b6b6b]">Account Name: <span className="font-medium text-black">Tokonesia Indonesia</span></p>
-            <p className="text-[12px] text-[#6b6b6b] mt-2">After transferring, please confirm payment to our team.</p>
+            <p className="text-[11px] text-[#6b6b6b] uppercase tracking-wider mb-2">Payment</p>
+            <p className="text-[13px] text-[#6b6b6b]">
+              Your payment has been submitted via Midtrans. You will receive a confirmation email once it is verified.
+            </p>
           </div>
 
           {/* Divider */}

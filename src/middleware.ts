@@ -1,42 +1,31 @@
 import { NextResponse, type NextRequest } from "next/server";
-
-// =============================================================================
-// Next.js Middleware — Route Protection
-// =============================================================================
-// Currently: allows all requests (mock mode)
-// Future: validate Supabase session and redirect unauthenticated users
-// =============================================================================
-
-// Routes that require authentication
-const PROTECTED_ROUTES = ["/profile", "/checkout"];
-
-// Routes that should redirect logged-in users (e.g., login/register)
-const AUTH_ROUTES = ["/login", "/register", "/complete-data"];
+import { updateSession } from "@/lib/supabase/middleware";
+import { getRoutingDecision, type AuthState } from "@/lib/middleware-routing";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Future: Check Supabase session
-  // const supabase = createServerClient(...)
-  // const { data: { user } } = await supabase.auth.getUser()
-  const user = null; // Mock: no session check yet
+  // Validate session and refresh cookies
+  const { user, supabaseResponse } = await updateSession(request);
 
-  // Check if the route is protected
-  const isProtectedRoute = PROTECTED_ROUTES.some((route) => pathname.startsWith(route));
-  const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
+  // Determine auth state
+  let authState: AuthState;
+  if (!user) {
+    authState = { authenticated: false };
+  } else {
+    const role = (user.app_metadata?.role as 'user' | 'admin') || 'user';
+    authState = { authenticated: true, role };
+  }
 
-  // Future: Uncomment these redirects when Supabase Auth is active
-  // if (isProtectedRoute && !user) {
-  //   const loginUrl = new URL("/login", request.url);
-  //   loginUrl.searchParams.set("redirect", pathname);
-  //   return NextResponse.redirect(loginUrl);
-  // }
+  // Get routing decision from pure routing logic
+  const decision = getRoutingDecision(pathname, authState);
 
-  // if (isAuthRoute && user) {
-  //   return NextResponse.redirect(new URL("/", request.url));
-  // }
+  if (decision.action === 'redirect') {
+    return NextResponse.redirect(new URL(decision.to, request.url));
+  }
 
-  return NextResponse.next();
+  // Allow — return supabaseResponse which has refreshed cookies
+  return supabaseResponse;
 }
 
 export const config = {

@@ -3,24 +3,38 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/auth-context";
+import { resolveImagePath } from "@/lib/image-paths";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { register, isLoading } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/complete-data");
+    setError(null);
+    if (password !== confirm) {
+      setError("Passwords do not match");
+      return;
+    }
+    const result = await register(name, email, password);
+    if (result.success) {
+      router.push("/complete-data");
+    } else {
+      setError(result.error || "Registration failed");
+    }
   };
 
   return (
     <div className="bg-[#FDF9F5] min-h-screen flex items-center justify-center p-4">
       <div className="flex max-w-[906px] w-full shadow-lg">
         <div className="hidden md:block w-[448px] h-[675px] relative overflow-hidden">
-          <img alt="" className="absolute h-[148.01%] left-[-111.31%] max-w-none top-[-23.71%] w-[396.5%]" src="/images/Register/fbb1676fb1e714ce082c8512433c9a5517bce894.png" />
+          <img alt="" className="absolute h-[148.01%] left-[-111.31%] max-w-none top-[-23.71%] w-[396.5%]" src={resolveImagePath("/images/Register/fbb1676fb1e714ce082c8512433c9a5517bce894.png")} />
         </div>
         <div className="bg-white flex-1 p-16 flex flex-col justify-center min-h-[675px]">
           <h1 className="font-['Inter:Bold',sans-serif] font-bold text-[26px] text-black">CREATE YOUR ACCOUNT</h1>
@@ -45,8 +59,15 @@ export default function RegisterPage() {
                 <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="••••••••" className="w-full mt-2 bg-[#FDF9F5] border border-[#d8d0c8] rounded-[8px] px-4 py-3 font-['Manrope',sans-serif] text-[14px] placeholder-[rgba(47,37,29,0.5)] outline-none" />
               </div>
             </div>
-            <button type="submit" className="w-full bg-[#511e0b] text-white rounded-[8px] h-[53px] font-['Manrope',sans-serif] text-[14px] tracking-[1.4px] uppercase shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] cursor-pointer border-none hover:bg-[#3d1608] transition-colors">
-              CONTINUE REGISTER
+            {error && (
+              <p className="text-[#a24141] font-['Manrope',sans-serif] text-[13px] text-center">{error}</p>
+            )}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-[#511e0b] text-white rounded-[8px] h-[53px] font-['Manrope',sans-serif] text-[14px] tracking-[1.4px] uppercase shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] cursor-pointer border-none hover:bg-[#3d1608] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isLoading ? "Loading..." : "CONTINUE REGISTER"}
             </button>
           </form>
 

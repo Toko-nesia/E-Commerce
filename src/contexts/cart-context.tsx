@@ -17,6 +17,8 @@ interface CartContextType {
   items: CartItem[];
   totalItems: number;
   totalPrice: number;
+  totalWeight: number;
+  canCheckout: boolean;
   addToCart: (product: Product, qty?: number) => void;
   removeFromCart: (productId: number) => void;
   updateQty: (productId: number, qty: number) => void;
@@ -86,10 +88,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     (sum, item) => sum + item.product.price_raw * item.qty,
     0,
   );
+  const totalWeight = items.reduce(
+    (sum, item) => sum + (item.product.weight_kg ?? 0) * item.qty,
+    0,
+  );
+  const canCheckout = totalWeight >= 21;
 
   return (
     <CartContext.Provider
-      value={{ items, totalItems, totalPrice, addToCart, removeFromCart, updateQty, clearCart }}
+      value={{ items, totalItems, totalPrice, totalWeight, canCheckout, addToCart, removeFromCart, updateQty, clearCart }}
     >
       {children}
     </CartContext.Provider>
