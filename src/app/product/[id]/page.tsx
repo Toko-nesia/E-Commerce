@@ -83,7 +83,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     <PageWrapper>
       <div className="max-w-[1200px] mx-auto px-6 md:px-8 py-8">
         {/* Breadcrumb */}
-        <Link href="/shop" className="inline-flex items-center gap-1 text-[13px] text-[#a6a6a6] hover:text-[#511e0b] transition-colors no-underline mb-6">
+        <Link href="/shop" className="inline-flex items-center gap-1 text-[13px] text-[#6b6b6b] hover:text-[#511e0b] transition-colors no-underline mb-6">
           <ArrowLeft size={14} />
           Kembali ke toko
         </Link>
@@ -101,7 +101,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <p className="font-bold text-[28px] text-[#eb0d0d] mt-2">{product.price}</p>
 
             {/* Stock info */}
-            <p className="text-[14px] text-[#a6a6a6] mt-1">
+            <p className="text-[14px] text-[#6b6b6b] mt-1">
               Stok: <span className="text-[#511e0b] font-medium">{product.stock}</span>
             </p>
 
@@ -110,11 +110,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <Truck size={18} className="text-[#15A15B] mt-0.5 shrink-0" />
               <div>
                 <p className="text-[14px] text-[#511e0b] font-medium">Estimasi tiba: {shipping.estimatedDelivery}</p>
-                <p className="text-[13px] text-[#a6a6a6] mt-0.5">Minimum berat {shipping.minWeight} per pengiriman</p>
+                <p className="text-[13px] text-[#6b6b6b] mt-0.5">Minimum berat {shipping.minWeight} per pengiriman</p>
               </div>
               <button
                 onClick={() => setShowShippingModal(true)}
-                className="text-[#a6a6a6] bg-transparent border-none cursor-pointer p-0 ml-1"
+                className="text-[#6b6b6b] bg-transparent border-none cursor-pointer p-0 ml-1"
               >
                 <ChevronRight size={16} />
               </button>
@@ -151,12 +151,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         </div>
 
         {/* Specification */}
-        <div className="mt-12 border-t border-[#ececec] pt-8">
+        <div className="mt-12 border-t border-[#d5d5d5] pt-8">
           <h2 className="font-bold text-[19px] text-[#511e0b]">Spesifikasi Produk</h2>
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2">
             {specifications.map(([label, value]) => (
-              <div key={label} className="flex gap-4 py-2 border-b border-[#f0f0f0]">
-                <span className="text-[14px] text-[#a6a6a6] w-[140px] shrink-0">{label}</span>
+              <div key={label} className="flex gap-4 py-2 border-b border-[#e0e0e0]">
+                <span className="text-[14px] text-[#6b6b6b] w-[140px] shrink-0">{label}</span>
                 <span className="text-[14px] text-[#511e0b] font-medium">{value}</span>
               </div>
             ))}
@@ -179,23 +179,23 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         </div>
 
         {/* Shipping Detail */}
-        <div className="mt-10 border-t border-[#ececec] pt-8">
+        <div className="mt-10 border-t border-[#d5d5d5] pt-8">
           <h2 className="font-bold text-[19px] text-[#511e0b]">Detail Pengiriman</h2>
           <div className="mt-4 space-y-4">
             <div className="flex items-start gap-3">
-              <MapPin size={18} className="text-[#a6a6a6] mt-0.5 shrink-0" />
+              <MapPin size={18} className="text-[#6b6b6b] mt-0.5 shrink-0" />
               <p className="text-[14px] text-gray-700">Dikirim dari <span className="font-medium text-[#511e0b]">{shipping.origin}</span></p>            </div>
             <div className="flex items-start gap-3">
-              <Box size={18} className="text-[#a6a6a6] mt-0.5 shrink-0" />
+              <Box size={18} className="text-[#6b6b6b] mt-0.5 shrink-0" />
               <div>
                 <p className="text-[14px] text-gray-700">Minimum <span className="font-medium">{shipping.minWeight}</span> per pengiriman</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <Truck size={18} className="text-[#a6a6a6] mt-0.5 shrink-0" />
+              <Truck size={18} className="text-[#6b6b6b] mt-0.5 shrink-0" />
               <div>
                 <p className="text-[14px] text-gray-700">Biaya pengiriman udara: <span className="font-medium text-[#511e0b]">{shipping.airPrice}</span></p>
-                <p className="text-[13px] text-[#a6a6a6] mt-0.5">Estimasi tiba: {shipping.estimatedDelivery}</p>
+                <p className="text-[13px] text-[#6b6b6b] mt-0.5">Estimasi tiba: {shipping.estimatedDelivery}</p>
               </div>
             </div>
             <button

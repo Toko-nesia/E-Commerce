@@ -104,7 +104,7 @@ export default function OrdersPage() {
       {/* ── White Card ────────────────────────────────────────────────── */}
       <div className="bg-white rounded shadow-[2px_2px_10px_rgba(0,0,0,0.25)] overflow-hidden">
         {/* Status Filter Tabs */}
-        <div className="flex items-center border-b border-[#EBEBEB]">
+        <div className="flex items-center border-b border-[#d0d0d0]">
           {STATUS_TABS.map((tab) => {
             const isActive = activeTab === tab.value;
             return (
@@ -112,10 +112,10 @@ export default function OrdersPage() {
                 key={tab.value}
                 type="button"
                 onClick={() => setActiveTab(tab.value)}
-                className={`px-4 py-3 text-[14px] cursor-pointer bg-transparent border-none transition-colors ${
+                className={`px-4 py-3 text-[13px] cursor-pointer bg-transparent border-none transition-colors ${
                   isActive
                     ? "border-b-2 border-[#511E0B] text-[#511E0B] font-bold"
-                    : "text-[#A6A6A6] hover:text-black"
+                    : "text-[#6b6b6b] hover:text-black"
                 }`}
               >
                 {tab.label}
@@ -127,29 +127,29 @@ export default function OrdersPage() {
         {/* Table */}
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#EBEBEB]">
-              <th className="text-left text-[14px] font-normal text-black px-4 py-3 whitespace-nowrap">
+            <tr className="border-b border-[#d0d0d0]">
+              <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3 whitespace-nowrap">
                 No. Pesanan
               </th>
-              <th className="text-left text-[14px] font-normal text-black px-4 py-3 whitespace-nowrap">
+              <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3 whitespace-nowrap">
                 Tanggal
               </th>
-              <th className="text-left text-[14px] font-normal text-black px-4 py-3 whitespace-nowrap">
+              <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3 whitespace-nowrap">
                 Pelanggan
               </th>
-              <th className="text-left text-[14px] font-normal text-black px-4 py-3">
+              <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3">
                 Produk
               </th>
-              <th className="text-left text-[14px] font-normal text-black px-4 py-3 whitespace-nowrap">
+              <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3 whitespace-nowrap">
                 Qty
               </th>
-              <th className="text-left text-[14px] font-normal text-black px-4 py-3 whitespace-nowrap">
+              <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3 whitespace-nowrap">
                 Total
               </th>
-              <th className="text-left text-[14px] font-normal text-black px-4 py-3">
+              <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3">
                 Status
               </th>
-              <th className="text-left text-[14px] font-normal text-black px-4 py-3">
+              <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3">
                 Aksi
               </th>
             </tr>
@@ -159,7 +159,7 @@ export default function OrdersPage() {
               <tr>
                 <td
                   colSpan={8}
-                  className="text-center text-[13px] text-[#A6A6A6] py-12"
+                  className="text-center text-[13px] text-[#6b6b6b] py-12"
                 >
                   Tidak ada pesanan ditemukan.
                 </td>
@@ -168,7 +168,7 @@ export default function OrdersPage() {
               filtered.map((order) => (
                 <tr
                   key={order.id}
-                  className="border-b border-[#EBEBEB] last:border-0 hover:bg-gray-50 transition-colors"
+                  className="border-b border-[#d0d0d0] last:border-0 hover:bg-gray-50 transition-colors"
                 >
                   {/* No. Pesanan */}
                   <td className="px-4 py-4 text-[13px] text-black font-medium whitespace-nowrap">
@@ -240,47 +240,47 @@ export default function OrdersPage() {
             <button
               type="button"
               onClick={() => setShowModal(false)}
-              className="absolute top-4 right-4 bg-transparent border-none cursor-pointer text-[#A6A6A6] hover:text-black transition-colors p-0"
+              className="absolute top-4 right-4 bg-transparent border-none cursor-pointer text-[#6b6b6b] hover:text-black transition-colors p-0"
               aria-label="Tutup modal"
             >
               <X size={20} />
             </button>
 
             {/* Title */}
-            <h2 className="font-bold text-[20px] mb-4">Detail Pesanan</h2>
+            <h2 className="font-bold text-[17px] mb-4">Detail Pesanan</h2>
 
             {/* Info Rows */}
-            <div className="grid grid-cols-[120px_1fr] gap-y-2 text-[14px]">
-              <span className="text-[#A6A6A6]">No. Pesanan</span>
+            <div className="grid grid-cols-[120px_1fr] gap-y-2 text-[13px]">
+              <span className="text-[#6b6b6b]">No. Pesanan</span>
               <span className="text-black font-medium">{selectedOrder.id}</span>
 
-              <span className="text-[#A6A6A6]">Tanggal</span>
+              <span className="text-[#6b6b6b]">Tanggal</span>
               <span className="text-black">{selectedOrder.date}</span>
 
-              <span className="text-[#A6A6A6]">Pelanggan</span>
+              <span className="text-[#6b6b6b]">Pelanggan</span>
               <span className="text-black">{selectedOrder.customer}</span>
 
-              <span className="text-[#A6A6A6]">Produk</span>
+              <span className="text-[#6b6b6b]">Produk</span>
               <span className="text-black">{selectedOrder.product}</span>
 
-              <span className="text-[#A6A6A6]">Qty</span>
+              <span className="text-[#6b6b6b]">Qty</span>
               <span className="text-black">{selectedOrder.qty}</span>
 
-              <span className="text-[#A6A6A6]">Total</span>
+              <span className="text-[#6b6b6b]">Total</span>
               <span className="text-black font-medium">
                 {selectedOrder.total}
               </span>
             </div>
 
             {/* Divider */}
-            <div className="border-t border-[#EBEBEB] my-4" />
+            <div className="border-t border-[#d0d0d0] my-4" />
 
             {/* Ubah Status */}
-            <p className="font-bold text-[14px] mb-2">Ubah Status</p>
+            <p className="font-bold text-[13px] mb-2">Ubah Status</p>
             <select
               value={newStatus}
               onChange={(e) => setNewStatus(e.target.value)}
-              className="border border-[#EBEBEB] rounded px-3 py-2 text-[14px] w-full outline-none focus:border-[#511E0B] bg-white cursor-pointer"
+              className="border border-[#d0d0d0] rounded px-3 py-2 text-[13px] w-full outline-none focus:border-[#511E0B] bg-white cursor-pointer"
             >
               <option value="BARU">BARU</option>
               <option value="DIPROSES">DIPROSES</option>

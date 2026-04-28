@@ -44,7 +44,7 @@ export default function CheckoutPage() {
   if (items.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#f8f8f8]">
-        <p className="text-[#a6a6a6] text-[16px]">Keranjang kamu kosong.</p>
+        <p className="text-[#6b6b6b] text-[16px]">Keranjang kamu kosong.</p>
         <Link href="/shop" className="text-[#511e0b] underline text-[15px]">
           Mulai belanja
         </Link>
@@ -74,7 +74,7 @@ export default function CheckoutPage() {
           </div>
           <div>
             <p className="text-[14px] text-black font-medium">Shop Protection</p>
-            <p className="text-[12px] text-[#a6a6a6]">Your purchase is secure and protected</p>
+            <p className="text-[12px] text-[#6b6b6b]">Your purchase is secure and protected</p>
           </div>
         </div>
       </header>
@@ -86,8 +86,8 @@ export default function CheckoutPage() {
           <h2 className="font-bold text-[22px] text-[#511e0b]">Alamat Pengiriman</h2>
           <div className="border border-[#511e0b] rounded-lg p-5 mt-3 relative bg-white">
             <p className="font-bold text-[16px] text-black">{currentAddress.name}</p>
-            <p className="text-[14px] text-[#a6a6a6] mt-1">{currentAddress.phone}</p>
-            <p className="text-[14px] text-[#a6a6a6]">{currentAddress.address}</p>            <button
+            <p className="text-[14px] text-[#6b6b6b] mt-1">{currentAddress.phone}</p>
+            <p className="text-[14px] text-[#6b6b6b]">{currentAddress.address}</p>            <button
               onClick={() => setAddressModal(true)}
               className="absolute top-4 right-4 bg-transparent border-none cursor-pointer p-0 text-[#511e0b] hover:text-black transition-colors"
             >
@@ -99,14 +99,14 @@ export default function CheckoutPage() {
           <h2 className="font-bold text-[22px] text-[#511e0b] mt-8">Pengiriman</h2>
           <div className="border border-[#511e0b] rounded-lg p-5 mt-3 bg-white">
             <p className="font-bold text-[15px] text-black">Air Shipping</p>
-            <p className="text-[14px] text-[#a6a6a6] mt-1">{formatRp(shipping)}</p>
-            <p className="text-[14px] text-[#a6a6a6]">Estimasi tiba Apr 12 - Jun 21</p>
+            <p className="text-[14px] text-[#6b6b6b] mt-1">{formatRp(shipping)}</p>
+            <p className="text-[14px] text-[#6b6b6b]">Estimasi tiba Apr 12 - Jun 21</p>
           </div>
 
           {/* Payment */}
           <h2 className="font-bold text-[22px] text-[#511e0b] mt-8">Pembayaran</h2>
           <div className="border border-[#511e0b] rounded-lg p-5 mt-3 flex items-center relative bg-white">
-            <div className="bg-[#ececec] border border-[#d9d9d9] rounded-lg w-20 h-12 flex items-center justify-center shrink-0">
+            <div className="bg-[#ececec] border border-[#b0b0b0] rounded-lg w-20 h-12 flex items-center justify-center shrink-0">
               <div className="relative overflow-hidden h-[19px] w-[69px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -132,14 +132,14 @@ export default function CheckoutPage() {
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="(Opsional) Tambahkan catatan untuk pesananmu"
-              className="text-[14px] text-[#a6a6a6] flex-1 bg-transparent border-none outline-none placeholder:text-[#c0c0c0]"
+              className="text-[14px] text-[#6b6b6b] flex-1 bg-transparent border-none outline-none placeholder:text-[#999999]"
             />
-            <Edit3 size={18} className="text-[#a6a6a6] shrink-0 ml-2" />
+            <Edit3 size={18} className="text-[#6b6b6b] shrink-0 ml-2" />
           </div>
         </div>
 
         {/* Right Column - Order Summary */}
-        <div className="w-full lg:w-[440px] bg-[#ececec] p-6 md:p-10 lg:min-h-[calc(100vh-80px)]">
+        <div className="w-full lg:w-[440px] bg-[#efefef] p-6 md:p-10 lg:min-h-[calc(100vh-80px)]">
           <h2 className="font-bold text-[22px] text-[#511e0b]">Pesanan</h2>
 
           {/* Cart Items */}
@@ -152,7 +152,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-[14px] text-black leading-snug line-clamp-2">{product.name}</p>
-                  <p className="text-[13px] text-[#a6a6a6] mt-0.5">{product.price} × {qty}</p>
+                  <p className="text-[13px] text-[#6b6b6b] mt-0.5">{product.price} × {qty}</p>
                   <p className="text-[13px] font-bold text-[#511e0b] mt-0.5">{formatRp(product.price_raw * qty)}</p>
                 </div>
               </div>
@@ -169,7 +169,7 @@ export default function CheckoutPage() {
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between">
                 <span className="text-[14px] text-black">{label}</span>
-                <span className="text-[14px] text-[#a6a6a6]">{value}</span>
+                <span className="text-[14px] text-[#6b6b6b]">{value}</span>
               </div>
             ))}
           </div>

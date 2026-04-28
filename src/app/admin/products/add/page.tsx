@@ -10,7 +10,7 @@ interface CustomSpec {
 }
 
 const inputClass =
-  "w-full border border-[#EBEBEB] rounded px-3 py-2 text-[14px] outline-none focus:border-[#511E0B] transition-colors placeholder:text-[#A6A6A6]";
+  "w-full border border-[#d0d0d0] rounded px-3 py-2 text-[14px] outline-none focus:border-[#511E0B] transition-colors placeholder:text-[#6b6b6b]";
 
 const labelClass = "block font-bold text-[14px] text-black mb-1.5";
 
@@ -122,10 +122,10 @@ export default function AddProductPage() {
           <h1 className="font-bold text-[20px] text-black">
             Tambah Produk Baru
           </h1>
-          <p className="text-[#A6A6A6] text-[13px] mt-1">
+          <p className="text-[#6b6b6b] text-[13px] mt-1">
             Masukkan foto, nama, harga, stok, deskripsi produk.
           </p>
-          <hr className="border-[#EBEBEB] mt-4" />
+          <hr className="border-[#d0d0d0] mt-4" />
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -140,7 +140,7 @@ export default function AddProductPage() {
                   <RequiredStar />
                 </label>
                 <label className="cursor-pointer inline-block">
-                  <div className="w-[82px] h-[82px] border border-dashed border-[#EBEBEB] rounded flex flex-col items-center justify-center gap-1 bg-gray-50 hover:bg-gray-100 transition-colors overflow-hidden">
+                  <div className="w-[82px] h-[82px] border border-dashed border-[#d0d0d0] rounded flex flex-col items-center justify-center gap-1 bg-gray-50 hover:bg-gray-100 transition-colors overflow-hidden">
                     {photoPreview ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -150,8 +150,8 @@ export default function AddProductPage() {
                       />
                     ) : (
                       <>
-                        <Camera size={22} className="text-[#A6A6A6]" />
-                        <span className="text-[11px] text-[#A6A6A6] text-center leading-tight px-1">
+                        <Camera size={22} className="text-[#6b6b6b]" />
+                        <span className="text-[11px] text-[#6b6b6b] text-center leading-tight px-1">
                           Tambahkan foto
                         </span>
                       </>
@@ -312,7 +312,7 @@ export default function AddProductPage() {
               </div>
 
               {/* Divider */}
-              <div className="mt-4 border-t border-[#EBEBEB]" />
+              <div className="mt-4 border-t border-[#d0d0d0]" />
 
               {/* Add custom spec button */}
               <button

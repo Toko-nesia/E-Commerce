@@ -64,14 +64,14 @@ export default function ShopPage() {
           {/* Sidebar */}
           <aside className={`${mobileSidebarOpen ? "block" : "hidden"} md:block w-full md:w-[220px] shrink-0`}>
             {/* Search */}
-            <div className="bg-white rounded-xl border border-[#d9d9d9] flex items-center px-4 py-2.5 gap-2 shadow-sm">
-              <Search size={15} className="text-[#a6a6a6] shrink-0" />
+            <div className="bg-white rounded-xl border border-[#b0b0b0] flex items-center px-4 py-2.5 gap-2 shadow-sm">
+              <Search size={15} className="text-[#6b6b6b] shrink-0" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
                 placeholder="Cari produk..."
-                className="flex-1 text-[14px] text-[#511e0b] bg-transparent border-none outline-none placeholder:text-[#c0c0c0]"
+                className="flex-1 text-[14px] text-[#511e0b] bg-transparent border-none outline-none placeholder:text-[#999999]"
               />
             </div>
 
@@ -103,7 +103,7 @@ export default function ShopPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
               <div>
                 <h1 className="font-bold text-[28px] md:text-[32px] text-[#511e0b]">Semua Produk</h1>
-                <p className="text-[13px] text-[#a6a6a6] mt-0.5">
+                <p className="text-[13px] text-[#6b6b6b] mt-0.5">
                   Menampilkan {Math.min((currentPage - 1) * PRODUCTS_PER_PAGE + 1, filtered.length)}–{Math.min(currentPage * PRODUCTS_PER_PAGE, filtered.length)} dari {filtered.length} produk
                 </p>
               </div>
@@ -112,13 +112,13 @@ export default function ShopPage() {
               <div className="relative shrink-0">
                 <button
                   onClick={() => setShowSortMenu((v) => !v)}
-                  className="flex items-center gap-2 text-[13px] text-[#511e0b] bg-white border border-[#d9d9d9] rounded-lg px-4 py-2 cursor-pointer hover:border-[#511e0b] transition-colors"
+                  className="flex items-center gap-2 text-[13px] text-[#511e0b] bg-white border border-[#b0b0b0] rounded-lg px-4 py-2 cursor-pointer hover:border-[#511e0b] transition-colors"
                 >
                   Urutkan: <span className="font-medium">{currentSortLabel}</span>
                   <ChevronDown size={14} />
                 </button>
                 {showSortMenu && (
-                  <div className="absolute right-0 top-10 bg-white border border-[#ececec] rounded-xl shadow-lg z-10 min-w-[160px] overflow-hidden">
+                  <div className="absolute right-0 top-10 bg-white border border-[#d5d5d5] rounded-xl shadow-lg z-10 min-w-[160px] overflow-hidden">
                     {SORT_OPTIONS.map((opt) => (
                       <button
                         key={opt.value}
@@ -136,7 +136,7 @@ export default function ShopPage() {
           {/* Product Grid */}
             {paginated.length === 0 ? (
               <div className="text-center py-24">
-                <p className="text-[#a6a6a6] text-[15px]">Produk tidak ditemukan untuk &ldquo;{searchQuery}&rdquo;</p>
+                <p className="text-[#6b6b6b] text-[15px]">Produk tidak ditemukan untuk &ldquo;{searchQuery}&rdquo;</p>
                 <button onClick={() => handleSearch("")} className="mt-3 text-[#511e0b] underline text-[13px] bg-transparent border-none cursor-pointer">
                   Reset pencarian
                 </button>
@@ -145,7 +145,7 @@ export default function ShopPage() {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {paginated.map((p) => (
                   <Link href={`/product/${p.id}`} key={p.id} className="no-underline group">
-                    <div className="bg-white rounded-xl overflow-hidden border border-[#f0f0f0] hover:shadow-md transition-all duration-200 group-hover:-translate-y-0.5 flex flex-col h-full">
+                    <div className="bg-white rounded-xl overflow-hidden border border-[#e0e0e0] hover:shadow-md transition-all duration-200 group-hover:-translate-y-0.5 flex flex-col h-full">
                       <div className="relative w-full aspect-[4/3] bg-[#f8f8f8] overflow-hidden">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
@@ -158,10 +158,10 @@ export default function ShopPage() {
                         </div>
                       </div>
                       <div className="p-3 flex flex-col flex-1">
-                        <p className="text-[12px] text-[#a6a6a6] uppercase tracking-wider">{p.category}</p>
+                        <p className="text-[12px] text-[#6b6b6b] uppercase tracking-wider">{p.category}</p>
                         <p className="font-bold text-[14px] text-black mt-1 line-clamp-2 leading-snug flex-1">{p.name}</p>
                         <p className="font-bold text-[15px] text-[#511e0b] mt-1">{p.price}</p>
-                        <p className="text-[12px] text-[#a6a6a6] mt-0.5">Stok: {p.stock}</p>
+                        <p className="text-[12px] text-[#6b6b6b] mt-0.5">Stok: {p.stock}</p>
                       </div>
                     </div>
                   </Link>
@@ -175,7 +175,7 @@ export default function ShopPage() {
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="w-9 h-9 rounded-lg border border-[#d9d9d9] text-[14px] font-medium flex items-center justify-center bg-white cursor-pointer hover:border-[#511e0b] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-9 h-9 rounded-lg border border-[#b0b0b0] text-[14px] font-medium flex items-center justify-center bg-white cursor-pointer hover:border-[#511e0b] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   ←
                 </button>
@@ -186,7 +186,7 @@ export default function ShopPage() {
                     className={`w-9 h-9 rounded-lg text-[14px] font-bold flex items-center justify-center cursor-pointer border transition-colors ${
                       page === currentPage
                         ? "bg-[#511e0b] text-white border-[#511e0b]"
-                        : "bg-white text-black border-[#d9d9d9] hover:border-[#511e0b]"
+                        : "bg-white text-black border-[#b0b0b0] hover:border-[#511e0b]"
                     }`}
                   >
                     {page}
@@ -195,7 +195,7 @@ export default function ShopPage() {
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="w-9 h-9 rounded-lg border border-[#d9d9d9] text-[14px] font-medium flex items-center justify-center bg-white cursor-pointer hover:border-[#511e0b] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-9 h-9 rounded-lg border border-[#b0b0b0] text-[14px] font-medium flex items-center justify-center bg-white cursor-pointer hover:border-[#511e0b] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   →
                 </button>

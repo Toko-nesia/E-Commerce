@@ -49,27 +49,27 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-[#F8F8F8]">
       {/* ── Fixed Header ─────────────────────────────────────────────── */}
-      <header className="fixed top-0 left-0 right-0 z-50 h-24 bg-white shadow-[0_2px_10px_rgba(0,0,0,0.25)] flex items-center">
+      <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-white shadow-[0_2px_10px_rgba(0,0,0,0.15)] flex items-center">
         {/* Logo — aligns with sidebar width */}
         <div className="w-[211px] flex-shrink-0 flex items-center justify-center gap-1 px-4">
           <Link href="/admin" className="flex items-center gap-1 no-underline">
-            <span className="font-bold text-[18px] text-black">トコネシア</span>
+            <span className="font-bold text-[15px] text-black">トコネシア</span>
             <span className="text-gray-300 font-light px-1">|</span>
-            <span className="font-bold text-[18px] text-[#BA2F2F]">Tokonesia</span>
+            <span className="font-bold text-[15px] text-[#BA2F2F]">Tokonesia</span>
           </Link>
         </div>
 
         {/* Vertical red divider */}
-        <div className="w-px h-[22px] bg-[#BA2F2F] flex-shrink-0" />
+        <div className="w-px h-[18px] bg-[#BA2F2F] flex-shrink-0" />
 
         {/* Breadcrumb */}
         <div className="flex-1 flex items-center px-6">
-          <p className="text-[14px] text-gray-600">{breadcrumb}</p>
+          <p className="text-[13px] text-gray-500">{breadcrumb}</p>
         </div>
       </header>
 
       {/* ── Fixed Sidebar ────────────────────────────────────────────── */}
-      <aside className="fixed top-24 left-0 bottom-0 w-[211px] bg-white shadow-[2px_2px_10px_rgba(0,0,0,0.25)] z-40 overflow-y-auto">
+      <aside className="fixed top-16 left-0 bottom-0 w-[211px] bg-white shadow-[2px_2px_10px_rgba(0,0,0,0.15)] z-40 overflow-y-auto">
         <nav className="py-4">
           {/* Dashboard */}
           <Link
@@ -174,8 +174,8 @@ export default function AdminLayout({
       </aside>
 
       {/* ── Scrollable Main Content ───────────────────────────────────── */}
-      <main className="ml-[211px] pt-24">
-        <div className="p-6 min-h-[calc(100vh-96px)]">{children}</div>
+      <main className="ml-[211px] pt-16">
+        <div className="p-6 min-h-[calc(100vh-64px)]">{children}</div>
       </main>
     </div>
   );

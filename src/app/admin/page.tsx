@@ -40,23 +40,23 @@ export default function AdminDashboardPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {stats.map((stat) => (
-          <div key={stat.label} className="bg-white rounded-xl shadow-sm border border-[#EBEBEB] p-5">
+          <div key={stat.label} className="bg-white rounded-xl shadow-sm border border-[#d0d0d0] p-5">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[13px] text-[#A6A6A6]">{stat.label}</p>
+              <p className="text-[13px] text-[#6b6b6b]">{stat.label}</p>
               <div className={`rounded-lg p-2 ${stat.color}`}>
                 <stat.icon size={18} />
               </div>
             </div>
-            <p className="font-bold text-[28px] text-black">{stat.value}</p>
+            <p className="font-bold text-[22px] text-black">{stat.value}</p>
           </div>
         ))}
       </div>
 
       {/* Recent Orders */}
-      <div className="bg-white rounded-xl shadow-sm border border-[#EBEBEB] overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#EBEBEB]">
+      <div className="bg-white rounded-xl shadow-sm border border-[#d0d0d0] overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#d0d0d0]">
           <div className="flex items-center gap-2">
-            <Clock size={16} className="text-[#A6A6A6]" />
+            <Clock size={16} className="text-[#6b6b6b]" />
             <h2 className="font-bold text-[15px] text-black">Pesanan Terbaru</h2>
           </div>
           <a href="/admin/orders" className="text-[13px] text-[#511E0B] hover:underline">
@@ -66,9 +66,9 @@ export default function AdminDashboardPage() {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[#EBEBEB] bg-[#fafafa]">
+              <tr className="border-b border-[#d0d0d0] bg-[#fafafa]">
                 {["No. Pesanan", "Pelanggan", "Produk", "Total", "Status", "Tanggal"].map((h) => (
-                  <th key={h} className="text-left text-[13px] font-medium text-[#A6A6A6] px-4 py-3 whitespace-nowrap">
+                  <th key={h} className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3 whitespace-nowrap">
                     {h}
                   </th>
                 ))}
@@ -76,7 +76,7 @@ export default function AdminDashboardPage() {
             </thead>
             <tbody>
               {recentOrders.map((order) => (
-                <tr key={order.id} className="border-b border-[#EBEBEB] last:border-0 hover:bg-gray-50 transition-colors">
+                <tr key={order.id} className="border-b border-[#d0d0d0] last:border-0 hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3 text-[13px] font-medium text-[#511E0B]">{order.id}</td>
                   <td className="px-4 py-3 text-[13px] text-black whitespace-nowrap">{order.customer}</td>
                   <td className="px-4 py-3 text-[13px] text-black max-w-[180px]">
@@ -88,7 +88,7 @@ export default function AdminDashboardPage() {
                       {order.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-[13px] text-[#A6A6A6] whitespace-nowrap">{order.date}</td>
+                  <td className="px-4 py-3 text-[13px] text-[#6b6b6b] whitespace-nowrap">{order.date}</td>
                 </tr>
               ))}
             </tbody>

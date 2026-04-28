@@ -13,7 +13,7 @@ interface CustomSpec {
 }
 
 const inputClass =
-  "w-full border border-[#EBEBEB] rounded px-3 py-2 text-[14px] outline-none focus:border-[#511E0B] transition-colors placeholder:text-[#A6A6A6]";
+  "w-full border border-[#d0d0d0] rounded px-3 py-2 text-[14px] outline-none focus:border-[#511E0B] transition-colors placeholder:text-[#6b6b6b]";
 
 const labelClass = "block font-bold text-[14px] text-black mb-1.5";
 
@@ -28,7 +28,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   if (!product) {
     return (
       <div className="text-center py-24">
-        <p className="text-[16px] text-[#A6A6A6] mb-4">Produk tidak ditemukan.</p>
+        <p className="text-[16px] text-[#6b6b6b] mb-4">Produk tidak ditemukan.</p>
         <Link href="/admin/products" className="text-[#511E0B] underline text-[14px]">
           ← Kembali ke Produk
         </Link>
@@ -107,7 +107,7 @@ function EditForm({
       {/* Back link */}
       <Link
         href="/admin/products"
-        className="inline-flex items-center gap-1.5 text-[13px] text-[#A6A6A6] hover:text-[#511E0B] transition-colors mb-5 no-underline"
+        className="inline-flex items-center gap-1.5 text-[13px] text-[#6b6b6b] hover:text-[#511E0B] transition-colors mb-5 no-underline"
       >
         <ArrowLeft size={14} />
         Kembali ke Produk
@@ -118,10 +118,10 @@ function EditForm({
         {/* Card Header */}
         <div>
           <h1 className="font-bold text-[20px] text-black">Edit Produk</h1>
-          <p className="text-[#A6A6A6] text-[13px] mt-1">
+          <p className="text-[#6b6b6b] text-[13px] mt-1">
             ID Produk: <span className="font-medium text-black">{3172860 + product.id}</span>
           </p>
-          <hr className="border-[#EBEBEB] mt-4" />
+          <hr className="border-[#d0d0d0] mt-4" />
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -136,14 +136,14 @@ function EditForm({
                   <RequiredStar />
                 </label>
                 <label className="cursor-pointer inline-block">
-                  <div className="w-[82px] h-[82px] border border-dashed border-[#EBEBEB] rounded flex flex-col items-center justify-center gap-1 bg-gray-50 hover:bg-gray-100 transition-colors overflow-hidden relative">
+                  <div className="w-[82px] h-[82px] border border-dashed border-[#d0d0d0] rounded flex flex-col items-center justify-center gap-1 bg-gray-50 hover:bg-gray-100 transition-colors overflow-hidden relative">
                     {photoPreview ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
                       <>
-                        <Camera size={22} className="text-[#A6A6A6]" />
-                        <span className="text-[11px] text-[#A6A6A6] text-center leading-tight px-1">
+                        <Camera size={22} className="text-[#6b6b6b]" />
+                        <span className="text-[11px] text-[#6b6b6b] text-center leading-tight px-1">
                           Tambahkan foto
                         </span>
                       </>
@@ -281,7 +281,7 @@ function EditForm({
                 ))}
               </div>
 
-              <div className="mt-4 border-t border-[#EBEBEB]" />
+              <div className="mt-4 border-t border-[#d0d0d0]" />
               <button
                 type="button"
                 onClick={addCustomSpec}
@@ -298,7 +298,7 @@ function EditForm({
             <button
               type="button"
               onClick={() => router.push("/admin/products")}
-              className="border border-[#EBEBEB] text-black rounded px-6 py-3 font-medium text-[14px] hover:bg-gray-50 transition-colors cursor-pointer bg-white"
+              className="border border-[#d0d0d0] text-black rounded px-6 py-3 font-medium text-[14px] hover:bg-gray-50 transition-colors cursor-pointer bg-white"
             >
               Batalkan
             </button>

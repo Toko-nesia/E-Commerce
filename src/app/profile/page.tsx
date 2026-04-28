@@ -74,7 +74,7 @@ export default function ProfilePage() {
               <input ref={fileRef} type="file" accept="image/*" className="sr-only" onChange={handleAvatarChange} />
             </div>
             <p className="font-bold text-[17px] text-black mt-3">{fullName}</p>
-            <p className="text-[13px] text-[#a6a6a6]">{email}</p>
+            <p className="text-[13px] text-[#6b6b6b]">{email}</p>
           </div>
 
           {/* Tab nav — horizontal on mobile, vertical on desktop */}
@@ -111,27 +111,27 @@ export default function ProfilePage() {
               <h2 className="font-bold text-[24px] text-black mb-6">Profil Saya</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-[12px] text-[#a6a6a6] tracking-widest uppercase mb-1.5">Nama Lengkap</label>
+                  <label className="block text-[12px] text-[#6b6b6b] tracking-widest uppercase mb-1.5">Nama Lengkap</label>
                   <input
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="w-full border border-[#d9d9d9] rounded-lg px-4 py-3 text-[14px] text-black outline-none focus:border-[#511e0b] transition-colors"
+                    className="w-full border border-[#b0b0b0] rounded-lg px-4 py-3 text-[14px] text-black outline-none focus:border-[#511e0b] transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-[12px] text-[#a6a6a6] tracking-widest uppercase mb-1.5">Alamat Email</label>
+                  <label className="block text-[12px] text-[#6b6b6b] tracking-widest uppercase mb-1.5">Alamat Email</label>
                   <input
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full border border-[#d9d9d9] rounded-lg px-4 py-3 text-[14px] text-black outline-none focus:border-[#511e0b] transition-colors"
+                    className="w-full border border-[#b0b0b0] rounded-lg px-4 py-3 text-[14px] text-black outline-none focus:border-[#511e0b] transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-[12px] text-[#a6a6a6] tracking-widest uppercase mb-1.5">Nomor Telepon</label>
+                  <label className="block text-[12px] text-[#6b6b6b] tracking-widest uppercase mb-1.5">Nomor Telepon</label>
                   <input
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
-                    className="w-full border border-[#d9d9d9] rounded-lg px-4 py-3 text-[14px] text-black outline-none focus:border-[#511e0b] transition-colors"
+                    className="w-full border border-[#b0b0b0] rounded-lg px-4 py-3 text-[14px] text-black outline-none focus:border-[#511e0b] transition-colors"
                   />
                 </div>
               </div>
@@ -147,14 +147,14 @@ export default function ProfilePage() {
           {activeTab === "orders" && (
             <section>
               <h2 className="font-bold text-[24px] text-black mb-6">Riwayat Pesanan</h2>
-              <div className="border border-[#d9d9d9] rounded-xl overflow-hidden">
+              <div className="border border-[#b0b0b0] rounded-xl overflow-hidden">
                 <div className="grid grid-cols-5 bg-[#f5f5f5] px-5 py-3">
                   {["ID PESANAN", "TANGGAL", "STATUS", "TOTAL", "AKSI"].map((h) => (
-                    <span key={h} className="font-bold text-[11px] text-[#a6a6a6] tracking-wider">{h}</span>
+                    <span key={h} className="font-bold text-[11px] text-[#6b6b6b] tracking-wider">{h}</span>
                   ))}
                 </div>
                 {orderHistory.map((order) => (
-                  <div key={order.id} className="grid grid-cols-5 px-5 py-4 border-t border-[#ececec] items-center hover:bg-gray-50 transition-colors">
+                  <div key={order.id} className="grid grid-cols-5 px-5 py-4 border-t border-[#d5d5d5] items-center hover:bg-gray-50 transition-colors">
                     <span key={order.id} className="font-bold text-[13px] text-[#511e0b]">{order.id}</span>
                     <span className="text-[13px] text-black">{order.date}</span>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-[12px] font-bold w-fit ${STATUS_COLOR[order.status] ?? "bg-gray-100 text-gray-500"}`}>
@@ -163,7 +163,7 @@ export default function ProfilePage() {
                     <span className="text-[13px] text-black">{order.total_price}</span>
                     <button
                       onClick={() => setSelectedOrder(order)}
-                      className="bg-transparent border-none cursor-pointer p-0 w-fit hover:text-[#511e0b] transition-colors text-[#a6a6a6]"
+                      className="bg-transparent border-none cursor-pointer p-0 w-fit hover:text-[#511e0b] transition-colors text-[#6b6b6b]"
                       aria-label="Lihat detail"
                     >
                       <Eye size={18} />
@@ -171,7 +171,7 @@ export default function ProfilePage() {
                   </div>
                 ))}
                 {orderHistory.length === 0 && (
-                  <div className="px-5 py-12 text-center text-[13px] text-[#a6a6a6]">Belum ada pesanan.</div>
+                  <div className="px-5 py-12 text-center text-[13px] text-[#6b6b6b]">Belum ada pesanan.</div>
                 )}
               </div>
             </section>
@@ -189,27 +189,27 @@ export default function ProfilePage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {savedAddresses.map((addr) => (
-                  <div key={addr.id} className="border border-[#d9d9d9] rounded-xl p-5 relative">
+                  <div key={addr.id} className="border border-[#b0b0b0] rounded-xl p-5 relative">
                     <div className="flex items-center gap-2 mb-3 pr-8">
                       <span className="bg-[#511e0b] text-white px-2 py-0.5 rounded text-[10px] font-bold tracking-wider">{addr.label}</span>
                     </div>
                     <p className="font-medium text-[15px] text-black">{addr.name}</p>
-                    <p className="text-[13px] text-[#a6a6a6] mt-0.5 leading-relaxed">{addr.address}</p>
+                    <p className="text-[13px] text-[#6b6b6b] mt-0.5 leading-relaxed">{addr.address}</p>
                     <div className="flex items-center gap-1 mt-2">
-                      <Phone size={11} className="text-[#a6a6a6]" />
-                      <span className="text-[13px] text-[#a6a6a6]">{addr.phone}</span>
+                      <Phone size={11} className="text-[#6b6b6b]" />
+                      <span className="text-[13px] text-[#6b6b6b]">{addr.phone}</span>
                     </div>
 
                     {/* MoreVertical menu */}
                     <div className="absolute top-4 right-4">
                       <button
                         onClick={() => setOpenAddressMenu(openAddressMenu === addr.id ? null : addr.id)}
-                        className="text-[#a6a6a6] hover:text-black transition-colors bg-transparent border-none cursor-pointer p-0"
+                        className="text-[#6b6b6b] hover:text-black transition-colors bg-transparent border-none cursor-pointer p-0"
                       >
                         <MoreVertical size={16} />
                       </button>
                       {openAddressMenu === addr.id && (
-                        <div className="absolute right-0 top-6 bg-white border border-[#ececec] rounded-lg shadow-lg z-10 min-w-[120px] overflow-hidden">
+                        <div className="absolute right-0 top-6 bg-white border border-[#d5d5d5] rounded-lg shadow-lg z-10 min-w-[120px] overflow-hidden">
                           <button className="w-full text-left px-4 py-2.5 text-[13px] text-black hover:bg-[#f5f0ea] flex items-center gap-2 bg-transparent border-none cursor-pointer">
                             <Edit3 size={13} />
                             Edit
@@ -235,7 +235,7 @@ export default function ProfilePage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-[440px] p-8" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-bold text-[18px] text-black">Detail Pesanan</h3>
-              <button onClick={() => setSelectedOrder(null)} className="text-[#a6a6a6] hover:text-black bg-transparent border-none cursor-pointer p-0">
+              <button onClick={() => setSelectedOrder(null)} className="text-[#6b6b6b] hover:text-black bg-transparent border-none cursor-pointer p-0">
                 <X size={20} />
               </button>
             </div>
@@ -247,7 +247,7 @@ export default function ProfilePage() {
                 ["Total", selectedOrder.total_price],
               ].map(([label, value]) => (
                 <div key={label} className="flex justify-between text-[14px]">
-                  <span className="text-[#a6a6a6]">{label}</span>
+                  <span className="text-[#6b6b6b]">{label}</span>
                   <span className="font-medium text-black">{value}</span>
                 </div>
               ))}

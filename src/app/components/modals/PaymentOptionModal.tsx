@@ -13,13 +13,13 @@ interface PaymentOptionModalProps {
 export function PaymentOptionModal({ isOpen, onClose, selected, onSelect }: PaymentOptionModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      <div className="p-8 pt-7">
-        <h2 className="font-['Inter:Bold',sans-serif] font-bold text-[32px] text-black text-center tracking-[-0.96px]">Payment Option</h2>
-        <div className="mt-10 space-y-0">
+      <div className="p-6 pt-5">
+        <h2 className="font-bold text-[18px] text-black text-center">Payment Option</h2>
+        <div className="mt-6 space-y-0">
           {paymentMethods.map((method, i) => (
             <div key={method.id}>
-              <div className="flex items-center py-5 cursor-pointer" onClick={() => { onSelect(method.id); onClose(); }}>
-                <div className="bg-[#ececec] border-[#511e0b] border-[0.5px] border-solid rounded-[8px] w-[91px] h-[57px] flex items-center justify-center shrink-0">
+              <div className="flex items-center py-4 cursor-pointer" onClick={() => { onSelect(method.id); onClose(); }}>
+                <div className="bg-[#e0e0e0] border-[#511e0b] border border-solid rounded-lg w-[80px] h-[48px] flex items-center justify-center shrink-0">
                   <div className={`relative overflow-hidden ${method.img_style}`}>
                     {method.overflow ? (
                       <img alt={method.name} className={`absolute max-w-none ${method.overflow_style}`} src={method.img} />
@@ -28,12 +28,12 @@ export function PaymentOptionModal({ isOpen, onClose, selected, onSelect }: Paym
                     )}
                   </div>
                 </div>
-                <p className="font-['Inter',sans-serif] text-[20px] text-black tracking-[-0.6px] ml-6 flex-1">{method.name}</p>
-                <div className="w-[30px] h-[30px] rounded-full border-[3.5px] border-black flex items-center justify-center">
-                  {selected === method.id && <div className="w-[14px] h-[14px] rounded-full bg-black" />}
+                <p className="text-[14px] text-black ml-4 flex-1">{method.name}</p>
+                <div className="w-[20px] h-[20px] rounded-full border-2 border-black flex items-center justify-center">
+                  {selected === method.id && <div className="w-[10px] h-[10px] rounded-full bg-black" />}
                 </div>
               </div>
-              {i < paymentMethods.length - 1 && <div className="h-px bg-[#511e0b] opacity-50" />}
+              {i < paymentMethods.length - 1 && <div className="h-px bg-[#511e0b] opacity-30" />}
             </div>
           ))}
         </div>

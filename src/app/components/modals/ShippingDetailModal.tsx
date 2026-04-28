@@ -11,38 +11,38 @@ interface ShippingDetailModalProps {
 export function ShippingDetailModal({ isOpen, onClose }: ShippingDetailModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} width="max-w-[553px]">
-      <div className="p-8 pt-7">
-        <h2 className="font-['Inter:Bold',sans-serif] font-bold text-[32px] text-black tracking-[-0.96px]">Shipping Details</h2>
+      <div className="p-6 pt-5">
+        <h2 className="font-bold text-[18px] text-black">Shipping Details</h2>
 
-        <div className="border border-[#a6a6a6] rounded-[5px] mt-8 p-6">
+        <div className="border border-[#b0b0b0] rounded-lg mt-5 p-4">
           <div className="flex items-center gap-3">
-            <MapPin size={20} />
-            <p className="font-['Inter',sans-serif] text-[15px] text-black tracking-[-0.45px]">From Solo, Indonesia</p>
+            <MapPin size={16} className="text-[#6b6b6b]" />
+            <p className="text-[14px] text-black">From Solo, Indonesia</p>
           </div>
-          <div className="ml-[10px] h-[9px] border-l border-[#7f7f7f]" />
+          <div className="ml-[7px] h-[8px] border-l border-[#b0b0b0]" />
           <div className="flex items-center gap-3">
-            <MapPin size={20} />
-            <p className="font-['Inter',sans-serif] text-[15px] text-black tracking-[-0.45px]">Ship to Tokyo, Japan</p>
-            <ChevronDown size={16} />
+            <MapPin size={16} className="text-[#6b6b6b]" />
+            <p className="text-[14px] text-black">Ship to Tokyo, Japan</p>
+            <ChevronDown size={14} className="text-[#6b6b6b]" />
           </div>
         </div>
 
-        <p className="font-['Inter',sans-serif] text-[15px] text-black tracking-[-0.45px] text-center mt-6">
+        <p className="text-[13px] text-[#555] text-center mt-4">
           Weight per item: 500g <span className="font-bold">•</span> Total shipping cost calculated at checkout
         </p>
-        <p className="font-['Inter',sans-serif] text-[15px] text-black tracking-[-0.45px] text-center mt-1">
-          Shipping is available for orders of <span className="text-[#511e0b]">at least 21 kg</span>.
+        <p className="text-[13px] text-[#555] text-center mt-1">
+          Shipping is available for orders of <span className="text-[#511e0b] font-medium">at least 21 kg</span>.
         </p>
 
-        <div className="mt-8">
+        <div className="mt-6">
           <div className="flex justify-between items-start">
             <div>
-              <p className="font-['Inter:Bold',sans-serif] font-bold text-[15px] text-black tracking-[-0.45px]">Air Shipping</p>
-              <p className="font-['Inter',sans-serif] text-[15px] text-[#a6a6a6] tracking-[-0.45px] mt-1">Estimated arrival Apr 12 - June 21</p>
+              <p className="font-bold text-[14px] text-black">Air Shipping</p>
+              <p className="text-[13px] text-[#6b6b6b] mt-0.5">Estimated arrival Apr 12 - June 21</p>
             </div>
-            <p className="font-['Inter:Bold',sans-serif] font-bold text-[15px] text-black tracking-[-0.45px]">Rp350.000</p>
+            <p className="font-bold text-[14px] text-black">Rp350.000</p>
           </div>
-          <div className="h-px bg-[#a6a6a6] mt-4" />
+          <div className="h-px bg-[#e0e0e0] mt-4" />
         </div>
       </div>
     </Modal>

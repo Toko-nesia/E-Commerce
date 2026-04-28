@@ -44,19 +44,19 @@ export default function ProductsPage() {
       {/* ── White Card ───────────────────────────────────────────────── */}
       <div className="bg-white rounded shadow-[2px_2px_10px_rgba(0,0,0,0.25)] overflow-hidden">
         {/* Filter Row */}
-        <div className="flex items-center gap-3 p-4 border-b border-[#EBEBEB]">
+        <div className="flex items-center gap-3 p-4 border-b border-[#d0d0d0]">
           {/* Search */}
           <div className="relative flex-1 max-w-sm">
             <Search
               size={15}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A6A6A6] pointer-events-none"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6b6b6b] pointer-events-none"
             />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari nama produk, ID Produk"
-              className="w-full border border-[#EBEBEB] rounded pl-9 pr-3 py-2 text-[13px] outline-none focus:border-[#511E0B] transition-colors placeholder:text-[#A6A6A6]"
+              className="w-full border border-[#d0d0d0] rounded pl-9 pr-3 py-2 text-[13px] outline-none focus:border-[#511E0B] transition-colors placeholder:text-[#6b6b6b]"
             />
           </div>
 
@@ -64,7 +64,7 @@ export default function ProductsPage() {
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="border border-[#EBEBEB] rounded px-3 py-2 text-[13px] text-gray-700 outline-none focus:border-[#511E0B] transition-colors bg-white cursor-pointer"
+            className="border border-[#d0d0d0] rounded px-3 py-2 text-[13px] text-gray-700 outline-none focus:border-[#511E0B] transition-colors bg-white cursor-pointer"
           >
             <option value="">Semua Kategori</option>
             {categories.map((cat) => (
@@ -78,17 +78,17 @@ export default function ProductsPage() {
         {/* Table */}
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#EBEBEB]">
-              <th className="text-left text-[14px] font-normal text-black px-4 py-3">
+            <tr className="border-b border-[#d0d0d0]">
+              <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3">
                 Produk
               </th>
-              <th className="text-left text-[14px] font-normal text-black px-4 py-3">
+              <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3">
                 Harga
               </th>
-              <th className="text-left text-[14px] font-normal text-black px-4 py-3">
+              <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3">
                 Stok
               </th>
-              <th className="text-left text-[14px] font-normal text-black px-4 py-3">
+              <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3">
                 Aksi
               </th>
             </tr>
@@ -98,7 +98,7 @@ export default function ProductsPage() {
               <tr>
                 <td
                   colSpan={4}
-                  className="text-center text-[13px] text-[#A6A6A6] py-12"
+                  className="text-center text-[13px] text-[#6b6b6b] py-12"
                 >
                   Tidak ada produk yang ditemukan.
                 </td>
@@ -107,12 +107,12 @@ export default function ProductsPage() {
               filtered.map((p) => (
                 <tr
                   key={p.id}
-                  className="border-b border-[#EBEBEB] last:border-0 hover:bg-gray-50 transition-colors"
+                  className="border-b border-[#d0d0d0] last:border-0 hover:bg-gray-50 transition-colors"
                 >
                   {/* Produk */}
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="relative w-[82px] h-[82px] flex-shrink-0 rounded overflow-hidden border border-[#EBEBEB] bg-gray-50">
+                      <div className="relative w-[82px] h-[82px] flex-shrink-0 rounded overflow-hidden border border-[#d0d0d0] bg-gray-50">
                         <Image
                           src={p.image}
                           alt={p.name}
@@ -125,7 +125,7 @@ export default function ProductsPage() {
                         <span className="font-bold text-[13px] text-black leading-snug line-clamp-2 max-w-[260px]">
                           {p.name}
                         </span>
-                        <span className="text-[13px] text-[#A6A6A6]">
+                        <span className="text-[13px] text-[#6b6b6b]">
                           ID Produk: {3172860 + p.id}
                         </span>
                       </div>
@@ -140,7 +140,7 @@ export default function ProductsPage() {
                   {/* Stok */}
                   <td className="px-4 py-4 text-[13px]">
                     {p.stock === undefined ? (
-                      <span className="text-[#A6A6A6]">-</span>
+                      <span className="text-[#6b6b6b]">-</span>
                     ) : p.stock === 0 ? (
                       <span className="text-[#DF0000] font-semibold">Habis</span>
                     ) : (
@@ -189,14 +189,14 @@ export default function ProductsPage() {
               </div>
               <h3 className="font-bold text-[16px] text-black">Hapus Produk?</h3>
             </div>
-            <p className="text-[13px] text-[#A6A6A6] leading-relaxed">
+            <p className="text-[13px] text-[#6b6b6b] leading-relaxed">
               Apakah kamu yakin ingin menghapus produk ini? Tindakan ini tidak dapat dibatalkan.
             </p>
             <div className="flex gap-3 mt-6">
               <button
                 type="button"
                 onClick={() => setConfirmDeleteId(null)}
-                className="flex-1 border border-[#EBEBEB] text-black text-[13px] font-medium rounded-lg py-2.5 hover:bg-gray-50 transition-colors bg-white cursor-pointer"
+                className="flex-1 border border-[#d0d0d0] text-black text-[13px] font-medium rounded-lg py-2.5 hover:bg-gray-50 transition-colors bg-white cursor-pointer"
               >
                 Batalkan
               </button>

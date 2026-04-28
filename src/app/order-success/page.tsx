@@ -35,14 +35,14 @@ export default function OrderSuccessPage() {
 
           {/* Title */}
           <h1 className="font-bold text-[26px] text-[#511e0b] mb-2">Pesanan Berhasil!</h1>
-          <p className="text-[14px] text-[#a6a6a6] mb-6">
+          <p className="text-[14px] text-[#6b6b6b] mb-6">
             Terima kasih telah berbelanja di Tokonesia. Pesananmu sedang diproses.
           </p>
 
           {/* Order number */}
           {orderNumber && (
             <div className="bg-[#faf5ee] rounded-xl px-6 py-4 mb-6">
-              <p className="text-[12px] text-[#a6a6a6] uppercase tracking-wider mb-1">Nomor Pesanan</p>
+              <p className="text-[12px] text-[#6b6b6b] uppercase tracking-wider mb-1">Nomor Pesanan</p>
               <p className="font-bold text-[22px] text-[#511e0b]">{orderNumber}</p>
             </div>
           )}
@@ -50,22 +50,22 @@ export default function OrderSuccessPage() {
           {/* Info cards */}
           <div className="grid grid-cols-2 gap-3 mb-8">
             <div className="bg-[#f8f8f8] rounded-xl p-4 text-left">
-              <p className="text-[11px] text-[#a6a6a6] uppercase tracking-wider mb-1">Pengiriman</p>
+              <p className="text-[11px] text-[#6b6b6b] uppercase tracking-wider mb-1">Pengiriman</p>
               <p className="text-[13px] font-medium text-black">Air Shipping</p>
-              <p className="text-[12px] text-[#a6a6a6]">Est. Apr 12 – Jun 21</p>
+              <p className="text-[12px] text-[#6b6b6b]">Est. Apr 12 – Jun 21</p>
             </div>
             <div className="bg-[#f8f8f8] rounded-xl p-4 text-left">
-              <p className="text-[11px] text-[#a6a6a6] uppercase tracking-wider mb-1">Status</p>
+              <p className="text-[11px] text-[#6b6b6b] uppercase tracking-wider mb-1">Status</p>
               <div className="inline-flex items-center gap-1.5 bg-[#FFF3CD] rounded-full px-2 py-0.5 mt-0.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#FBBE48] shrink-0" />
                 <span className="text-[12px] font-bold text-[#FBBE48]">BARU</span>
               </div>
-              <p className="text-[12px] text-[#a6a6a6] mt-1">Akan segera diproses</p>
+              <p className="text-[12px] text-[#6b6b6b] mt-1">Akan segera diproses</p>
             </div>
           </div>
 
           {/* Divider */}
-          <div className="h-px bg-[#ececec] mb-8" />
+          <div className="h-px bg-[#e0e0e0] mb-8" />
 
           {/* CTAs */}
           <div className="flex flex-col gap-3">
@@ -86,7 +86,7 @@ export default function OrderSuccessPage() {
           </div>
 
           {/* Footer note */}
-          <p className="text-[12px] text-[#a6a6a6] mt-6">
+          <p className="text-[12px] text-[#6b6b6b] mt-6">
             Konfirmasi pesanan akan dikirim ke emailmu.
             Jika ada pertanyaan, hubungi tim kami.
           </p>
@@ -95,7 +95,7 @@ export default function OrderSuccessPage() {
 
       {/* Brand footer */}
       <div className="text-center py-6">
-        <p className="text-[12px] text-[#a6a6a6]">
+        <p className="text-[12px] text-[#6b6b6b]">
           © 2026 Tokonesia (トコネシア) — Indonesian Products for Japan
         </p>
       </div>

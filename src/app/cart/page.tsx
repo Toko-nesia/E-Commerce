@@ -26,8 +26,8 @@ export default function CartPage() {
 
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-5">
-            <ShoppingBag size={56} className="text-[#d9d9d9]" />
-            <p className="text-[#A6A6A6] text-[15px]">Keranjang kamu masih kosong.</p>
+            <ShoppingBag size={56} className="text-[#b0b0b0]" />
+            <p className="text-[#6b6b6b] text-[15px]">Keranjang kamu masih kosong.</p>
             <Link
               href="/shop"
               className="bg-[#511e0b] text-white px-6 py-3 rounded-lg font-bold text-[14px] hover:bg-[#3d1608] transition-colors no-underline"
@@ -42,7 +42,7 @@ export default function CartPage() {
               {items.map(({ product, qty }) => (
                 <div
                   key={product.id}
-                  className="bg-white rounded-xl shadow-sm border border-[#f0f0f0] p-4 flex gap-4 items-center"
+                  className="bg-white rounded-xl shadow-sm border border-[#e0e0e0] p-4 flex gap-4 items-center"
                 >
                   <div className="w-[88px] h-[88px] shrink-0 overflow-hidden rounded-lg bg-[#F8F8F8]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -55,7 +55,7 @@ export default function CartPage() {
 
                   <div className="flex-1 min-w-0">
             <p className="font-bold text-[15px] text-black leading-snug line-clamp-2">{product.name}</p>
-                    <p className="text-[13px] text-[#A6A6A6] mt-0.5">{product.category}</p>
+                    <p className="text-[13px] text-[#6b6b6b] mt-0.5">{product.category}</p>
                     <p className="font-bold text-[15px] text-[#511e0b] mt-1">{product.price}</p>
                   </div>
 
@@ -81,7 +81,7 @@ export default function CartPage() {
 
                     <button
                       onClick={() => removeFromCart(product.id)}
-                      className="text-[#A6A6A6] hover:text-[#DF0000] transition-colors bg-transparent border-none cursor-pointer"
+                      className="text-[#6b6b6b] hover:text-[#DF0000] transition-colors bg-transparent border-none cursor-pointer"
                       aria-label="Hapus item"
                     >
                       <X size={18} />
@@ -92,38 +92,38 @@ export default function CartPage() {
             </div>
 
             {/* Order Summary */}
-            <div className="w-full lg:w-[320px] shrink-0 bg-white rounded-xl shadow-sm border border-[#f0f0f0] p-6 lg:sticky lg:top-28">
+            <div className="w-full lg:w-[320px] shrink-0 bg-white rounded-xl shadow-sm border border-[#e0e0e0] p-6 lg:sticky lg:top-28">
               <h2 className="font-bold text-[19px] text-black mb-4">Ringkasan Pesanan</h2>
 
               <div className="flex flex-col gap-2 mb-4">
                 {items.map(({ product, qty }) => (
                 <div key={product.id} className="flex justify-between text-[13px]">
-                    <span className="text-[#A6A6A6] line-clamp-1 max-w-[160px]">{product.name} ×{qty}</span>
+                    <span className="text-[#6b6b6b] line-clamp-1 max-w-[160px]">{product.name} ×{qty}</span>
                     <span className="text-black font-medium shrink-0 ml-2">{formatRp(product.price_raw * qty)}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="border-t border-[#EBEBEB] pt-4 space-y-2">
+              <div className="border-t border-[#d0d0d0] pt-4 space-y-2">
                 <div className="flex justify-between text-[13px]">
-                  <span className="text-[#A6A6A6]">Subtotal produk</span>
+                  <span className="text-[#6b6b6b]">Subtotal produk</span>
                   <span className="text-black">{formatRp(totalPrice)}</span>
                 </div>
                 <div className="flex justify-between text-[13px]">
-                  <span className="text-[#A6A6A6]">Pengiriman udara</span>
+                  <span className="text-[#6b6b6b]">Pengiriman udara</span>
                   <span className="text-black">{formatRp(shipping)}</span>
                 </div>
                 <div className="flex justify-between text-[13px]">
-                  <span className="text-[#A6A6A6]">Biaya layanan</span>
+                  <span className="text-[#6b6b6b]">Biaya layanan</span>
                   <span className="text-black">{formatRp(serviceFee)}</span>
                 </div>
                 <div className="flex justify-between text-[13px]">
-                  <span className="text-[#A6A6A6]">Pajak impor (est.)</span>
+                  <span className="text-[#6b6b6b]">Pajak impor (est.)</span>
                   <span className="text-black">{formatRp(importTax)}</span>
                 </div>
               </div>
 
-              <div className="border-t border-[#EBEBEB] mt-4 pt-4 flex justify-between">
+              <div className="border-t border-[#d0d0d0] mt-4 pt-4 flex justify-between">
                 <span className="font-bold text-[17px] text-black">Total</span>
                 <span className="font-bold text-[17px] text-[#511e0b]">{formatRp(grandTotal)}</span>
               </div>

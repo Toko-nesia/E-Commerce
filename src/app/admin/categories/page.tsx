@@ -16,7 +16,7 @@ function slugify(text: string): string {
 }
 
 const inputClass =
-  "w-full border border-[#EBEBEB] rounded px-3 py-2 text-[14px] outline-none focus:border-[#511E0B] transition-colors placeholder:text-[#A6A6A6]";
+  "w-full border border-[#d0d0d0] rounded px-3 py-2 text-[14px] outline-none focus:border-[#511E0B] transition-colors placeholder:text-[#6b6b6b]";
 
 export default function CategoriesPage() {
   const [catList, setCatList] = useState<Category[]>(initialCategories);
@@ -89,17 +89,17 @@ export default function CategoriesPage() {
       <div className="bg-white rounded shadow-[2px_2px_10px_rgba(0,0,0,0.25)] overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#EBEBEB]">
-              <th className="text-left text-[14px] font-normal text-black px-4 py-3">
+            <tr className="border-b border-[#d0d0d0]">
+              <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3">
                 Nama Kategori
               </th>
-              <th className="text-left text-[14px] font-normal text-black px-4 py-3">
+              <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3">
                 Slug
               </th>
-              <th className="text-left text-[14px] font-normal text-black px-4 py-3">
+              <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3">
                 Jumlah Produk
               </th>
-              <th className="text-left text-[14px] font-normal text-black px-4 py-3">
+              <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3">
                 Aksi
               </th>
             </tr>
@@ -107,7 +107,7 @@ export default function CategoriesPage() {
           <tbody>
             {catList.length === 0 ? (
               <tr>
-                <td colSpan={4} className="text-center text-[13px] text-[#A6A6A6] py-12">
+                <td colSpan={4} className="text-center text-[13px] text-[#6b6b6b] py-12">
                   Belum ada kategori.
                 </td>
               </tr>
@@ -115,12 +115,12 @@ export default function CategoriesPage() {
               catList.map((category) => (
                 <tr
                   key={category.slug}
-                  className="border-b border-[#EBEBEB] last:border-0 hover:bg-gray-50 transition-colors"
+                  className="border-b border-[#d0d0d0] last:border-0 hover:bg-gray-50 transition-colors"
                 >
                   <td className="px-4 py-3 text-[13px] text-black font-medium">
                     {category.name}
                   </td>
-                  <td className="px-4 py-3 text-[13px] text-[#A6A6A6]">
+                  <td className="px-4 py-3 text-[13px] text-[#6b6b6b]">
                     {category.slug}
                   </td>
                   <td className="px-4 py-3 text-[13px] text-black">
@@ -169,7 +169,7 @@ export default function CategoriesPage() {
               <button
                 type="button"
                 onClick={closeModal}
-                className="text-[#A6A6A6] hover:text-black bg-transparent border-none cursor-pointer p-0 transition-colors"
+                className="text-[#6b6b6b] hover:text-black bg-transparent border-none cursor-pointer p-0 transition-colors"
               >
                 <X size={18} />
               </button>
@@ -190,7 +190,7 @@ export default function CategoriesPage() {
                   required
                 />
                 {formName && modalMode === "add" && (
-                  <p className="text-[11px] text-[#A6A6A6] mt-1">
+                  <p className="text-[11px] text-[#6b6b6b] mt-1">
                     Slug: <span className="font-medium text-[#511E0B]">{slugify(formName)}</span>
                   </p>
                 )}
@@ -215,7 +215,7 @@ export default function CategoriesPage() {
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="flex-1 border border-[#EBEBEB] text-black text-[13px] font-medium rounded-lg py-2.5 hover:bg-gray-50 transition-colors bg-white cursor-pointer"
+                  className="flex-1 border border-[#d0d0d0] text-black text-[13px] font-medium rounded-lg py-2.5 hover:bg-gray-50 transition-colors bg-white cursor-pointer"
                 >
                   Batalkan
                 </button>
@@ -247,14 +247,14 @@ export default function CategoriesPage() {
               </div>
               <h3 className="font-bold text-[16px] text-black">Hapus Kategori?</h3>
             </div>
-            <p className="text-[13px] text-[#A6A6A6] leading-relaxed">
+            <p className="text-[13px] text-[#6b6b6b] leading-relaxed">
               Apakah kamu yakin ingin menghapus kategori ini? Tindakan ini tidak dapat dibatalkan.
             </p>
             <div className="flex gap-3 mt-6">
               <button
                 type="button"
                 onClick={() => setDeleteSlug(null)}
-                className="flex-1 border border-[#EBEBEB] text-black text-[13px] font-medium rounded-lg py-2.5 hover:bg-gray-50 transition-colors bg-white cursor-pointer"
+                className="flex-1 border border-[#d0d0d0] text-black text-[13px] font-medium rounded-lg py-2.5 hover:bg-gray-50 transition-colors bg-white cursor-pointer"
               >
                 Batalkan
               </button>
