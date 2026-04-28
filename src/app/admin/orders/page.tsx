@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { X } from "lucide-react";
+import { validateTrackingNumber } from "@/lib/fedex/service";
 
 interface Order {
   id: string;
@@ -11,6 +12,8 @@ interface Order {
   qty: number;
   total: string;
   status: string;
+  tracking_number?: string;
+  cancel_reason?: string;
 }
 
 const initialOrders: Order[] = [
@@ -22,6 +25,7 @@ const initialOrders: Order[] = [
     qty: 2,
     total: "Rp 795.400",
     status: "BARU",
+    tracking_number: "",
   },
   {
     id: "#ZB-0002",
@@ -31,6 +35,7 @@ const initialOrders: Order[] = [
     qty: 1,
     total: "Rp 131.822",
     status: "DIPROSES",
+    tracking_number: "",
   },
   {
     id: "#ZB-0003",
@@ -40,6 +45,7 @@ const initialOrders: Order[] = [
     qty: 3,
     total: "Rp 68.400",
     status: "DIKIRIM",
+    tracking_number: "7489234651200",
   },
   {
     id: "#ZB-0004",
@@ -49,6 +55,7 @@ const initialOrders: Order[] = [
     qty: 1,
     total: "Rp 397.700",
     status: "SELESAI",
+    tracking_number: "7489234651201",
   },
   {
     id: "#ZB-0005",
@@ -58,6 +65,7 @@ const initialOrders: Order[] = [
     qty: 2,
     total: "Rp 263.644",
     status: "DIBATALKAN",
+    tracking_number: "",
   },
 ];
 
@@ -84,10 +92,18 @@ export default function OrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [newStatus, setNewStatus] = useState("");
+  const [trackingInput, setTrackingInput] = useState("");
+  const [trackingError, setTrackingError] = useState("");
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelReasonError, setCancelReasonError] = useState("");
 
   useEffect(() => {
     if (selectedOrder) {
       setNewStatus(selectedOrder.status);
+      setTrackingInput(selectedOrder.tracking_number ?? "");
+      setTrackingError("");
+      setCancelReason("");
+      setCancelReasonError("");
     }
   }, [selectedOrder]);
 
@@ -95,6 +111,39 @@ export default function OrdersPage() {
     if (!activeTab) return orders;
     return orders.filter((o) => o.status === activeTab);
   }, [activeTab, orders]);
+
+  const showTrackingInput = newStatus === "DIKIRIM";
+
+  function handleSave() {
+    // Validate tracking number when changing to DIKIRIM
+    if (showTrackingInput && trackingInput !== "") {
+      if (!validateTrackingNumber(trackingInput)) {
+        setTrackingError("Nomor resi tidak valid. Minimal 12 karakter alfanumerik.");
+        return;
+      }
+    }
+
+    // Require cancellation reason when changing to DIBATALKAN
+    if (newStatus === "DIBATALKAN" && cancelReason.trim() === "") {
+      setCancelReasonError("Alasan pembatalan wajib diisi.");
+      return;
+    }
+
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id !== selectedOrder!.id) return o;
+        const updatedTracking =
+          trackingInput === "" ? o.tracking_number : trackingInput;
+        return {
+          ...o,
+          status: newStatus,
+          tracking_number: updatedTracking,
+          ...(newStatus === "DIBATALKAN" ? { cancel_reason: cancelReason.trim() } : {}),
+        };
+      })
+    );
+    setShowModal(false);
+  }
 
   return (
     <div>
@@ -149,6 +198,9 @@ export default function OrdersPage() {
               <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3">
                 Status
               </th>
+              <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3 whitespace-nowrap">
+                No. Resi
+              </th>
               <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3">
                 Aksi
               </th>
@@ -158,7 +210,7 @@ export default function OrdersPage() {
             {filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={9}
                   className="text-center text-[13px] text-[#6b6b6b] py-12"
                 >
                   Tidak ada pesanan ditemukan.
@@ -210,6 +262,11 @@ export default function OrdersPage() {
                     >
                       {order.status}
                     </span>
+                  </td>
+
+                  {/* No. Resi */}
+                  <td className="px-4 py-4 text-[13px] text-black whitespace-nowrap">
+                    {order.tracking_number || "—"}
                   </td>
 
                   {/* Aksi */}
@@ -272,6 +329,14 @@ export default function OrdersPage() {
               </span>
             </div>
 
+            {/* Show cancellation reason if order is already cancelled */}
+            {selectedOrder.status === "DIBATALKAN" && selectedOrder.cancel_reason && (
+              <div className="mt-3 p-3 bg-red-50 rounded text-[13px]">
+                <span className="font-bold text-red-600">Alasan Pembatalan: </span>
+                <span className="text-red-700">{selectedOrder.cancel_reason}</span>
+              </div>
+            )}
+
             {/* Divider */}
             <div className="border-t border-[#d0d0d0] my-4" />
 
@@ -279,27 +344,63 @@ export default function OrdersPage() {
             <p className="font-bold text-[13px] mb-2">Ubah Status</p>
             <select
               value={newStatus}
-              onChange={(e) => setNewStatus(e.target.value)}
+              onChange={(e) => {
+                setNewStatus(e.target.value);
+                setTrackingError("");
+                setCancelReasonError("");
+              }}
               className="border border-[#d0d0d0] rounded px-3 py-2 text-[13px] w-full outline-none focus:border-[#511E0B] bg-white cursor-pointer"
             >
               <option value="BARU">BARU</option>
               <option value="DIPROSES">DIPROSES</option>
               <option value="DIKIRIM">DIKIRIM</option>
-              <option value="SELESAI">SELESAI</option>
               <option value="DIBATALKAN">DIBATALKAN</option>
             </select>
+
+            {/* No. Resi Input — only when changing to DIKIRIM */}
+            {showTrackingInput && (
+              <div className="mt-3">
+                <p className="font-bold text-[13px] mb-2">No. Resi FedEx</p>
+                <input
+                  type="text"
+                  value={trackingInput}
+                  onChange={(e) => {
+                    setTrackingInput(e.target.value);
+                    setTrackingError("");
+                  }}
+                  placeholder="Masukkan nomor resi FedEx"
+                  className="border border-[#d0d0d0] rounded px-3 py-2 text-[13px] w-full outline-none focus:border-[#511E0B]"
+                />
+                {trackingError && (
+                  <p className="text-red-500 text-[12px] mt-1">{trackingError}</p>
+                )}
+              </div>
+            )}
+
+            {/* Cancellation Reason — only when changing to DIBATALKAN */}
+            {newStatus === "DIBATALKAN" && (
+              <div className="mt-3">
+                <p className="font-bold text-[13px] mb-2">Alasan Pembatalan <span className="text-red-500">*</span></p>
+                <textarea
+                  value={cancelReason}
+                  onChange={(e) => {
+                    setCancelReason(e.target.value);
+                    setCancelReasonError("");
+                  }}
+                  placeholder="Tuliskan alasan pembatalan pesanan ini..."
+                  rows={3}
+                  className="border border-[#d0d0d0] rounded px-3 py-2 text-[13px] w-full outline-none focus:border-[#511E0B] resize-none"
+                />
+                {cancelReasonError && (
+                  <p className="text-red-500 text-[12px] mt-1">{cancelReasonError}</p>
+                )}
+              </div>
+            )}
 
             {/* Save Button */}
             <button
               type="button"
-              onClick={() => {
-                setOrders((prev) =>
-                  prev.map((o) =>
-                    o.id === selectedOrder.id ? { ...o, status: newStatus } : o,
-                  ),
-                );
-                setShowModal(false);
-              }}
+              onClick={handleSave}
               className="w-full mt-3 bg-[#511E0B] text-white rounded py-3 font-bold text-[14px] hover:bg-[#3d1608] transition-colors cursor-pointer border-none"
             >
               Simpan Perubahan

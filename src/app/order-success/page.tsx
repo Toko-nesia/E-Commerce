@@ -64,6 +64,15 @@ export default function OrderSuccessPage() {
             </div>
           </div>
 
+          {/* Payment Instructions */}
+          <div className="bg-[#f8f8f8] rounded-xl p-4 text-left mb-6">
+            <p className="text-[11px] text-[#6b6b6b] uppercase tracking-wider mb-2">Instruksi Pembayaran</p>
+            <p className="text-[13px] font-medium text-black mb-1">Transfer ke rekening BCA:</p>
+            <p className="text-[13px] text-[#6b6b6b]">No. Rekening: <span className="font-medium text-black">1234567890</span></p>
+            <p className="text-[13px] text-[#6b6b6b]">Atas Nama: <span className="font-medium text-black">Tokonesia Indonesia</span></p>
+            <p className="text-[12px] text-[#6b6b6b] mt-2">Setelah transfer, konfirmasi pembayaran ke tim kami.</p>
+          </div>
+
           {/* Divider */}
           <div className="h-px bg-[#e0e0e0] mb-8" />
 
@@ -74,7 +83,7 @@ export default function OrderSuccessPage() {
               className="w-full bg-[#511e0b] text-white rounded-xl py-3.5 font-bold text-[15px] no-underline hover:bg-[#3d1608] transition-colors flex items-center justify-center gap-2"
             >
               <Package size={18} />
-              Lihat Riwayat Pesanan
+              Lihat Pesanan Saya
             </Link>
             <Link
               href="/shop"

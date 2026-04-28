@@ -8,6 +8,7 @@ import { PaymentOptionModal } from "../components/modals/PaymentOptionModal";
 import { AddressModal } from "../components/modals/AddressModal";
 import { EditAddressModal } from "../components/modals/EditAddressModal";
 import { addresses } from "@/data/addresses";
+import { paymentMethods } from "@/data/payment-methods";
 import { useCart } from "@/contexts/cart-context";
 
 function formatRp(amount: number): string {
@@ -20,7 +21,7 @@ export default function CheckoutPage() {
   const [paymentModal, setPaymentModal] = useState(false);
   const [addressModal, setAddressModal] = useState(false);
   const [editAddressModal, setEditAddressModal] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState("paypal");
+  const [selectedPayment, setSelectedPayment] = useState("bank_transfer");
   const [selectedAddress, setSelectedAddress] = useState("1");
   const [note, setNote] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -106,17 +107,14 @@ export default function CheckoutPage() {
           {/* Payment */}
           <h2 className="font-bold text-[22px] text-[#511e0b] mt-8">Pembayaran</h2>
           <div className="border border-[#511e0b] rounded-lg p-5 mt-3 flex items-center relative bg-white">
-            <div className="bg-[#ececec] border border-[#b0b0b0] rounded-lg w-20 h-12 flex items-center justify-center shrink-0">
-              <div className="relative overflow-hidden h-[19px] w-[69px]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  alt="PayPal"
-                  className="absolute h-[183.93%] left-[-0.12%] max-w-none top-[-41.96%] w-[100.24%]"
-                  src="/images/PaymentOption/a002559c80637287a6897bcbb94172adeaf103d3.png"
-                />
-              </div>
+            <div className="bg-[#e0e0e0] border-[#511e0b] border border-solid rounded-lg w-[80px] h-[48px] flex items-center justify-center shrink-0">
+              <span className="text-[11px] font-semibold text-[#511e0b] text-center leading-tight px-1">
+                {selectedPayment === "bank_transfer" ? "Bank\nTransfer" : "QRIS"}
+              </span>
             </div>
-            <p className="font-bold text-[15px] text-black ml-4">PayPal</p>
+            <p className="font-bold text-[15px] text-black ml-4">
+              {paymentMethods.find(m => m.id === selectedPayment)?.name ?? selectedPayment}
+            </p>
             <button
               onClick={() => setPaymentModal(true)}
               className="absolute top-4 right-4 bg-transparent border-none cursor-pointer p-0 text-[#511e0b] hover:text-black transition-colors"

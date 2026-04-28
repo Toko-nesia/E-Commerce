@@ -6,21 +6,24 @@ import { User, MapPin, FileText, LogOut, Phone, Plus, MoreVertical, Eye, Edit3, 
 import { savedAddresses } from "@/data/addresses";
 import { orderHistory } from "@/data/orders";
 import { useAuth } from "@/contexts/auth-context";
+import { TrackingModal } from "../components/modals/TrackingModal";
 
 type Tab = "profile" | "orders" | "addresses";
 
 const STATUS_LABEL: Record<string, string> = {
-  SHIPPED: "Dikirim",
-  DELIVERED: "Terkirim",
-  PROCESSING: "Diproses",
-  CANCELLED: "Dibatalkan",
+  BARU: "Baru",
+  DIPROSES: "Diproses",
+  DIKIRIM: "Dikirim",
+  SELESAI: "Selesai",
+  DIBATALKAN: "Dibatalkan",
 };
 
 const STATUS_COLOR: Record<string, string> = {
-  SHIPPED: "bg-blue-50 text-blue-500",
-  DELIVERED: "bg-green-50 text-[#15a15b]",
-  PROCESSING: "bg-orange-50 text-orange-500",
-  CANCELLED: "bg-red-50 text-[#df0000]",
+  BARU: "bg-[#FFF3CD] text-[#FBBE48]",
+  DIPROSES: "bg-orange-50 text-orange-500",
+  DIKIRIM: "bg-blue-50 text-blue-500",
+  SELESAI: "bg-green-50 text-[#15a15b]",
+  DIBATALKAN: "bg-red-50 text-[#df0000]",
 };
 
 export default function ProfilePage() {
@@ -34,6 +37,17 @@ export default function ProfilePage() {
 
   // Order detail modal
   const [selectedOrder, setSelectedOrder] = useState<typeof orderHistory[0] | null>(null);
+
+  // Tracking modal
+  const [trackingOrder, setTrackingOrder] = useState<typeof orderHistory[0] | null>(null);
+  const [showTrackingModal, setShowTrackingModal] = useState(false);
+
+  // Refund modal
+  const [refundOrder, setRefundOrder] = useState<typeof orderHistory[0] | null>(null);
+  const [refundMethod, setRefundMethod] = useState<"bank_transfer" | "ewallet">("bank_transfer");
+  const [refundAccount, setRefundAccount] = useState("");
+  const [refundReason, setRefundReason] = useState("");
+  const [refundSubmitted, setRefundSubmitted] = useState(false);
 
   // Address dropdown
   const [openAddressMenu, setOpenAddressMenu] = useState<string | null>(null);
@@ -148,17 +162,30 @@ export default function ProfilePage() {
             <section>
               <h2 className="font-bold text-[24px] text-black mb-6">Riwayat Pesanan</h2>
               <div className="border border-[#b0b0b0] rounded-xl overflow-hidden">
-                <div className="grid grid-cols-5 bg-[#f5f5f5] px-5 py-3">
-                  {["ID PESANAN", "TANGGAL", "STATUS", "TOTAL", "AKSI"].map((h) => (
+                <div className="grid grid-cols-6 bg-[#f5f5f5] px-5 py-3">
+                  {["ID PESANAN", "TANGGAL", "STATUS", "NO. RESI", "TOTAL", "AKSI"].map((h) => (
                     <span key={h} className="font-bold text-[11px] text-[#6b6b6b] tracking-wider">{h}</span>
                   ))}
                 </div>
                 {orderHistory.map((order) => (
-                  <div key={order.id} className="grid grid-cols-5 px-5 py-4 border-t border-[#d5d5d5] items-center hover:bg-gray-50 transition-colors">
-                    <span key={order.id} className="font-bold text-[13px] text-[#511e0b]">{order.id}</span>
+                  <div key={order.id} className="grid grid-cols-6 px-5 py-4 border-t border-[#d5d5d5] items-center hover:bg-gray-50 transition-colors">
+                    <span className="font-bold text-[13px] text-[#511e0b]">{order.id}</span>
                     <span className="text-[13px] text-black">{order.date}</span>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[12px] font-bold w-fit ${STATUS_COLOR[order.status] ?? "bg-gray-100 text-gray-500"}`}>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[12px] font-bold w-fit ${STATUS_COLOR[order.status] ?? "bg-gray-100 text-gray-500"}`}>
+                      {order.status === "DIKIRIM" && <span className="text-blue-500 text-[10px]">●</span>}
                       {STATUS_LABEL[order.status] ?? order.status}
+                    </span>
+                    <span className="text-[13px]">
+                      {order.tracking_number ? (
+                        <button
+                          onClick={() => { setTrackingOrder(order); setShowTrackingModal(true); }}
+                          className="bg-transparent border border-[#511e0b] text-[#511e0b] rounded px-2 py-1 text-[11px] font-medium cursor-pointer hover:bg-[#faf5ee] transition-colors"
+                        >
+                          Lacak Paket
+                        </button>
+                      ) : (
+                        <span className="text-[#9b9b9b]">Menunggu pengiriman</span>
+                      )}
                     </span>
                     <span className="text-[13px] text-black">{order.total_price}</span>
                     <button
@@ -245,6 +272,8 @@ export default function ProfilePage() {
                 ["Tanggal", selectedOrder.date],
                 ["Status", STATUS_LABEL[selectedOrder.status] ?? selectedOrder.status],
                 ["Total", selectedOrder.total_price],
+                ...(selectedOrder.tracking_number ? [["Nomor Resi", selectedOrder.tracking_number]] : []),
+                ...(selectedOrder.estimated_delivery ? [["Estimasi Tiba", selectedOrder.estimated_delivery]] : []),
               ].map(([label, value]) => (
                 <div key={label} className="flex justify-between text-[14px]">
                   <span className="text-[#6b6b6b]">{label}</span>
@@ -258,6 +287,124 @@ export default function ProfilePage() {
             >
               Tutup
             </button>
+            {selectedOrder.status === "DIBATALKAN" && (
+              <button
+                onClick={() => {
+                  setRefundOrder(selectedOrder);
+                  setRefundSubmitted(false);
+                  setRefundAccount("");
+                  setRefundReason("");
+                  setRefundMethod("bank_transfer");
+                  setSelectedOrder(null);
+                }}
+                className="w-full mt-2 border border-[#df0000] text-[#df0000] rounded-lg py-3 font-bold text-[14px] border-solid cursor-pointer hover:bg-red-50 transition-colors bg-transparent"
+              >
+                Ajukan Pengembalian Dana
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+      {/* Tracking Modal */}
+      {trackingOrder && (
+        <TrackingModal
+          isOpen={showTrackingModal}
+          onClose={() => { setShowTrackingModal(false); setTrackingOrder(null); }}
+          order={trackingOrder}
+        />
+      )}
+
+      {/* Refund Modal */}
+      {refundOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setRefundOrder(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-[460px] p-8" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-bold text-[18px] text-black">Pengembalian Dana</h3>
+              <button onClick={() => setRefundOrder(null)} className="text-[#6b6b6b] hover:text-black bg-transparent border-none cursor-pointer p-0">
+                <X size={20} />
+              </button>
+            </div>
+
+            {refundSubmitted ? (
+              <div className="text-center py-4">
+                <div className="text-[40px] mb-3">✅</div>
+                <p className="font-bold text-[16px] text-black mb-2">Pengajuan Terkirim</p>
+                <p className="text-[13px] text-[#6b6b6b]">Tim kami akan memproses pengembalian dana dalam 3–5 hari kerja.</p>
+                <button
+                  onClick={() => setRefundOrder(null)}
+                  className="mt-6 w-full bg-[#511e0b] text-white rounded-lg py-3 font-bold text-[14px] border-none cursor-pointer hover:bg-[#3d1608] transition-colors"
+                >
+                  Tutup
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className="text-[13px] text-[#6b6b6b] mb-4">
+                  Pesanan <span className="font-medium text-black">{refundOrder.id}</span> telah dibatalkan.
+                  Isi form berikut untuk mengajukan pengembalian dana.
+                </p>
+
+                <div className="space-y-4">
+                  {/* Alasan */}
+                  <div>
+                    <label className="block text-[12px] font-bold text-black mb-1.5">Alasan Pengajuan</label>
+                    <textarea
+                      value={refundReason}
+                      onChange={(e) => setRefundReason(e.target.value)}
+                      placeholder="Jelaskan alasan pengajuan pengembalian dana..."
+                      rows={3}
+                      className="w-full border border-[#b0b0b0] rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#511e0b] resize-none"
+                    />
+                  </div>
+
+                  {/* Metode pengembalian */}
+                  <div>
+                    <label className="block text-[12px] font-bold text-black mb-1.5">Metode Pengembalian</label>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setRefundMethod("bank_transfer")}
+                        className={`flex-1 py-2 rounded-lg text-[13px] font-medium border cursor-pointer transition-colors ${refundMethod === "bank_transfer" ? "bg-[#511e0b] text-white border-[#511e0b]" : "bg-white text-black border-[#b0b0b0] hover:border-[#511e0b]"}`}
+                      >
+                        Transfer Bank
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRefundMethod("ewallet")}
+                        className={`flex-1 py-2 rounded-lg text-[13px] font-medium border cursor-pointer transition-colors ${refundMethod === "ewallet" ? "bg-[#511e0b] text-white border-[#511e0b]" : "bg-white text-black border-[#b0b0b0] hover:border-[#511e0b]"}`}
+                      >
+                        E-Wallet
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Account number */}
+                  <div>
+                    <label className="block text-[12px] font-bold text-black mb-1.5">
+                      {refundMethod === "bank_transfer" ? "Nomor Rekening (BCA/Mandiri/BNI)" : "Nomor E-Wallet (GoPay/OVO/Dana)"}
+                    </label>
+                    <input
+                      type="text"
+                      value={refundAccount}
+                      onChange={(e) => setRefundAccount(e.target.value)}
+                      placeholder={refundMethod === "bank_transfer" ? "Contoh: 1234567890" : "Contoh: 08123456789"}
+                      className="w-full border border-[#b0b0b0] rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#511e0b]"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    if (!refundReason.trim() || !refundAccount.trim()) return;
+                    setRefundSubmitted(true);
+                  }}
+                  disabled={!refundReason.trim() || !refundAccount.trim()}
+                  className="w-full mt-6 bg-[#511e0b] text-white rounded-lg py-3 font-bold text-[14px] border-none cursor-pointer hover:bg-[#3d1608] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Kirim Pengajuan
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
