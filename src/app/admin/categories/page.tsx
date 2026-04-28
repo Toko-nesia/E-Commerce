@@ -87,6 +87,7 @@ export default function CategoriesPage() {
 
       {/* ── White Card ────────────────────────────────────────────────── */}
       <div className="bg-white rounded shadow-[2px_2px_10px_rgba(0,0,0,0.25)] overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-[#d0d0d0]">
@@ -149,6 +150,7 @@ export default function CategoriesPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* ── Add / Edit Modal ─────────────────────────────────────────── */}

@@ -38,7 +38,7 @@ export default function AdminDashboardPage() {
       <h1 className="font-bold text-[20px] text-black mb-6">Dashboard</h1>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
         {stats.map((stat) => (
           <div key={stat.label} className="bg-white rounded-xl shadow-sm border border-[#d0d0d0] p-5">
             <div className="flex items-center justify-between mb-3">

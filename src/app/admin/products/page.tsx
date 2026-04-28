@@ -44,9 +44,9 @@ export default function ProductsPage() {
       {/* ── White Card ───────────────────────────────────────────────── */}
       <div className="bg-white rounded shadow-[2px_2px_10px_rgba(0,0,0,0.25)] overflow-hidden">
         {/* Filter Row */}
-        <div className="flex items-center gap-3 p-4 border-b border-[#d0d0d0]">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-4 border-b border-[#d0d0d0]">
           {/* Search */}
-          <div className="relative flex-1 max-w-sm">
+          <div className="relative flex-1">
             <Search
               size={15}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6b6b6b] pointer-events-none"
@@ -64,7 +64,7 @@ export default function ProductsPage() {
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="border border-[#d0d0d0] rounded px-3 py-2 text-[13px] text-gray-700 outline-none focus:border-[#511E0B] transition-colors bg-white cursor-pointer"
+            className="border border-[#d0d0d0] rounded px-3 py-2 text-[13px] text-gray-700 outline-none focus:border-[#511E0B] transition-colors bg-white cursor-pointer w-full sm:w-auto"
           >
             <option value="">Semua Kategori</option>
             {categories.map((cat) => (
@@ -76,6 +76,7 @@ export default function ProductsPage() {
         </div>
 
         {/* Table */}
+        <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-[#d0d0d0]">
@@ -171,6 +172,7 @@ export default function ProductsPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* ── Delete Confirmation Modal ─────────────────────────────────── */}
