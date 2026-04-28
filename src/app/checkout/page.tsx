@@ -46,9 +46,9 @@ export default function CheckoutPage() {
   if (items.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#f8f8f8]">
-        <p className="text-[#6b6b6b] text-[16px]">Keranjang kamu kosong.</p>
+        <p className="text-[#6b6b6b] text-[16px]">Your cart is empty.</p>
         <Link href="/shop" className="text-[#511e0b] underline text-[15px]">
-          Mulai belanja
+          Start shopping
         </Link>
       </div>
     );
@@ -85,7 +85,7 @@ export default function CheckoutPage() {
         {/* Left Column */}
         <div className="flex-1 p-6 md:p-10 md:pr-12">
           {/* Address */}
-          <h2 className="font-bold text-[22px] text-[#511e0b]">Alamat Pengiriman</h2>
+          <h2 className="font-bold text-[22px] text-[#511e0b]">Shipping Address</h2>
           <div className="border border-[#511e0b] rounded-lg p-5 mt-3 relative bg-white">
             <p className="font-bold text-[16px] text-black">{currentAddress.name}</p>
             <p className="text-[14px] text-[#6b6b6b] mt-1">{currentAddress.phone}</p>
@@ -98,15 +98,15 @@ export default function CheckoutPage() {
           </div>
 
           {/* Shipping */}
-          <h2 className="font-bold text-[22px] text-[#511e0b] mt-8">Pengiriman</h2>
+          <h2 className="font-bold text-[22px] text-[#511e0b] mt-8">Shipping</h2>
           <div className="border border-[#511e0b] rounded-lg p-5 mt-3 bg-white">
             <p className="font-bold text-[15px] text-black">Air Shipping</p>
             <p className="text-[14px] text-[#6b6b6b] mt-1">{formatRp(shipping)}</p>
-            <p className="text-[14px] text-[#6b6b6b]">Estimasi tiba Apr 12 - Jun 21</p>
+            <p className="text-[14px] text-[#6b6b6b]">Estimated arrival Apr 12 - Jun 21</p>
           </div>
 
           {/* Payment */}
-          <h2 className="font-bold text-[22px] text-[#511e0b] mt-8">Pembayaran</h2>
+          <h2 className="font-bold text-[22px] text-[#511e0b] mt-8">Payment</h2>
           <div className="border border-[#511e0b] rounded-lg p-5 mt-3 flex items-center relative bg-white">
             <div className="bg-[#e0e0e0] border-[#511e0b] border border-solid rounded-lg w-[80px] h-[48px] flex items-center justify-center shrink-0">
               <span className="text-[11px] font-semibold text-[#511e0b] text-center leading-tight px-1">
@@ -125,12 +125,12 @@ export default function CheckoutPage() {
           </div>
 
           {/* Note */}
-          <h2 className="font-bold text-[22px] text-[#511e0b] mt-8">Catatan</h2>
+          <h2 className="font-bold text-[22px] text-[#511e0b] mt-8">Note</h2>
           <div className="border border-[#511e0b] rounded-lg p-4 mt-3 flex items-center bg-white">
             <input
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="(Opsional) Tambahkan catatan untuk pesananmu"
+              placeholder="(Optional) Add a note for your order"
               className="text-[14px] text-[#6b6b6b] flex-1 bg-transparent border-none outline-none placeholder:text-[#999999]"
             />
             <Edit3 size={18} className="text-[#6b6b6b] shrink-0 ml-2" />
@@ -139,7 +139,7 @@ export default function CheckoutPage() {
 
         {/* Right Column - Order Summary */}
         <div className="w-full lg:w-[440px] bg-[#FDF9F5] shadow-sm border border-[#e0e0e0] p-6 md:p-10 lg:min-h-[calc(100vh-80px)]">
-          <h2 className="font-bold text-[22px] text-[#511e0b]">Pesanan</h2>
+          <h2 className="font-bold text-[22px] text-[#511e0b]">Order</h2>
 
           {/* Cart Items */}
           <div className="mt-5 space-y-4">
@@ -161,10 +161,10 @@ export default function CheckoutPage() {
           {/* Price Breakdown */}
           <div className="mt-8 space-y-2">
             {[
-              ["Subtotal produk", formatRp(totalPrice)],
-              ["Pengiriman udara", formatRp(shipping)],
-              ["Biaya layanan", formatRp(serviceFee)],
-              ["Pajak impor & bea cukai", formatRp(importTax)],
+              ["Product subtotal", formatRp(totalPrice)],
+              ["Air shipping", formatRp(shipping)],
+              ["Service fee", formatRp(serviceFee)],
+              ["Import tax & customs", formatRp(importTax)],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between">
                 <span className="text-[14px] text-black">{label}</span>
@@ -177,7 +177,7 @@ export default function CheckoutPage() {
           <div className="h-px bg-black/20 mt-6" />
 
           <div className="flex justify-between mt-4">
-            <span className="font-bold text-[18px] text-black">Total Pembayaran</span>
+            <span className="font-bold text-[18px] text-black">Total Payment</span>
             <span className="font-bold text-[18px] text-black">{formatRp(grandTotal)}</span>
           </div>
           <p className="font-bold text-[16px] text-[#df0000] text-right mt-1">
@@ -185,7 +185,7 @@ export default function CheckoutPage() {
           </p>
 
           <p className="text-[13px] text-[#df0000] mt-4">
-            Pajak impor dihitung dalam IDR dan dikonversi ke JPY berdasarkan nilai tukar terkini.
+            Import tax is calculated in IDR and converted to JPY based on the current exchange rate.
           </p>
 
           <button
@@ -193,7 +193,7 @@ export default function CheckoutPage() {
             disabled={isProcessing}
             className="w-full bg-[#511e0b] text-white rounded-lg h-14 mt-6 font-bold text-[16px] border-none cursor-pointer hover:bg-[#3d1608] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            {isProcessing ? "Memproses..." : "Bayar Sekarang"}
+            {isProcessing ? "Processing..." : "Pay Now"}
           </button>
         </div>
       </div>

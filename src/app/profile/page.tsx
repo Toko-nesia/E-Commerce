@@ -11,11 +11,11 @@ import { TrackingModal } from "../components/modals/TrackingModal";
 type Tab = "profile" | "orders" | "addresses";
 
 const STATUS_LABEL: Record<string, string> = {
-  BARU: "Baru",
-  DIPROSES: "Diproses",
-  DIKIRIM: "Dikirim",
-  SELESAI: "Selesai",
-  DIBATALKAN: "Dibatalkan",
+  BARU: "New",
+  DIPROSES: "Processing",
+  DIKIRIM: "Shipped",
+  SELESAI: "Completed",
+  DIBATALKAN: "Cancelled",
 };
 
 const STATUS_COLOR: Record<string, string> = {
@@ -53,9 +53,9 @@ export default function ProfilePage() {
   const [openAddressMenu, setOpenAddressMenu] = useState<string | null>(null);
 
   const sidebarItems = [
-    { icon: User, label: "Profil Saya", id: "profile" as Tab },
-    { icon: FileText, label: "Riwayat Pesanan", id: "orders" as Tab },
-    { icon: MapPin, label: "Alamat Tersimpan", id: "addresses" as Tab },
+    { icon: User, label: "My Profile", id: "profile" as Tab },
+    { icon: FileText, label: "Order History", id: "orders" as Tab },
+    { icon: MapPin, label: "Saved Addresses", id: "addresses" as Tab },
   ];
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,7 +81,7 @@ export default function ProfilePage() {
               <button
                 onClick={() => fileRef.current?.click()}
                 className="absolute bottom-0 right-0 bg-[#511e0b] rounded-full w-7 h-7 flex items-center justify-center cursor-pointer border-2 border-white"
-                aria-label="Ganti foto"
+                aria-label="Change photo"
               >
                 <Camera size={12} className="text-white" />
               </button>
@@ -122,10 +122,10 @@ export default function ProfilePage() {
           {/* ── Profile Info ── */}
           {activeTab === "profile" && (
             <section>
-              <h2 className="font-bold text-[24px] text-black mb-6">Profil Saya</h2>
+              <h2 className="font-bold text-[24px] text-black mb-6">My Profile</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-[12px] text-[#6b6b6b] tracking-widest uppercase mb-1.5">Nama Lengkap</label>
+                  <label className="block text-[12px] text-[#6b6b6b] tracking-widest uppercase mb-1.5">Full Name</label>
                   <input
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
@@ -133,7 +133,7 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[12px] text-[#6b6b6b] tracking-widest uppercase mb-1.5">Alamat Email</label>
+                  <label className="block text-[12px] text-[#6b6b6b] tracking-widest uppercase mb-1.5">Email Address</label>
                   <input
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -141,7 +141,7 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[12px] text-[#6b6b6b] tracking-widest uppercase mb-1.5">Nomor Telepon</label>
+                  <label className="block text-[12px] text-[#6b6b6b] tracking-widest uppercase mb-1.5">Phone Number</label>
                   <input
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
@@ -151,7 +151,7 @@ export default function ProfilePage() {
               </div>
               <div className="flex justify-end mt-6">
                 <button className="bg-[#511e0b] text-white rounded-lg px-6 py-2.5 text-[14px] font-bold border-none cursor-pointer hover:bg-[#3d1608] transition-colors">
-                  Simpan Perubahan
+                  Save Changes
                 </button>
               </div>
             </section>
@@ -160,10 +160,10 @@ export default function ProfilePage() {
           {/* ── Order History ── */}
           {activeTab === "orders" && (
             <section>
-              <h2 className="font-bold text-[24px] text-black mb-6">Riwayat Pesanan</h2>
+              <h2 className="font-bold text-[24px] text-black mb-6">Order History</h2>
               <div className="border border-[#b0b0b0] rounded-xl overflow-hidden">
                 <div className="grid grid-cols-6 bg-[#f5f5f5] px-5 py-3">
-                  {["ID PESANAN", "TANGGAL", "STATUS", "NO. RESI", "TOTAL", "AKSI"].map((h) => (
+                  {["ORDER ID", "DATE", "STATUS", "TRACKING", "TOTAL", "ACTION"].map((h) => (
                     <span key={h} className="font-bold text-[11px] text-[#6b6b6b] tracking-wider">{h}</span>
                   ))}
                 </div>
@@ -181,24 +181,24 @@ export default function ProfilePage() {
                           onClick={() => { setTrackingOrder(order); setShowTrackingModal(true); }}
                           className="bg-transparent border border-[#511e0b] text-[#511e0b] rounded px-2 py-1 text-[11px] font-medium cursor-pointer hover:bg-[#faf5ee] transition-colors"
                         >
-                          Lacak Paket
+                          Track Package
                         </button>
                       ) : (
-                        <span className="text-[#9b9b9b]">Menunggu pengiriman</span>
+                        <span className="text-[#9b9b9b]">Awaiting shipment</span>
                       )}
                     </span>
                     <span className="text-[13px] text-black">{order.total_price}</span>
                     <button
                       onClick={() => setSelectedOrder(order)}
                       className="bg-transparent border-none cursor-pointer p-0 w-fit hover:text-[#511e0b] transition-colors text-[#6b6b6b]"
-                      aria-label="Lihat detail"
+                      aria-label="View details"
                     >
                       <Eye size={18} />
                     </button>
                   </div>
                 ))}
                 {orderHistory.length === 0 && (
-                  <div className="px-5 py-12 text-center text-[13px] text-[#6b6b6b]">Belum ada pesanan.</div>
+                  <div className="px-5 py-12 text-center text-[13px] text-[#6b6b6b]">No orders yet.</div>
                 )}
               </div>
             </section>
@@ -208,10 +208,10 @@ export default function ProfilePage() {
           {activeTab === "addresses" && (
             <section>
               <div className="flex justify-between items-center mb-6">
-                <h2 className="font-bold text-[24px] text-black">Alamat Tersimpan</h2>
+                <h2 className="font-bold text-[24px] text-black">Saved Addresses</h2>
                 <button className="flex items-center gap-1.5 text-[13px] text-[#511e0b] font-medium bg-transparent border border-[#511e0b] rounded-lg px-3 py-2 cursor-pointer hover:bg-[#faf5ee] transition-colors">
                   <Plus size={14} />
-                  Tambah Alamat
+                  Add Address
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -243,7 +243,7 @@ export default function ProfilePage() {
                           </button>
                           <button className="w-full text-left px-4 py-2.5 text-[13px] text-[#df0000] hover:bg-red-50 flex items-center gap-2 bg-transparent border-none cursor-pointer">
                             <X size={13} />
-                            Hapus
+                            Delete
                           </button>
                         </div>
                       )}
@@ -261,19 +261,19 @@ export default function ProfilePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setSelectedOrder(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-[440px] p-8" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
-              <h3 className="font-bold text-[18px] text-black">Detail Pesanan</h3>
+              <h3 className="font-bold text-[18px] text-black">Order Details</h3>
               <button onClick={() => setSelectedOrder(null)} className="text-[#6b6b6b] hover:text-black bg-transparent border-none cursor-pointer p-0">
                 <X size={20} />
               </button>
             </div>
             <div className="space-y-3">
               {[
-                ["ID Pesanan", selectedOrder.id],
-                ["Tanggal", selectedOrder.date],
+                ["Order ID", selectedOrder.id],
+                ["Date", selectedOrder.date],
                 ["Status", STATUS_LABEL[selectedOrder.status] ?? selectedOrder.status],
                 ["Total", selectedOrder.total_price],
-                ...(selectedOrder.tracking_number ? [["Nomor Resi", selectedOrder.tracking_number]] : []),
-                ...(selectedOrder.estimated_delivery ? [["Estimasi Tiba", selectedOrder.estimated_delivery]] : []),
+                ...(selectedOrder.tracking_number ? [["Tracking No.", selectedOrder.tracking_number]] : []),
+                ...(selectedOrder.estimated_delivery ? [["Est. Delivery", selectedOrder.estimated_delivery]] : []),
               ].map(([label, value]) => (
                 <div key={label} className="flex justify-between text-[14px]">
                   <span className="text-[#6b6b6b]">{label}</span>
@@ -285,7 +285,7 @@ export default function ProfilePage() {
               onClick={() => setSelectedOrder(null)}
               className="w-full mt-6 bg-[#511e0b] text-white rounded-lg py-3 font-bold text-[14px] border-none cursor-pointer hover:bg-[#3d1608] transition-colors"
             >
-              Tutup
+              Close
             </button>
             {selectedOrder.status === "DIBATALKAN" && (
               <button
@@ -299,7 +299,7 @@ export default function ProfilePage() {
                 }}
                 className="w-full mt-2 border border-[#df0000] text-[#df0000] rounded-lg py-3 font-bold text-[14px] border-solid cursor-pointer hover:bg-red-50 transition-colors bg-transparent"
               >
-                Ajukan Pengembalian Dana
+                Request Refund
               </button>
             )}
           </div>
@@ -319,7 +319,7 @@ export default function ProfilePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setRefundOrder(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-[460px] p-8" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-[18px] text-black">Pengembalian Dana</h3>
+              <h3 className="font-bold text-[18px] text-black">Refund Request</h3>
               <button onClick={() => setRefundOrder(null)} className="text-[#6b6b6b] hover:text-black bg-transparent border-none cursor-pointer p-0">
                 <X size={20} />
               </button>
@@ -328,45 +328,45 @@ export default function ProfilePage() {
             {refundSubmitted ? (
               <div className="text-center py-4">
                 <div className="text-[40px] mb-3">✅</div>
-                <p className="font-bold text-[16px] text-black mb-2">Pengajuan Terkirim</p>
-                <p className="text-[13px] text-[#6b6b6b]">Tim kami akan memproses pengembalian dana dalam 3–5 hari kerja.</p>
+                <p className="font-bold text-[16px] text-black mb-2">Request Submitted</p>
+                <p className="text-[13px] text-[#6b6b6b]">Our team will process your refund within 3–5 business days.</p>
                 <button
                   onClick={() => setRefundOrder(null)}
                   className="mt-6 w-full bg-[#511e0b] text-white rounded-lg py-3 font-bold text-[14px] border-none cursor-pointer hover:bg-[#3d1608] transition-colors"
                 >
-                  Tutup
+                  Close
                 </button>
               </div>
             ) : (
               <>
                 <p className="text-[13px] text-[#6b6b6b] mb-4">
-                  Pesanan <span className="font-medium text-black">{refundOrder.id}</span> telah dibatalkan.
-                  Isi form berikut untuk mengajukan pengembalian dana.
+                  Order <span className="font-medium text-black">{refundOrder.id}</span> has been cancelled.
+                  Fill in the form below to request a refund.
                 </p>
 
                 <div className="space-y-4">
-                  {/* Alasan */}
+                  {/* Reason */}
                   <div>
-                    <label className="block text-[12px] font-bold text-black mb-1.5">Alasan Pengajuan</label>
+                    <label className="block text-[12px] font-bold text-black mb-1.5">Reason for Refund</label>
                     <textarea
                       value={refundReason}
                       onChange={(e) => setRefundReason(e.target.value)}
-                      placeholder="Jelaskan alasan pengajuan pengembalian dana..."
+                      placeholder="Explain the reason for your refund request..."
                       rows={3}
                       className="w-full border border-[#b0b0b0] rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#511e0b] resize-none"
                     />
                   </div>
 
-                  {/* Metode pengembalian */}
+                  {/* Refund method */}
                   <div>
-                    <label className="block text-[12px] font-bold text-black mb-1.5">Metode Pengembalian</label>
+                    <label className="block text-[12px] font-bold text-black mb-1.5">Refund Method</label>
                     <div className="flex gap-3">
                       <button
                         type="button"
                         onClick={() => setRefundMethod("bank_transfer")}
                         className={`flex-1 py-2 rounded-lg text-[13px] font-medium border cursor-pointer transition-colors ${refundMethod === "bank_transfer" ? "bg-[#511e0b] text-white border-[#511e0b]" : "bg-white text-black border-[#b0b0b0] hover:border-[#511e0b]"}`}
                       >
-                        Transfer Bank
+                        Bank Transfer
                       </button>
                       <button
                         type="button"
@@ -381,13 +381,13 @@ export default function ProfilePage() {
                   {/* Account number */}
                   <div>
                     <label className="block text-[12px] font-bold text-black mb-1.5">
-                      {refundMethod === "bank_transfer" ? "Nomor Rekening (BCA/Mandiri/BNI)" : "Nomor E-Wallet (GoPay/OVO/Dana)"}
+                      {refundMethod === "bank_transfer" ? "Account Number (BCA/Mandiri/BNI)" : "E-Wallet Number (GoPay/OVO/Dana)"}
                     </label>
                     <input
                       type="text"
                       value={refundAccount}
                       onChange={(e) => setRefundAccount(e.target.value)}
-                      placeholder={refundMethod === "bank_transfer" ? "Contoh: 1234567890" : "Contoh: 08123456789"}
+                      placeholder={refundMethod === "bank_transfer" ? "e.g. 1234567890" : "e.g. 08123456789"}
                       className="w-full border border-[#b0b0b0] rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#511e0b]"
                     />
                   </div>
@@ -401,7 +401,7 @@ export default function ProfilePage() {
                   disabled={!refundReason.trim() || !refundAccount.trim()}
                   className="w-full mt-6 bg-[#511e0b] text-white rounded-lg py-3 font-bold text-[14px] border-none cursor-pointer hover:bg-[#3d1608] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Kirim Pengajuan
+                  Submit Request
                 </button>
               </>
             )}

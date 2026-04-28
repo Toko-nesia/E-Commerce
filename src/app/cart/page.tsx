@@ -21,18 +21,18 @@ export default function CartPage() {
     <PageWrapper mobileFooter={false}>
       <div className="max-w-[1200px] mx-auto px-6 md:px-8 py-10">
         <h1 className="font-bold text-[28px] text-[#511e0b] mb-8">
-          Keranjang Belanja
+          Shopping Cart
         </h1>
 
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-5">
             <ShoppingBag size={56} className="text-[#b0b0b0]" />
-            <p className="text-[#6b6b6b] text-[15px]">Keranjang kamu masih kosong.</p>
+            <p className="text-[#6b6b6b] text-[15px]">Your cart is empty.</p>
             <Link
               href="/shop"
               className="bg-[#511e0b] text-white px-6 py-3 rounded-lg font-bold text-[14px] hover:bg-[#3d1608] transition-colors no-underline"
             >
-              Mulai Belanja
+              Start Shopping
             </Link>
           </div>
         ) : (
@@ -65,7 +65,7 @@ export default function CartPage() {
                       <button
                         onClick={() => updateQty(product.id, qty - 1)}
                         className="bg-transparent border-none cursor-pointer text-[#511e0b] p-0 hover:text-black transition-colors"
-                        aria-label="Kurangi jumlah"
+                        aria-label="Decrease quantity"
                       >
                         <Minus size={13} />
                       </button>
@@ -73,7 +73,7 @@ export default function CartPage() {
                       <button
                         onClick={() => updateQty(product.id, qty + 1)}
                         className="bg-transparent border-none cursor-pointer text-[#511e0b] p-0 hover:text-black transition-colors"
-                        aria-label="Tambah jumlah"
+                        aria-label="Increase quantity"
                       >
                         <Plus size={13} />
                       </button>
@@ -82,7 +82,7 @@ export default function CartPage() {
                     <button
                       onClick={() => removeFromCart(product.id)}
                       className="text-[#6b6b6b] hover:text-[#DF0000] transition-colors bg-transparent border-none cursor-pointer"
-                      aria-label="Hapus item"
+                      aria-label="Remove item"
                     >
                       <X size={18} />
                     </button>
@@ -93,7 +93,7 @@ export default function CartPage() {
 
             {/* Order Summary */}
             <div className="w-full lg:w-[320px] shrink-0 bg-[#FDF9F5] rounded-xl shadow-sm border border-[#e0e0e0] p-6 lg:sticky lg:top-28">
-              <h2 className="font-bold text-[19px] text-black mb-4">Ringkasan Pesanan</h2>
+              <h2 className="font-bold text-[19px] text-black mb-4">Order Summary</h2>
 
               <div className="flex flex-col gap-2 mb-4">
                 {items.map(({ product, qty }) => (
@@ -106,19 +106,19 @@ export default function CartPage() {
 
               <div className="border-t border-[#d0d0d0] pt-4 space-y-2">
                 <div className="flex justify-between text-[13px]">
-                  <span className="text-[#6b6b6b]">Subtotal produk</span>
+                  <span className="text-[#6b6b6b]">Product subtotal</span>
                   <span className="text-black">{formatRp(totalPrice)}</span>
                 </div>
                 <div className="flex justify-between text-[13px]">
-                  <span className="text-[#6b6b6b]">Pengiriman udara</span>
+                  <span className="text-[#6b6b6b]">Air shipping</span>
                   <span className="text-black">{formatRp(shipping)}</span>
                 </div>
                 <div className="flex justify-between text-[13px]">
-                  <span className="text-[#6b6b6b]">Biaya layanan</span>
+                  <span className="text-[#6b6b6b]">Service fee</span>
                   <span className="text-black">{formatRp(serviceFee)}</span>
                 </div>
                 <div className="flex justify-between text-[13px]">
-                  <span className="text-[#6b6b6b]">Pajak impor (est.)</span>
+                  <span className="text-[#6b6b6b]">Import tax (est.)</span>
                   <span className="text-black">{formatRp(importTax)}</span>
                 </div>
               </div>
@@ -139,7 +139,7 @@ export default function CartPage() {
                 href="/shop"
                 className="block w-full mt-2 text-center text-[13px] text-[#511e0b] no-underline hover:underline"
               >
-                Lanjut belanja
+                Continue shopping
               </Link>
             </div>
           </div>

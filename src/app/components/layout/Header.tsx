@@ -59,7 +59,7 @@ export function Header() {
       {/* Right Actions */}
       <div className="flex items-center gap-4">
         {/* Cart icon with badge */}
-        <Link href="/cart" className="relative text-black" aria-label="Keranjang belanja">
+        <Link href="/cart" className="relative text-black" aria-label="Shopping cart">
           <ShoppingCart size={22} />
           {totalItems > 0 && (
             <span className="absolute -top-2 -right-2 bg-[#511e0b] text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center animate-[badgePop_0.3s_ease-out]">
@@ -70,7 +70,7 @@ export function Header() {
 
         {/* Auth */}
         {isLoggedIn ? (
-          <Link href="/profile" className="text-black" aria-label="Profil">
+          <Link href="/profile" className="text-black" aria-label="Profile">
             <User size={22} />
           </Link>
         ) : (

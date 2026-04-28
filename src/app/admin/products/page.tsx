@@ -31,13 +31,13 @@ export default function ProductsPage() {
     <div>
       {/* ── Page Header ──────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="font-bold text-[20px] text-black">Produk Saya</h1>
+        <h1 className="font-bold text-[20px] text-black">My Products</h1>
         <Link
           href="/admin/products/add"
           className="flex items-center gap-2 bg-[#511E0B] text-white text-[14px] font-bold px-4 py-2 rounded hover:bg-[#3d1608] transition-colors"
         >
           <Plus size={16} />
-          Tambah Produk
+          Add Product
         </Link>
       </div>
 
@@ -55,7 +55,7 @@ export default function ProductsPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari nama produk, ID Produk"
+              placeholder="Search product name, product ID"
               className="w-full border border-[#d0d0d0] rounded pl-9 pr-3 py-2 text-[13px] outline-none focus:border-[#511E0B] transition-colors placeholder:text-[#6b6b6b]"
             />
           </div>
@@ -66,7 +66,7 @@ export default function ProductsPage() {
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="border border-[#d0d0d0] rounded px-3 py-2 text-[13px] text-gray-700 outline-none focus:border-[#511E0B] transition-colors bg-white cursor-pointer w-full sm:w-auto"
           >
-            <option value="">Semua Kategori</option>
+            <option value="">All Categories</option>
             {categories.map((cat) => (
               <option key={cat.slug} value={cat.name}>
                 {cat.name}
@@ -81,16 +81,16 @@ export default function ProductsPage() {
           <thead>
             <tr className="border-b border-[#d0d0d0]">
               <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3">
-                Produk
+                Product
               </th>
               <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3">
-                Harga
+                Price
               </th>
               <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3">
-                Stok
+                Stock
               </th>
               <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3">
-                Aksi
+                Action
               </th>
             </tr>
           </thead>
@@ -101,8 +101,7 @@ export default function ProductsPage() {
                   colSpan={4}
                   className="text-center text-[13px] text-[#6b6b6b] py-12"
                 >
-                  Tidak ada produk yang ditemukan.
-                </td>
+                  Tidak ada produk yang ditemukan.                </td>
               </tr>
             ) : (
               filtered.map((p) => (
@@ -143,7 +142,7 @@ export default function ProductsPage() {
                     {p.stock === undefined ? (
                       <span className="text-[#6b6b6b]">-</span>
                     ) : p.stock === 0 ? (
-                      <span className="text-[#DF0000] font-semibold">Habis</span>
+                      <span className="text-[#DF0000] font-semibold">Out of stock</span>
                     ) : (
                       <span className="text-black">{p.stock}</span>
                     )}
@@ -189,10 +188,10 @@ export default function ProductsPage() {
               <div className="bg-red-50 rounded-full p-2.5">
                 <AlertTriangle size={20} className="text-[#DF0000]" />
               </div>
-              <h3 className="font-bold text-[16px] text-black">Hapus Produk?</h3>
+              <h3 className="font-bold text-[16px] text-black">Delete Product?</h3>
             </div>
             <p className="text-[13px] text-[#6b6b6b] leading-relaxed">
-              Apakah kamu yakin ingin menghapus produk ini? Tindakan ini tidak dapat dibatalkan.
+              Are you sure you want to delete this product? This action cannot be undone.
             </p>
             <div className="flex gap-3 mt-6">
               <button
@@ -200,14 +199,14 @@ export default function ProductsPage() {
                 onClick={() => setConfirmDeleteId(null)}
                 className="flex-1 border border-[#d0d0d0] text-black text-[13px] font-medium rounded-lg py-2.5 hover:bg-gray-50 transition-colors bg-white cursor-pointer"
               >
-                Batalkan
+                Cancel
               </button>
               <button
                 type="button"
                 onClick={confirmDelete}
                 className="flex-1 bg-[#DF0000] text-white text-[13px] font-bold rounded-lg py-2.5 hover:bg-red-700 transition-colors border-none cursor-pointer"
               >
-                Hapus
+                Delete
               </button>
             </div>
           </div>

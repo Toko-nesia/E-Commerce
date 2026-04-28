@@ -27,16 +27,15 @@ export default function AdminDashboardPage() {
   const totalCategories = categories.length;
 
   const stats = [
-    { label: "Total Produk", value: totalProducts, icon: Package, color: "bg-blue-50 text-blue-600" },
-    { label: "Total Pesanan", value: totalOrders, icon: ShoppingBag, color: "bg-[#FDF9F5] text-[#511e0b]" },
-    { label: "Pesanan Baru", value: newOrders, icon: TrendingUp, color: "bg-[#FFF3CD] text-[#FBBE48]" },
-    { label: "Kategori", value: totalCategories, icon: Tag, color: "bg-green-50 text-[#15a15b]" },
+    { label: "Total Products", value: totalProducts, icon: Package, color: "bg-blue-50 text-blue-600" },
+    { label: "Total Orders", value: totalOrders, icon: ShoppingBag, color: "bg-[#FDF9F5] text-[#511e0b]" },
+    { label: "New Orders", value: newOrders, icon: TrendingUp, color: "bg-[#FFF3CD] text-[#FBBE48]" },
+    { label: "Categories", value: totalCategories, icon: Tag, color: "bg-green-50 text-[#15a15b]" },
   ];
 
   return (
     <div>
       <h1 className="font-bold text-[20px] text-black mb-6">Dashboard</h1>
-
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
         {stats.map((stat) => (
@@ -57,7 +56,7 @@ export default function AdminDashboardPage() {
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#d0d0d0]">
           <div className="flex items-center gap-2">
             <Clock size={16} className="text-[#6b6b6b]" />
-            <h2 className="font-bold text-[15px] text-black">Pesanan Terbaru</h2>
+            <h2 className="font-bold text-[15px] text-black">Recent Orders</h2>
           </div>
           <a href="/admin/orders" className="text-[13px] text-[#511E0B] hover:underline">
             Lihat semua →
@@ -67,7 +66,7 @@ export default function AdminDashboardPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#d0d0d0] bg-[#fafafa]">
-                {["No. Pesanan", "Pelanggan", "Produk", "Total", "Status", "Tanggal"].map((h) => (
+                {["Order No.", "Customer", "Product", "Total", "Status", "Date"].map((h) => (
                   <th key={h} className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3 whitespace-nowrap">
                     {h}
                   </th>

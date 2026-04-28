@@ -44,18 +44,18 @@ export function PaymentOptionModal({ isOpen, onClose, selected, onSelect }: Paym
               {/* Bank Transfer details */}
               {method.type === "bank_transfer" && activeDetail === method.id && (
                 <div className="mb-4 ml-[96px] bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <p className="text-[13px] font-semibold text-black mb-2">Detail Rekening</p>
+                  <p className="text-[13px] font-semibold text-black mb-2">Account Details</p>
                   <div className="space-y-1 text-[13px] text-gray-700">
                     <div className="flex gap-2">
                       <span className="w-[100px] text-gray-500">Bank</span>
                       <span>: BCA</span>
                     </div>
                     <div className="flex gap-2">
-                      <span className="w-[100px] text-gray-500">No. Rekening</span>
+                      <span className="w-[100px] text-gray-500">Account No.</span>
                       <span>: 1234567890</span>
                     </div>
                     <div className="flex gap-2">
-                      <span className="w-[100px] text-gray-500">Atas Nama</span>
+                      <span className="w-[100px] text-gray-500">Account Name</span>
                       <span>: Tokonesia Indonesia</span>
                     </div>
                   </div>
@@ -69,7 +69,7 @@ export function PaymentOptionModal({ isOpen, onClose, selected, onSelect }: Paym
                     <span className="text-[13px] text-gray-500 font-medium">QR Code</span>
                   </div>
                   <p className="text-[12px] text-gray-600 max-w-[240px]">
-                    Scan QR code menggunakan aplikasi dompet digital (GoPay, OVO, Dana, dll.)
+                    Scan the QR code using your digital wallet app (GoPay, OVO, Dana, etc.)
                   </p>
                 </div>
               )}
@@ -83,7 +83,7 @@ export function PaymentOptionModal({ isOpen, onClose, selected, onSelect }: Paym
           className="mt-4 w-full bg-[#511e0b] text-white font-semibold py-3 rounded-lg text-[14px]"
           onClick={onClose}
         >
-          Konfirmasi
+          Confirm
         </button>
       </div>
     </Modal>

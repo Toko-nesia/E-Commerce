@@ -74,14 +74,14 @@ export default function CategoriesPage() {
     <div>
       {/* ── Page Header ───────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="font-bold text-[20px] text-black">Kategori</h1>
+        <h1 className="font-bold text-[20px] text-black">Categories</h1>
         <button
           type="button"
           onClick={openAdd}
           className="flex items-center gap-2 bg-[#511E0B] text-white text-[14px] font-bold px-4 py-2 rounded hover:bg-[#3d1608] transition-colors cursor-pointer border-none"
         >
           <Plus size={16} />
-          Tambah Kategori
+          Add Category
         </button>
       </div>
 
@@ -92,16 +92,16 @@ export default function CategoriesPage() {
           <thead>
             <tr className="border-b border-[#d0d0d0]">
               <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3">
-                Nama Kategori
+                Category Name
               </th>
               <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3">
                 Slug
               </th>
               <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3">
-                Jumlah Produk
+                Product Count
               </th>
               <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3">
-                Aksi
+                Action
               </th>
             </tr>
           </thead>
@@ -109,7 +109,7 @@ export default function CategoriesPage() {
             {catList.length === 0 ? (
               <tr>
                 <td colSpan={4} className="text-center text-[13px] text-[#6b6b6b] py-12">
-                  Belum ada kategori.
+                  No categories yet.
                 </td>
               </tr>
             ) : (
@@ -166,7 +166,7 @@ export default function CategoriesPage() {
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-bold text-[17px] text-black">
-                {modalMode === "add" ? "Tambah Kategori" : "Edit Kategori"}
+                {modalMode === "add" ? "Add Category" : "Edit Category"}
               </h3>
               <button
                 type="button"
@@ -181,13 +181,13 @@ export default function CategoriesPage() {
               {/* Nama */}
               <div>
                 <label className="block font-bold text-[13px] text-black mb-1.5">
-                  Nama Kategori <span className="text-[#DF0000]">*</span>
+                  Category Name <span className="text-[#DF0000]">*</span>
                 </label>
                 <input
                   type="text"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  placeholder="Masukkan nama kategori"
+                  placeholder="Enter category name"
                   className={inputClass}
                   required
                 />
@@ -201,7 +201,7 @@ export default function CategoriesPage() {
               {/* Jumlah Produk */}
               <div>
                 <label className="block font-bold text-[13px] text-black mb-1.5">
-                  Jumlah Produk
+                  Product Count
                 </label>
                 <input
                   type="number"
@@ -219,13 +219,13 @@ export default function CategoriesPage() {
                   onClick={closeModal}
                   className="flex-1 border border-[#d0d0d0] text-black text-[13px] font-medium rounded-lg py-2.5 hover:bg-gray-50 transition-colors bg-white cursor-pointer"
                 >
-                  Batalkan
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className="flex-1 bg-[#511E0B] text-white text-[13px] font-bold rounded-lg py-2.5 hover:bg-[#3d1608] transition-colors border-none cursor-pointer"
                 >
-                  {modalMode === "add" ? "Tambah" : "Simpan"}
+                  {modalMode === "add" ? "Add" : "Save"}
                 </button>
               </div>
             </form>
@@ -247,10 +247,10 @@ export default function CategoriesPage() {
               <div className="bg-red-50 rounded-full p-2.5">
                 <AlertTriangle size={20} className="text-[#DF0000]" />
               </div>
-              <h3 className="font-bold text-[16px] text-black">Hapus Kategori?</h3>
+              <h3 className="font-bold text-[16px] text-black">Delete Category?</h3>
             </div>
             <p className="text-[13px] text-[#6b6b6b] leading-relaxed">
-              Apakah kamu yakin ingin menghapus kategori ini? Tindakan ini tidak dapat dibatalkan.
+              Are you sure you want to delete this category? This action cannot be undone.
             </p>
             <div className="flex gap-3 mt-6">
               <button
@@ -258,14 +258,14 @@ export default function CategoriesPage() {
                 onClick={() => setDeleteSlug(null)}
                 className="flex-1 border border-[#d0d0d0] text-black text-[13px] font-medium rounded-lg py-2.5 hover:bg-gray-50 transition-colors bg-white cursor-pointer"
               >
-                Batalkan
+                Cancel
               </button>
               <button
                 type="button"
                 onClick={confirmDelete}
                 className="flex-1 bg-[#DF0000] text-white text-[13px] font-bold rounded-lg py-2.5 hover:bg-red-700 transition-colors border-none cursor-pointer"
               >
-                Hapus
+                Delete
               </button>
             </div>
           </div>

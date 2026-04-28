@@ -31,12 +31,12 @@ export function AddToCartPopup({ isOpen, onClose, productName }: AddToCartPopupP
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
             <CheckCircle size={20} className="text-[#15a15b] shrink-0" />
-            <p className="font-bold text-[15px] text-black">Berhasil ditambahkan!</p>
+            <p className="font-bold text-[15px] text-black">Added to cart!</p>
           </div>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer p-0 transition-colors"
-            aria-label="Tutup"
+            aria-label="Close"
           >
             <X size={16} />
           </button>
@@ -51,7 +51,7 @@ export function AddToCartPopup({ isOpen, onClose, productName }: AddToCartPopupP
             onClick={onClose}
             className="flex-1 border border-[#511e0b] text-[#511e0b] rounded-lg py-2 text-[13px] font-medium hover:bg-[#faf5ee] transition-colors cursor-pointer bg-transparent"
           >
-            Lanjut Belanja
+            Continue Shopping
           </button>
           <Link
             href="/cart"
@@ -59,7 +59,7 @@ export function AddToCartPopup({ isOpen, onClose, productName }: AddToCartPopupP
             className="flex-1 bg-[#511e0b] text-white rounded-lg py-2 text-[13px] font-medium flex items-center justify-center gap-1.5 no-underline hover:bg-[#3d1608] transition-colors"
           >
             <ShoppingCart size={14} />
-            Lihat Keranjang
+            View Cart
           </Link>
         </div>
       </div>

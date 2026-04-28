@@ -21,14 +21,14 @@ export default function HomePage() {
             <span>Tokonesia</span>
           </h1>
           <p className="text-[16px] md:text-[22px] text-white max-w-[540px] mt-3 leading-relaxed">
-            Membawa kebaikan Nusantara ke jantung Jepang.
-            Temukan produk Indonesia terbaik, langsung dari sumbernya.
+            Bringing the best of the Nusantara to the heart of Japan.
+            Discover authentic Indonesian products, straight from the source.
           </p>
           <Link
             href="/shop"
             className="inline-block mt-6 bg-[#511e0b] text-white text-[14px] font-bold px-6 py-3 rounded-lg hover:bg-[#3d1608] transition-colors no-underline"
           >
-            Belanja Sekarang →
+            Shop Now →
           </Link>
         </div>
       </section>
@@ -72,7 +72,7 @@ export default function HomePage() {
             href="/shop"
             className="inline-block border border-[#511e0b] text-[#511e0b] text-[14px] font-bold px-6 py-2.5 rounded-lg hover:bg-[#511e0b] hover:text-white transition-colors no-underline"
           >
-            Lihat Semua Produk
+            View All Products
           </Link>
         </div>
       </section>

@@ -9,17 +9,17 @@ import { categories } from "@/data/categories";
 
 const PRODUCTS_PER_PAGE = 9;
 
-type SortOption = "relevansi" | "harga-asc" | "harga-desc";
+type SortOption = "relevance" | "price-asc" | "price-desc";
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: "relevansi", label: "Relevansi" },
-  { value: "harga-asc", label: "Harga Terendah" },
-  { value: "harga-desc", label: "Harga Tertinggi" },
+  { value: "relevance", label: "Relevance" },
+  { value: "price-asc", label: "Lowest Price" },
+  { value: "price-desc", label: "Highest Price" },
 ];
 
 export default function ShopPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<SortOption>("relevansi");
+  const [sortBy, setSortBy] = useState<SortOption>("relevance");
   const [currentPage, setCurrentPage] = useState(1);
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -30,8 +30,8 @@ export default function ShopPage() {
       return p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q);
     });
 
-    if (sortBy === "harga-asc") result = [...result].sort((a, b) => a.price_raw - b.price_raw);
-    else if (sortBy === "harga-desc") result = [...result].sort((a, b) => b.price_raw - a.price_raw);
+    if (sortBy === "price-asc") result = [...result].sort((a, b) => a.price_raw - b.price_raw);
+    else if (sortBy === "price-desc") result = [...result].sort((a, b) => b.price_raw - a.price_raw);
 
     return result;
   }, [searchQuery, sortBy]);
@@ -44,7 +44,7 @@ export default function ShopPage() {
     setCurrentPage(1);
   };
 
-  const currentSortLabel = SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? "Relevansi";
+  const currentSortLabel = SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? "Relevance";
 
   return (
     <PageWrapper>
@@ -56,7 +56,7 @@ export default function ShopPage() {
             className="flex items-center gap-2 text-[14px] text-[#511e0b] font-medium border border-[#511e0b] rounded-lg px-4 py-2 bg-transparent cursor-pointer hover:bg-[#faf5ee] transition-colors"
           >
             <SlidersHorizontal size={15} />
-            Filter Kategori
+            Filter Categories
           </button>
         </div>
 
@@ -70,20 +70,20 @@ export default function ShopPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
-                placeholder="Cari produk..."
+                placeholder="Search products..."
                 className="flex-1 text-[14px] text-[#511e0b] bg-transparent border-none outline-none placeholder:text-[#999999]"
               />
             </div>
 
             {/* Categories */}
             <div className="mt-6 border-r-2 border-[#791111] pr-4">
-              <h3 className="font-bold text-[16px] text-[#511e0b] mb-3 uppercase tracking-wide">Kategori</h3>
+              <h3 className="font-bold text-[16px] text-[#511e0b] mb-3 uppercase tracking-wide">Categories</h3>
               <Link
                 href="/shop"
                 className="block text-[14px] font-bold text-[#511e0b] no-underline py-1.5 hover:text-[#3d1608]"
                 onClick={() => setMobileSidebarOpen(false)}
               >
-                Semua <span className="text-[#fbbe48]">({products.length})</span>
+                All <span className="text-[#fbbe48]">({products.length})</span>
               </Link>
               {categories.map((c) => (
                 <Link
@@ -102,9 +102,9 @@ export default function ShopPage() {
           <div className="flex-1 min-w-0">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
               <div>
-                <h1 className="font-bold text-[28px] md:text-[32px] text-[#511e0b]">Semua Produk</h1>
+                <h1 className="font-bold text-[28px] md:text-[32px] text-[#511e0b]">All Products</h1>
                 <p className="text-[13px] text-[#6b6b6b] mt-0.5">
-                  Menampilkan {Math.min((currentPage - 1) * PRODUCTS_PER_PAGE + 1, filtered.length)}–{Math.min(currentPage * PRODUCTS_PER_PAGE, filtered.length)} dari {filtered.length} produk
+                  Showing {Math.min((currentPage - 1) * PRODUCTS_PER_PAGE + 1, filtered.length)}–{Math.min(currentPage * PRODUCTS_PER_PAGE, filtered.length)} of {filtered.length} products
                 </p>
               </div>
 
@@ -114,7 +114,7 @@ export default function ShopPage() {
                   onClick={() => setShowSortMenu((v) => !v)}
                   className="flex items-center gap-2 text-[13px] text-[#511e0b] bg-white border border-[#b0b0b0] rounded-lg px-4 py-2 cursor-pointer hover:border-[#511e0b] transition-colors"
                 >
-                  Urutkan: <span className="font-medium">{currentSortLabel}</span>
+                  Sort: <span className="font-medium">{currentSortLabel}</span>
                   <ChevronDown size={14} />
                 </button>
                 {showSortMenu && (
@@ -136,9 +136,9 @@ export default function ShopPage() {
           {/* Product Grid */}
             {paginated.length === 0 ? (
               <div className="text-center py-24">
-                <p className="text-[#6b6b6b] text-[15px]">Produk tidak ditemukan untuk &ldquo;{searchQuery}&rdquo;</p>
+                <p className="text-[#6b6b6b] text-[15px]">No products found for &ldquo;{searchQuery}&rdquo;</p>
                 <button onClick={() => handleSearch("")} className="mt-3 text-[#511e0b] underline text-[13px] bg-transparent border-none cursor-pointer">
-                  Reset pencarian
+                  Clear search
                 </button>
               </div>
             ) : (
@@ -161,7 +161,7 @@ export default function ShopPage() {
                         <p className="text-[12px] text-[#6b6b6b] uppercase tracking-wider">{p.category}</p>
                         <p className="font-bold text-[14px] text-black mt-1 line-clamp-2 leading-snug flex-1">{p.name}</p>
                         <p className="font-bold text-[15px] text-[#511e0b] mt-1">{p.price}</p>
-                        <p className="text-[12px] text-[#6b6b6b] mt-0.5">Stok: {p.stock}</p>
+                        <p className="text-[12px] text-[#6b6b6b] mt-0.5">Stock: {p.stock}</p>
                       </div>
                     </div>
                   </Link>

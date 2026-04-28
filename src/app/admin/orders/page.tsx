@@ -70,12 +70,12 @@ const initialOrders: Order[] = [
 ];
 
 const STATUS_TABS = [
-  { label: "Semua", value: "" },
-  { label: "Baru", value: "BARU" },
-  { label: "Diproses", value: "DIPROSES" },
-  { label: "Dikirim", value: "DIKIRIM" },
-  { label: "Selesai", value: "SELESAI" },
-  { label: "Dibatalkan", value: "DIBATALKAN" },
+  { label: "All", value: "" },
+  { label: "New", value: "BARU" },
+  { label: "Processing", value: "DIPROSES" },
+  { label: "Shipped", value: "DIKIRIM" },
+  { label: "Completed", value: "SELESAI" },
+  { label: "Cancelled", value: "DIBATALKAN" },
 ];
 
 const STATUS_STYLES: Record<string, string> = {
@@ -118,14 +118,14 @@ export default function OrdersPage() {
     // Validate tracking number when changing to DIKIRIM
     if (showTrackingInput && trackingInput !== "") {
       if (!validateTrackingNumber(trackingInput)) {
-        setTrackingError("Nomor resi tidak valid. Minimal 12 karakter alfanumerik.");
+        setTrackingError("Invalid tracking number. Minimum 12 alphanumeric characters.");
         return;
       }
     }
 
     // Require cancellation reason when changing to DIBATALKAN
     if (newStatus === "DIBATALKAN" && cancelReason.trim() === "") {
-      setCancelReasonError("Alasan pembatalan wajib diisi.");
+      setCancelReasonError("Cancellation reason is required.");
       return;
     }
 
@@ -148,7 +148,7 @@ export default function OrdersPage() {
   return (
     <div>
       {/* ── Page Header ───────────────────────────────────────────────── */}
-      <h1 className="font-bold text-[20px] text-black mb-6">Pesanan Masuk</h1>
+      <h1 className="font-bold text-[20px] text-black mb-6">Incoming Orders</h1>
 
       {/* ── White Card ────────────────────────────────────────────────── */}
       <div className="bg-white rounded shadow-[2px_2px_10px_rgba(0,0,0,0.25)] overflow-hidden">
@@ -179,16 +179,16 @@ export default function OrdersPage() {
           <thead>
             <tr className="border-b border-[#d0d0d0]">
               <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3 whitespace-nowrap">
-                No. Pesanan
+                Order No.
               </th>
               <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3 whitespace-nowrap">
-                Tanggal
+                Date
               </th>
               <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3 whitespace-nowrap">
-                Pelanggan
+                Customer
               </th>
               <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3">
-                Produk
+                Product
               </th>
               <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3 whitespace-nowrap">
                 Qty
@@ -200,10 +200,10 @@ export default function OrdersPage() {
                 Status
               </th>
               <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3 whitespace-nowrap">
-                No. Resi
+                Tracking No.
               </th>
               <th className="text-left text-[13px] font-medium text-[#6b6b6b] px-4 py-3">
-                Aksi
+                Action
               </th>
             </tr>
           </thead>
@@ -214,8 +214,7 @@ export default function OrdersPage() {
                   colSpan={9}
                   className="text-center text-[13px] text-[#6b6b6b] py-12"
                 >
-                  Tidak ada pesanan ditemukan.
-                </td>
+                  Tidak ada pesanan ditemukan.</td>
               </tr>
             ) : (
               filtered.map((order) => (
@@ -280,8 +279,7 @@ export default function OrdersPage() {
                       }}
                       className="text-[#511E0B] text-[13px] bg-transparent border-none cursor-pointer hover:underline font-medium whitespace-nowrap"
                     >
-                      Lihat Detail
-                    </button>
+                      Lihat Detail                    </button>
                   </td>
                 </tr>
               ))
@@ -300,26 +298,26 @@ export default function OrdersPage() {
               type="button"
               onClick={() => setShowModal(false)}
               className="absolute top-4 right-4 bg-transparent border-none cursor-pointer text-[#6b6b6b] hover:text-black transition-colors p-0"
-              aria-label="Tutup modal"
+              aria-label="Close modal"
             >
               <X size={20} />
             </button>
 
             {/* Title */}
-            <h2 className="font-bold text-[17px] mb-4">Detail Pesanan</h2>
+            <h2 className="font-bold text-[17px] mb-4">Order Details</h2>
 
             {/* Info Rows */}
             <div className="grid grid-cols-[120px_1fr] gap-y-2 text-[13px]">
-              <span className="text-[#6b6b6b]">No. Pesanan</span>
+              <span className="text-[#6b6b6b]">Order No.</span>
               <span className="text-black font-medium">{selectedOrder.id}</span>
 
-              <span className="text-[#6b6b6b]">Tanggal</span>
+              <span className="text-[#6b6b6b]">Date</span>
               <span className="text-black">{selectedOrder.date}</span>
 
-              <span className="text-[#6b6b6b]">Pelanggan</span>
+              <span className="text-[#6b6b6b]">Customer</span>
               <span className="text-black">{selectedOrder.customer}</span>
 
-              <span className="text-[#6b6b6b]">Produk</span>
+              <span className="text-[#6b6b6b]">Product</span>
               <span className="text-black">{selectedOrder.product}</span>
 
               <span className="text-[#6b6b6b]">Qty</span>
@@ -334,7 +332,7 @@ export default function OrdersPage() {
             {/* Show cancellation reason if order is already cancelled */}
             {selectedOrder.status === "DIBATALKAN" && selectedOrder.cancel_reason && (
               <div className="mt-3 p-3 bg-red-50 rounded text-[13px]">
-                <span className="font-bold text-red-600">Alasan Pembatalan: </span>
+                <span className="font-bold text-red-600">Cancellation Reason: </span>
                 <span className="text-red-700">{selectedOrder.cancel_reason}</span>
               </div>
             )}
@@ -342,8 +340,8 @@ export default function OrdersPage() {
             {/* Divider */}
             <div className="border-t border-[#d0d0d0] my-4" />
 
-            {/* Ubah Status */}
-            <p className="font-bold text-[13px] mb-2">Ubah Status</p>
+            {/* Change Status */}
+            <p className="font-bold text-[13px] mb-2">Change Status</p>
             <select
               value={newStatus}
               onChange={(e) => {
@@ -353,16 +351,16 @@ export default function OrdersPage() {
               }}
               className="border border-[#d0d0d0] rounded px-3 py-2 text-[13px] w-full outline-none focus:border-[#511E0B] bg-white cursor-pointer"
             >
-              <option value="BARU">BARU</option>
-              <option value="DIPROSES">DIPROSES</option>
-              <option value="DIKIRIM">DIKIRIM</option>
-              <option value="DIBATALKAN">DIBATALKAN</option>
+              <option value="BARU">NEW</option>
+              <option value="DIPROSES">PROCESSING</option>
+              <option value="DIKIRIM">SHIPPED</option>
+              <option value="DIBATALKAN">CANCELLED</option>
             </select>
 
-            {/* No. Resi Input — only when changing to DIKIRIM */}
+            {/* Tracking No. Input — only when changing to DIKIRIM */}
             {showTrackingInput && (
               <div className="mt-3">
-                <p className="font-bold text-[13px] mb-2">No. Resi FedEx</p>
+                <p className="font-bold text-[13px] mb-2">FedEx Tracking No.</p>
                 <input
                   type="text"
                   value={trackingInput}
@@ -370,7 +368,7 @@ export default function OrdersPage() {
                     setTrackingInput(e.target.value);
                     setTrackingError("");
                   }}
-                  placeholder="Masukkan nomor resi FedEx"
+                  placeholder="Enter FedEx tracking number"
                   className="border border-[#d0d0d0] rounded px-3 py-2 text-[13px] w-full outline-none focus:border-[#511E0B]"
                 />
                 {trackingError && (
@@ -382,14 +380,14 @@ export default function OrdersPage() {
             {/* Cancellation Reason — only when changing to DIBATALKAN */}
             {newStatus === "DIBATALKAN" && (
               <div className="mt-3">
-                <p className="font-bold text-[13px] mb-2">Alasan Pembatalan <span className="text-red-500">*</span></p>
+                <p className="font-bold text-[13px] mb-2">Cancellation Reason <span className="text-red-500">*</span></p>
                 <textarea
                   value={cancelReason}
                   onChange={(e) => {
                     setCancelReason(e.target.value);
                     setCancelReasonError("");
                   }}
-                  placeholder="Tuliskan alasan pembatalan pesanan ini..."
+                  placeholder="Write the reason for cancelling this order..."
                   rows={3}
                   className="border border-[#d0d0d0] rounded px-3 py-2 text-[13px] w-full outline-none focus:border-[#511E0B] resize-none"
                 />
@@ -405,7 +403,7 @@ export default function OrdersPage() {
               onClick={handleSave}
               className="w-full mt-3 bg-[#511E0B] text-white rounded py-3 font-bold text-[14px] hover:bg-[#3d1608] transition-colors cursor-pointer border-none"
             >
-              Simpan Perubahan
+              Save Changes
             </button>
           </div>
         </div>
