@@ -92,7 +92,7 @@ export default function CartPage() {
             </div>
 
             {/* Order Summary */}
-            <div className="w-full lg:w-[320px] shrink-0 bg-white rounded-xl shadow-sm border border-[#e0e0e0] p-6 lg:sticky lg:top-28">
+            <div className="w-full lg:w-[320px] shrink-0 bg-[#FAF5EE] rounded-xl shadow-sm border border-[#e0e0e0] p-6 lg:sticky lg:top-28">
               <h2 className="font-bold text-[19px] text-black mb-4">Ringkasan Pesanan</h2>
 
               <div className="flex flex-col gap-2 mb-4">
