@@ -13,6 +13,11 @@ const PROTECTED_ROUTES = ['/profile', '/checkout'];
 const AUTH_ROUTES = ['/login', '/register', '/complete-data'];
 
 export function getRoutingDecision(pathname: string, auth: AuthState): RoutingDecision {
+  // Allow OAuth callback route without any redirect
+  if (pathname.startsWith('/auth/callback')) {
+    return { action: 'allow' };
+  }
+
   const isProtectedRoute =
     PROTECTED_ROUTES.some((route) => pathname.startsWith(route)) ||
     pathname.startsWith('/admin');

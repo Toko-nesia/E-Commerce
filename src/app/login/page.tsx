@@ -8,10 +8,18 @@ import { resolveImagePath } from "@/lib/image-paths";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, signInWithGoogle } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  const handleGoogleLogin = async () => {
+    setError(null);
+    const result = await signInWithGoogle();
+    if (!result.success) {
+      setError(result.error || "Google sign-in failed");
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,7 +87,11 @@ export default function LoginPage() {
             <div className="flex-1 h-px bg-[#deadad]" />
           </div>
 
-          <button className="w-full mt-4 bg-[#FDF9F5] rounded-[8px] h-[53px] font-['Manrope',sans-serif] text-[14px] text-[#798698] tracking-[1.4px] uppercase shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] cursor-pointer border-none hover:bg-[#f0e8dc] transition-colors">
+          <button
+            onClick={handleGoogleLogin}
+            disabled={isLoading}
+            className="w-full mt-4 bg-[#FDF9F5] rounded-[8px] h-[53px] font-['Manrope',sans-serif] text-[14px] text-[#798698] tracking-[1.4px] uppercase shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] cursor-pointer border-none hover:bg-[#f0e8dc] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          >
             GOOGLE
           </button>
 
