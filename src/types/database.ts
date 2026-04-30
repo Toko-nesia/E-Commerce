@@ -363,20 +363,33 @@ export interface FedExRateReplyDetail {
   serviceName?: string;
   packagingType?: string;
   ratedShipmentDetails?: Array<{
-    rateType: "LIST" | "ACCOUNT" | "PREFERRED" | "INCENTIVE";
-    totalNetCharge?: { amount: number; currency: string };
-    totalBaseCharge?: { amount: number; currency: string };
-    surCharges?: Array<{ type: string; description: string; amount: { amount: number; currency: string } }>;
+    rateType: "LIST" | "ACCOUNT" | "PREFERRED" | "INCENTIVE" | "PREFERRED_INCENTIVE" | "PREFERRED_CURRENCY";
+    /** Plain number — NOT an object. e.g. 445.54 */
+    totalNetCharge?: number;
+    /** Plain number — NOT an object. e.g. 403.2 */
+    totalBaseCharge?: number;
+    totalVatCharge?: number;
+    totalNetFedExCharge?: number;
+    totalNetChargeWithDutiesAndTaxes?: number;
+    currency?: string;
+    surCharges?: Array<{ type: string; description: string; amount: number }>;
   }>;
   operationalDetail?: {
-    transitDays?: string;
+    /** String enum e.g. "THREE_DAYS", "FOUR_DAYS" — NOT a number */
+    transitTime?: string;
     deliveryDay?: string;
+    /** ISO date-time string or empty string */
     deliveryDate?: string;
+    commitDate?: string;
   };
   commit?: {
     label?: string;
     commitTimestamp?: string;
     deliveryMessages?: string[];
+    dateDetail?: {
+      dayOfWeek?: string;
+      dayCxsFormat?: string;
+    };
   };
 }
 

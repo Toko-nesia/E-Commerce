@@ -185,18 +185,73 @@ export async function getShippingRate(
   ) ?? preferred.ratedShipmentDetails?.[0];
 
   // FedEx production returns rates in IDR directly — no USD conversion needed
-  const shippingCost = Math.round(ratedDetail?.totalNetCharge?.amount ?? 0);
+  // totalNetCharge is a plain number (e.g. 445.54), NOT { amount, currency }
+  const shippingCost = Math.round(ratedDetail?.totalNetCharge ?? 0);
 
-  const deliveryDate =
-    preferred.operationalDetail?.deliveryDate ??
-    preferred.commit?.commitTimestamp ??
-    "";
-  const transitDays = preferred.operationalDetail?.transitDays;
-  const estimatedDelivery = deliveryDate
-    ? deliveryDate.split("T")[0]
-    : transitDays
-    ? `${transitDays} business days`
-    : "Contact FedEx for details";
+  // ── Step 2: Fetch real estimated delivery from /availability/v1/transittimes ──
+  let estimatedDelivery = "";
+  try {
+    const transitBody = {
+      requestedShipment: {
+        shipper: { address: { postalCode: origin.postalCode, countryCode: origin.countryCode } },
+        recipients: [{ address: { postalCode: recipientPostalCode, countryCode: recipientCountryCode } }],
+        packagingType: "YOUR_PACKAGING",
+        pickupType: "DROPOFF_AT_FEDEX_LOCATION",
+        shipDatestamp: today,
+        serviceType: "INTERNATIONAL_ECONOMY",
+        requestedPackageLineItems: [{ weight: { units: "KG", value: totalWeightKg } }],
+        // Required for international shipments
+        customsClearanceDetail: {
+          dutiesPayment: { paymentType: "SENDER" },
+          commodities: [
+            {
+              weight: { units: "KG", value: totalWeightKg },
+              numberOfPieces: 1,
+              description: "General merchandise",
+              countryOfManufacture: origin.countryCode,
+              quantity: 1,
+              quantityUnits: "PCS",
+              unitPrice: { amount: 1, currency: "USD" },
+              customsValue: { amount: 1, currency: "USD" },
+            },
+          ],
+        },
+      },
+      carrierCodes: ["FDXE"],
+    };
+
+    const transitRes = await fetch(`${baseUrl}/availability/v1/transittimes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, "X-locale": "en_US" },
+      body: JSON.stringify(transitBody),
+    });
+
+    if (transitRes.ok) {
+      const transitData = await transitRes.json();
+      const details: Array<{
+        serviceType?: string;
+        commit?: { dateDetail?: { dayOfWeek?: string; day?: string } };
+      }> = transitData?.output?.transitTimes?.[0]?.transitTimeDetails ?? [];
+
+      const ieDetail = details.find((d) => d.serviceType === "INTERNATIONAL_ECONOMY") ?? details[0];
+
+      // FedEx returns "day": "May-07-2026" and "dayOfWeek": "Thu"
+      const rawDay = ieDetail?.commit?.dateDetail?.day ?? "";
+      if (rawDay) {
+        const parsed = new Date(rawDay);
+        // Format: "Thursday, May 07, 2026"
+        estimatedDelivery = new Intl.DateTimeFormat("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "2-digit",
+          timeZone: "UTC",
+        }).format(parsed);
+      }
+    }
+  } catch {
+    // Transit API failed — estimatedDelivery stays empty
+  }
 
   return {
     shippingCost,
