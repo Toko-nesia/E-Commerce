@@ -58,6 +58,8 @@ export default function CheckoutPage() {
   // Addresses
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [addressesLoading, setAddressesLoading] = useState(true);
+  const [isSavingAddress, setIsSavingAddress] = useState(false);
+  const [saveAddressError, setSaveAddressError] = useState<string | null>(null);
 
   // FedEx shipping
   const [shippingCost, setShippingCost] = useState<number | null>(null);
@@ -78,33 +80,87 @@ export default function CheckoutPage() {
   }, [canCheckout, items.length, router]);
 
   // Fetch addresses from Supabase
-  useEffect(() => {
+  const fetchAddresses = useCallback(async (autoSelectLatest = false) => {
     if (!user?.id) {
       setAddressesLoading(false);
       return;
     }
+    setAddressesLoading(true);
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("addresses")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("is_default", { ascending: false })
+      .order("created_at", { ascending: false });
 
-    const fetchAddresses = async () => {
-      setAddressesLoading(true);
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("addresses")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("is_default", { ascending: false });
-
-      if (data && data.length > 0) {
-        setAddresses(data);
-        const defaultAddr = data.find((a: Address) => a.is_default);
-        setSelectedAddress(defaultAddr ? defaultAddr.id : data[0].id);
+    if (data && data.length > 0) {
+      setAddresses(data);
+      if (autoSelectLatest) {
+        // After adding a new address, select the most recently created one
+        setSelectedAddress(data[0].id);
       } else {
-        setAddresses([]);
+        const defaultAddr = data.find((a: Address) => a.is_default);
+        setSelectedAddress((prev) => prev || (defaultAddr ? defaultAddr.id : data[0].id));
       }
-      setAddressesLoading(false);
-    };
-
-    fetchAddresses();
+    } else {
+      setAddresses([]);
+    }
+    setAddressesLoading(false);
   }, [user?.id]);
+
+  useEffect(() => {
+    fetchAddresses(false);
+  }, [fetchAddresses]);
+
+  const handleSaveAddress = useCallback(async (data: {
+    name: string;
+    phone: string;
+    address: string;
+    details: string;
+    postalCode: string;
+    countryCode: string;
+  }) => {
+    if (!user?.id) return;
+    setIsSavingAddress(true);
+    setSaveAddressError(null);
+
+    try {
+      const supabase = createClient();
+      const isFirst = addresses.length === 0;
+
+      // Insert without .single() to avoid PGRST116 if RLS blocks the returning SELECT
+      const { error } = await supabase
+        .from("addresses")
+        .insert({
+          user_id: user.id,
+          name: data.name.trim(),
+          phone: data.phone.trim(),
+          address: data.address.trim(),
+          full_address: data.address.trim(),
+          details: data.details.trim(),
+          postal_code: data.postalCode.trim(),
+          country_code: data.countryCode.trim().toUpperCase() || "JP",
+          is_default: isFirst,
+        });
+
+      if (error) {
+        console.error("Address insert error:", error);
+        setSaveAddressError("Failed to save address. Please try again.");
+        setIsSavingAddress(false);
+        return;
+      }
+
+      // Refresh address list — auto-select the newly added address
+      await fetchAddresses(true);
+      setIsSavingAddress(false);
+      setEditAddressModal(false);
+    } catch (err) {
+      console.error("Unexpected error saving address:", err);
+      setSaveAddressError("An unexpected error occurred. Please try again.");
+      setIsSavingAddress(false);
+    }
+  }, [user?.id, addresses.length, fetchAddresses]);
 
   // Fetch exchange rate on mount
   useEffect(() => {
@@ -482,8 +538,13 @@ export default function CheckoutPage() {
       />
       <EditAddressModal
         isOpen={editAddressModal}
-        onClose={() => setEditAddressModal(false)}
-        onSave={() => {}}
+        onClose={() => {
+          setEditAddressModal(false);
+          setSaveAddressError(null);
+        }}
+        onSave={handleSaveAddress}
+        isSaving={isSavingAddress}
+        saveError={saveAddressError}
         initialData={
           currentAddress
             ? {
@@ -491,8 +552,10 @@ export default function CheckoutPage() {
                 phone: currentAddress.phone,
                 fullAddress: currentAddress.address,
                 details: currentAddress.details || "",
+                postalCode: currentAddress.postal_code || "",
+                countryCode: currentAddress.country_code || "JP",
               }
-            : { name: "", phone: "", fullAddress: "", details: "" }
+            : { name: "", phone: "", fullAddress: "", details: "", postalCode: "", countryCode: "JP" }
         }
       />
 
