@@ -6,11 +6,14 @@ export type RoutingDecision =
   | { action: 'allow' }
   | { action: 'redirect'; to: string };
 
-// Routes that require authentication
+// Routes that require authentication (non-admin)
 const PROTECTED_ROUTES = ['/profile', '/checkout'];
 
-// Routes that should redirect logged-in users
+// Routes that should redirect logged-in users away
 const AUTH_ROUTES = ['/login', '/register', '/complete-data'];
+
+// Routes that are only for regular users (admin should not access)
+const USER_ONLY_ROUTES = ['/', '/shop', '/product', '/cart', '/checkout', '/profile', '/about', '/order-success', '/complete-data'];
 
 export function getRoutingDecision(pathname: string, auth: AuthState): RoutingDecision {
   // Allow OAuth callback route without any redirect
@@ -25,22 +28,38 @@ export function getRoutingDecision(pathname: string, auth: AuthState): RoutingDe
   const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
   const isAdminRoute = pathname.startsWith('/admin');
 
+  const isUserOnlyRoute = USER_ONLY_ROUTES.some((route) =>
+    route === '/' ? pathname === '/' : pathname.startsWith(route)
+  );
+
   // Unauthenticated users accessing protected routes → redirect to /login?redirect={path}
   if (!auth.authenticated && isProtectedRoute) {
     return { action: 'redirect', to: `/login?redirect=${pathname}` };
   }
 
-  // Authenticated users accessing auth routes → redirect to /
-  if (auth.authenticated && isAuthRoute) {
-    return { action: 'redirect', to: '/' };
+  if (auth.authenticated) {
+    const isAdmin = auth.role === 'admin';
+
+    // Admin accessing auth routes (login/register) → redirect to /admin
+    if (isAdmin && isAuthRoute) {
+      return { action: 'redirect', to: '/admin' };
+    }
+
+    // Admin accessing user-only routes → redirect to /admin
+    if (isAdmin && isUserOnlyRoute) {
+      return { action: 'redirect', to: '/admin' };
+    }
+
+    // Regular user accessing auth routes → redirect to /
+    if (!isAdmin && isAuthRoute) {
+      return { action: 'redirect', to: '/' };
+    }
+
+    // Regular user accessing /admin/* → redirect to /
+    if (!isAdmin && isAdminRoute) {
+      return { action: 'redirect', to: '/' };
+    }
   }
 
-  // Authenticated regular users accessing /admin/* → redirect to /
-  if (auth.authenticated && auth.role === 'user' && isAdminRoute) {
-    return { action: 'redirect', to: '/' };
-  }
-
-  // Admin users accessing /admin/* → allowed through
-  // All other routes → allowed through
   return { action: 'allow' };
 }

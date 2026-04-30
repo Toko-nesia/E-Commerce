@@ -7,6 +7,7 @@ import type {
   FedExServiceAvailabilityResponse,
   FedExLocationResponse,
 } from "@/types/database";
+import { createServiceClient } from "@/lib/supabase/service";
 
 // =============================================================================
 // Validation helpers
@@ -28,12 +29,16 @@ export function saveTrackingNumber(order: Order, resi: string): Order {
 // =============================================================================
 
 const FEDEX_BASE_URL = () =>
-  process.env.FEDEX_API_URL ?? "https://apis-sandbox.fedex.com";
+  process.env.FEDEX_API_URL ?? "https://apis.fedex.com";
+
+const FEDEX_TRACKING_BASE_URL = () =>
+  process.env.FEDEX_TRACKING_API_URL ?? "https://apis-sandbox.fedex.com";
 
 async function fetchOAuthToken(): Promise<string> {
   const apiKey = process.env.FEDEX_API_KEY!;
   const secretKey = process.env.FEDEX_SECRET_KEY!;
-  const res = await fetch("https://apis.fedex.com/oauth/token", {
+  const baseUrl = FEDEX_TRACKING_BASE_URL();
+  const res = await fetch(`${baseUrl}/oauth/token`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -76,9 +81,6 @@ function hasRateCredentials(): boolean {
   );
 }
 
-// Fixed USD → IDR conversion rate
-const USD_TO_IDR = 16000;
-
 export interface ShippingRateResult {
   shippingCost: number;
   serviceName: string;
@@ -86,8 +88,33 @@ export interface ShippingRateResult {
 }
 
 /**
- * Get shipping rate from Solo, Indonesia (57100, ID) to the given recipient.
- * Returns cost in IDR.
+ * Fetch origin address settings from store_settings table.
+ * Falls back to hardcoded defaults if DB is unavailable.
+ */
+async function getOriginAddress(): Promise<{ postalCode: string; countryCode: string }> {
+  try {
+    const supabase = createServiceClient();
+    const { data } = await supabase
+      .from("store_settings")
+      .select("key, value")
+      .in("key", ["origin_postal_code", "origin_country_code"]);
+
+    if (data && data.length > 0) {
+      const map = Object.fromEntries(data.map((r: { key: string; value: string }) => [r.key, r.value]));
+      return {
+        postalCode: map["origin_postal_code"] ?? "65143",
+        countryCode: map["origin_country_code"] ?? "ID",
+      };
+    }
+  } catch (err) {
+    console.warn("Failed to fetch origin address from DB, using default:", err);
+  }
+  return { postalCode: "65143", countryCode: "ID" };
+}
+
+/**
+ * Get shipping rate from admin-configured origin address to the given recipient.
+ * Returns cost in IDR (FedEx production API returns IDR directly for Indonesian accounts).
  */
 export async function getShippingRate(
   recipientPostalCode: string,
@@ -101,25 +128,28 @@ export async function getShippingRate(
   const baseUrl = FEDEX_BASE_URL();
   const token = await fetchRateOAuthToken();
 
-  const rateRequest: FedExRateRequest = {
+  const today = new Date().toISOString().split("T")[0];
+  const origin = await getOriginAddress();
+
+  const rateRequest = {
     accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER! },
     requestedShipment: {
-      shipper: { address: { postalCode: "57100", countryCode: "ID" } },
+      shipper: { address: { postalCode: origin.postalCode, countryCode: origin.countryCode } },
       recipient: {
         address: {
           postalCode: recipientPostalCode,
           countryCode: recipientCountryCode,
         },
       },
+      shipDatestamp: today,
       pickupType: "DROPOFF_AT_FEDEX_LOCATION",
       serviceType: "INTERNATIONAL_ECONOMY",
       packagingType: "YOUR_PACKAGING",
+      rateRequestType: ["LIST"],
       requestedPackageLineItems: [
         { weight: { units: "KG", value: totalWeightKg } },
       ],
     },
-    rateRequestType: ["LIST"],
-    returnTransitTimes: true,
   };
 
   const res = await fetch(`${baseUrl}/rate/v1/rates/quotes`, {
@@ -133,7 +163,9 @@ export async function getShippingRate(
   });
 
   if (!res.ok) {
-    throw new Error(`FedEx Rate API failed: ${res.status}`);
+    const errBody = await res.text().catch(() => "");
+    console.error(`[FedEx Rate API] ${res.status}:`, errBody);
+    throw new Error(`FedEx Rate API failed: ${res.status} — ${errBody}`);
   }
 
   const data: FedExRatesResponse = await res.json();
@@ -152,8 +184,8 @@ export async function getShippingRate(
     (r) => r.rateType === "LIST"
   ) ?? preferred.ratedShipmentDetails?.[0];
 
-  const amountUsd = ratedDetail?.totalNetCharge?.amount ?? 0;
-  const shippingCost = Math.round(amountUsd * USD_TO_IDR);
+  // FedEx production returns rates in IDR directly — no USD conversion needed
+  const shippingCost = Math.round(ratedDetail?.totalNetCharge?.amount ?? 0);
 
   const deliveryDate =
     preferred.operationalDetail?.deliveryDate ??
@@ -181,7 +213,8 @@ export const FedExService = {
   async trackShipment(trackingNumber: string): Promise<FedExTrackingResponse> {
     if (!hasCredentials()) throw new Error("FedEx Tracking API credentials not configured. Set FEDEX_API_KEY and FEDEX_SECRET_KEY.");
     const token = await fetchOAuthToken();
-    const res = await fetch("https://apis.fedex.com/track/v1/trackingnumbers", {
+    const baseUrl = FEDEX_TRACKING_BASE_URL();
+    const res = await fetch(`${baseUrl}/track/v1/trackingnumbers`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({
@@ -196,7 +229,8 @@ export const FedExService = {
   async validatePostalCode(postalCode: string, countryCode: string, carrierCode?: string): Promise<FedExPostalValidationResponse> {
     if (!hasCredentials()) throw new Error("FedEx API credentials not configured. Set FEDEX_API_KEY and FEDEX_SECRET_KEY.");
     const token = await fetchOAuthToken();
-    const res = await fetch("https://apis.fedex.com/postalcode/v1/validatepostalcode", {
+    const baseUrl = FEDEX_BASE_URL();
+    const res = await fetch(`${baseUrl}/postalcode/v1/validatepostalcode`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ carrierCode: carrierCode ?? "FDXE", countryCode, postalCode }),
@@ -208,7 +242,8 @@ export const FedExService = {
   async getRatesAndTransitTimes(request: FedExRateRequest): Promise<FedExRatesResponse> {
     if (!hasCredentials()) throw new Error("FedEx API credentials not configured. Set FEDEX_API_KEY and FEDEX_SECRET_KEY.");
     const token = await fetchOAuthToken();
-    const res = await fetch("https://apis.fedex.com/rate/v1/rates/quotes", {
+    const baseUrl = FEDEX_BASE_URL();
+    const res = await fetch(`${baseUrl}/rate/v1/rates/quotes`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify(request),
@@ -220,7 +255,8 @@ export const FedExService = {
   async checkServiceAvailability(originPostal: string, destPostal: string, originCountry: string, destCountry: string): Promise<FedExServiceAvailabilityResponse> {
     if (!hasCredentials()) throw new Error("FedEx API credentials not configured. Set FEDEX_API_KEY and FEDEX_SECRET_KEY.");
     const token = await fetchOAuthToken();
-    const res = await fetch("https://apis.fedex.com/availability/v1/packageandserviceoptions", {
+    const baseUrl = FEDEX_BASE_URL();
+    const res = await fetch(`${baseUrl}/availability/v1/packageandserviceoptions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({
@@ -237,7 +273,8 @@ export const FedExService = {
   async searchLocations(postalCode: string, countryCode: string, radiusKm?: number): Promise<FedExLocationResponse> {
     if (!hasCredentials()) throw new Error("FedEx API credentials not configured. Set FEDEX_API_KEY and FEDEX_SECRET_KEY.");
     const token = await fetchOAuthToken();
-    const res = await fetch("https://apis.fedex.com/location/v1/locations", {
+    const baseUrl = FEDEX_BASE_URL();
+    const res = await fetch(`${baseUrl}/location/v1/locations`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({

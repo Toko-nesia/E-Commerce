@@ -9,7 +9,7 @@ import {
   ShoppingBag,
   Tag,
   RotateCcw,
-  Users,
+  Settings,
   ChevronDown,
   ChevronRight,
   Menu,
@@ -23,7 +23,7 @@ const breadcrumbMap: Record<string, string> = {
   "/admin/orders": "Beranda > Pesanan Masuk",
   "/admin/categories": "Beranda > Kategori",
   "/admin/refunds": "Beranda > Refund Requests",
-  "/admin/users": "Beranda > Users",
+  "/admin/settings": "Beranda > Pengaturan",
 };
 
 function getAdminBreadcrumb(pathname: string): string {
@@ -101,9 +101,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <span>Refunds</span>
       </Link>
 
-      <Link href="/admin/users" className={`flex items-center gap-3 px-5 py-3 text-[14px] transition-colors hover:bg-gray-50 no-underline ${isActive("/admin/users") ? "font-bold text-[#511E0B]" : "text-gray-700"}`}>
-        <Users size={18} className={isActive("/admin/users") ? "text-[#511E0B]" : "text-gray-500"} />
-        <span>Users</span>
+      <Link href="/admin/settings" className={`flex items-center gap-3 px-5 py-3 text-[14px] transition-colors hover:bg-gray-50 no-underline ${isActive("/admin/settings") ? "font-bold text-[#511E0B]" : "text-gray-700"}`}>
+        <Settings size={18} className={isActive("/admin/settings") ? "text-[#511E0B]" : "text-gray-500"} />
+        <span>Pengaturan</span>
       </Link>
     </nav>
   );

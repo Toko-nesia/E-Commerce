@@ -20,9 +20,11 @@ export async function POST(request: NextRequest) {
     const result = await getShippingRate(postalCode, countryCode, totalWeightKg);
 
     return NextResponse.json(result);
-  } catch {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[/api/shipping/rates] Error:", message);
     return NextResponse.json(
-      { error: "Shipping rate unavailable" },
+      { error: "Shipping rate unavailable", detail: message },
       { status: 503 }
     );
   }

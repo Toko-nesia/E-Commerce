@@ -26,7 +26,13 @@ export default function LoginPage() {
     setError(null);
     const result = await login(email, password);
     if (result.success) {
-      router.push("/");
+      if (result.role === 'admin') {
+        router.push('/admin');
+      } else {
+        const params = new URLSearchParams(window.location.search);
+        const redirectTo = params.get("redirect");
+        router.push(redirectTo || "/");
+      }
     } else {
       setError(result.error || "Login failed");
     }

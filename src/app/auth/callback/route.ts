@@ -10,11 +10,14 @@ export async function GET(request: Request) {
   }
 
   const supabase = await createClient()
-  const { error } = await supabase.auth.exchangeCodeForSession(code)
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
   if (error) {
     return NextResponse.redirect(new URL('/login?error=auth', request.url))
   }
 
-  return NextResponse.redirect(new URL('/', request.url))
+  // Redirect admin to /admin, regular users to /
+  const role = data.user?.app_metadata?.role
+  const redirectTo = role === 'admin' ? '/admin' : '/'
+  return NextResponse.redirect(new URL(redirectTo, request.url))
 }

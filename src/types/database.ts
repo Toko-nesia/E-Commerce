@@ -344,9 +344,11 @@ export interface FedExRateRequest {
   requestedShipment: {
     shipper: { address: { postalCode: string; countryCode: string } };
     recipient: { address: { postalCode: string; countryCode: string } };
+    shipDatestamp?: string;
     pickupType: "DROPOFF_AT_FEDEX_LOCATION" | "USE_SCHEDULED_PICKUP";
     serviceType?: string;
     packagingType?: string;
+    rateRequestType?: Array<"LIST" | "ACCOUNT" | "PREFERRED">;
     requestedPackageLineItems: Array<{
       weight: { units: "KG" | "LB"; value: number };
       dimensions?: { length: number; width: number; height: number; units: "CM" | "IN" };
