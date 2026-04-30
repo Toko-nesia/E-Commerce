@@ -23,10 +23,13 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+import { useRouter } from "next/navigation";
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   const supabase = createClient();
 
@@ -142,7 +145,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setUser(null);
     setRole(null);
-  }, [supabase]);
+    router.push("/");
+    router.refresh();
+  }, [supabase, router]);
 
   const resetPassword = useCallback(async (email: string) => {
     try {

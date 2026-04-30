@@ -49,6 +49,9 @@ export default function ProfilePage() {
   const [trackingOrder, setTrackingOrder] = useState<Order | null>(null);
   const [showTrackingModal, setShowTrackingModal] = useState(false);
 
+  // Logout modal
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
   // Refund modal
   const [refundOrder, setRefundOrder] = useState<Order | null>(null);
   const [refundMethod, setRefundMethod] = useState<"bank_transfer" | "ewallet">("bank_transfer");
@@ -421,7 +424,7 @@ export default function ProfilePage() {
               </button>
             ))}
             <button
-              onClick={() => logout()}
+              onClick={() => setShowLogoutModal(true)}
               className="shrink-0 md:w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border-none cursor-pointer text-left text-[14px] text-[#df0000] bg-transparent hover:bg-red-50 md:mt-4"
             >
               <LogOut size={15} className="shrink-0" />
@@ -765,6 +768,38 @@ export default function ProfilePage() {
           onClose={() => { setShowTrackingModal(false); setTrackingOrder(null); }}
           order={trackingOrder}
         />
+      )}
+
+      {/* Logout Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setShowLogoutModal(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-[400px] p-8" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-[18px] text-black">Logout Confirmation</h3>
+              <button onClick={() => setShowLogoutModal(false)} className="text-[#6b6b6b] hover:text-black bg-transparent border-none cursor-pointer p-0">
+                <X size={20} />
+              </button>
+            </div>
+            <p className="text-[14px] text-[#6b6b6b] mb-6">Are you sure you want to log out from your account?</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="flex-1 py-2.5 rounded-lg text-[14px] font-bold border border-[#b0b0b0] bg-white text-black cursor-pointer hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowLogoutModal(false);
+                  logout();
+                }}
+                className="flex-1 py-2.5 rounded-lg text-[14px] font-bold border-none bg-[#df0000] text-white cursor-pointer hover:bg-red-700 transition-colors"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Refund Modal */}
