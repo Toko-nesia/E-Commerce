@@ -27,6 +27,7 @@ const breadcrumbMap: Record<string, string> = {
   "/admin/categories": "Beranda > Kategori",
   "/admin/refunds": "Beranda > Refund Requests",
   "/admin/settings": "Beranda > Pengaturan",
+  "/admin/profile": "Beranda > Profil Admin",
 };
 
 function getAdminBreadcrumb(pathname: string): string {
@@ -40,6 +41,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [productOpen, setProductOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const { user, logout } = useAuth();
 
   useEffect(() => {
@@ -119,9 +121,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* ── Profile & Logout (bottom) ── */}
       <div className="border-t border-gray-100 p-3 shrink-0">
-        {/* Profile card — links to /profile */}
+        {/* Profile card — links to /admin/profile */}
         <Link
-          href="/profile"
+          href="/admin/profile"
           className="flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-gray-50 transition-colors no-underline group mb-1"
         >
           {/* Avatar */}
@@ -146,7 +148,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Logout button */}
         <button
-          onClick={logout}
+          onClick={() => setShowLogoutModal(true)}
           className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-[13px] text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors bg-transparent border-none cursor-pointer"
         >
           <LogOut size={15} className="shrink-0" />
@@ -217,6 +219,49 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <main className="lg:ml-[211px] pt-16">
         <div className="p-4 md:p-6 min-h-[calc(100vh-64px)]">{children}</div>
       </main>
+
+      {/* ── Logout Confirmation Modal ─────────────────────────────── */}
+      {showLogoutModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          onClick={() => setShowLogoutModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl w-full max-w-[400px] p-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-[18px] text-black">Logout Confirmation</h3>
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="text-[#6b6b6b] hover:text-black bg-transparent border-none cursor-pointer p-0"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <p className="text-[14px] text-[#6b6b6b] mb-6">
+              Are you sure you want to log out from your account?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="flex-1 py-2.5 rounded-lg text-[14px] font-bold border border-[#b0b0b0] bg-white text-black cursor-pointer hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowLogoutModal(false);
+                  logout();
+                }}
+                className="flex-1 py-2.5 rounded-lg text-[14px] font-bold border-none bg-[#df0000] text-white cursor-pointer hover:bg-red-700 transition-colors"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
