@@ -30,7 +30,48 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!Array.isArray(cartItems) || cartItems.length === 0) {
+      return NextResponse.json(
+        { error: "Cart is empty." },
+        { status: 400 }
+      );
+    }
+
     const supabase = createServiceClient();
+
+    // ── Backend weight gate: fetch authoritative weight_kg from DB ────────────
+    // Never trust client-supplied weight — always verify server-side.
+    const productIds = cartItems.map((item: { id: string | number }) => Number(item.id));
+    const { data: productRows, error: productFetchError } = await supabase
+      .from("products")
+      .select("id, weight_kg")
+      .in("id", productIds);
+
+    if (productFetchError || !productRows) {
+      console.error("Product fetch error:", productFetchError);
+      return NextResponse.json({ error: "Failed to verify cart items." }, { status: 500 });
+    }
+
+    const weightMap = new Map<number, number>(
+      productRows.map((p: { id: number; weight_kg: number | null }) => [p.id, p.weight_kg ?? 0])
+    );
+
+    const totalWeightKg = cartItems.reduce(
+      (sum: number, item: { id: string | number; qty: number }) =>
+        sum + (weightMap.get(Number(item.id)) ?? 0) * item.qty,
+      0
+    );
+
+    const MIN_WEIGHT_KG = 21;
+    if (totalWeightKg < MIN_WEIGHT_KG) {
+      return NextResponse.json(
+        {
+          error: `Minimum order weight is ${MIN_WEIGHT_KG} kg. Current cart weight: ${totalWeightKg.toFixed(2)} kg.`,
+        },
+        { status: 422 }
+      );
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     // Generate a UUID for the DB row; orderId becomes midtrans_order_id
     const dbOrderId = crypto.randomUUID();

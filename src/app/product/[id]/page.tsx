@@ -117,6 +117,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       badge_color: product.badge_color || "bg-white",
       image: product.image,
       stock: product.stock,
+      weight_kg: product.weight_kg, // required for checkout weight gate (min 21 kg)
     };
     addToCart(cartProduct, qty);
     setShowCartPopup(true);
