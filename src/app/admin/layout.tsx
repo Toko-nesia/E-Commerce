@@ -14,7 +14,10 @@ import {
   ChevronRight,
   Menu,
   X,
+  User,
+  LogOut,
 } from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
 
 const breadcrumbMap: Record<string, string> = {
   "/admin": "Beranda",
@@ -37,6 +40,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [productOpen, setProductOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     if (pathname.startsWith("/admin/products")) setProductOpen(true);
@@ -51,61 +55,105 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isActive = (href: string) => pathname === href;
   const isProductActive = pathname.startsWith("/admin/products");
 
-  const NavContent = () => (
-    <nav className="py-4">
-      <Link
-        href="/admin"
-        className={`flex items-center gap-3 px-5 py-3 text-[14px] transition-colors hover:bg-gray-50 no-underline ${
-          isActive("/admin") ? "font-bold text-[#511E0B]" : "text-gray-700"
-        }`}
-      >
-        <LayoutDashboard size={18} className={isActive("/admin") ? "text-[#511E0B]" : "text-gray-500"} />
-        <span>Dashboard</span>
-      </Link>
+  const initials = user?.full_name
+    ? user.full_name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
+    : "AD";
 
-      <div>
-        <button
-          onClick={() => setProductOpen((prev) => !prev)}
-          className={`w-full flex items-center gap-3 px-5 py-3 text-[14px] transition-colors hover:bg-gray-50 bg-transparent border-none cursor-pointer ${
-            isProductActive ? "font-bold text-[#511E0B]" : "text-gray-700"
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full">
+      {/* ── Navigation Links ── */}
+      <nav className="py-4 flex-1 overflow-y-auto">
+        <Link
+          href="/admin"
+          className={`flex items-center gap-3 px-5 py-3 text-[14px] transition-colors hover:bg-gray-50 no-underline ${
+            isActive("/admin") ? "font-bold text-[#511E0B]" : "text-gray-700"
           }`}
         >
-          <Package size={18} className={isProductActive ? "text-[#511E0B]" : "text-gray-500"} />
-          <span className="flex-1 text-left">Produk</span>
-          {productOpen ? <ChevronDown size={15} className="text-gray-400" /> : <ChevronRight size={15} className="text-gray-400" />}
-        </button>
-        {productOpen && (
-          <div className="pl-11 pr-3 flex flex-col gap-0.5 pb-1">
-            <Link href="/admin/products" className={`block py-2 px-3 text-[13px] rounded transition-colors hover:bg-gray-50 no-underline ${isActive("/admin/products") ? "font-bold text-[#511E0B]" : "text-gray-600"}`}>
-              Produk Saya
-            </Link>
-            <Link href="/admin/products/add" className={`block py-2 px-3 text-[13px] rounded transition-colors hover:bg-gray-50 no-underline ${isActive("/admin/products/add") ? "font-bold text-[#511E0B]" : "text-gray-600"}`}>
-              Tambah Produk Baru
-            </Link>
+          <LayoutDashboard size={18} className={isActive("/admin") ? "text-[#511E0B]" : "text-gray-500"} />
+          <span>Dashboard</span>
+        </Link>
+
+        <div>
+          <button
+            onClick={() => setProductOpen((prev) => !prev)}
+            className={`w-full flex items-center gap-3 px-5 py-3 text-[14px] transition-colors hover:bg-gray-50 bg-transparent border-none cursor-pointer ${
+              isProductActive ? "font-bold text-[#511E0B]" : "text-gray-700"
+            }`}
+          >
+            <Package size={18} className={isProductActive ? "text-[#511E0B]" : "text-gray-500"} />
+            <span className="flex-1 text-left">Produk</span>
+            {productOpen ? <ChevronDown size={15} className="text-gray-400" /> : <ChevronRight size={15} className="text-gray-400" />}
+          </button>
+          {productOpen && (
+            <div className="pl-11 pr-3 flex flex-col gap-0.5 pb-1">
+              <Link href="/admin/products" className={`block py-2 px-3 text-[13px] rounded transition-colors hover:bg-gray-50 no-underline ${isActive("/admin/products") ? "font-bold text-[#511E0B]" : "text-gray-600"}`}>
+                Produk Saya
+              </Link>
+              <Link href="/admin/products/add" className={`block py-2 px-3 text-[13px] rounded transition-colors hover:bg-gray-50 no-underline ${isActive("/admin/products/add") ? "font-bold text-[#511E0B]" : "text-gray-600"}`}>
+                Tambah Produk Baru
+              </Link>
+            </div>
+          )}
+        </div>
+
+        <Link href="/admin/orders" className={`flex items-center gap-3 px-5 py-3 text-[14px] transition-colors hover:bg-gray-50 no-underline ${isActive("/admin/orders") ? "font-bold text-[#511E0B]" : "text-gray-700"}`}>
+          <ShoppingBag size={18} className={isActive("/admin/orders") ? "text-[#511E0B]" : "text-gray-500"} />
+          <span>Pesanan Masuk</span>
+        </Link>
+
+        <Link href="/admin/categories" className={`flex items-center gap-3 px-5 py-3 text-[14px] transition-colors hover:bg-gray-50 no-underline ${isActive("/admin/categories") ? "font-bold text-[#511E0B]" : "text-gray-700"}`}>
+          <Tag size={18} className={isActive("/admin/categories") ? "text-[#511E0B]" : "text-gray-500"} />
+          <span>Kategori</span>
+        </Link>
+
+        <Link href="/admin/refunds" className={`flex items-center gap-3 px-5 py-3 text-[14px] transition-colors hover:bg-gray-50 no-underline ${isActive("/admin/refunds") ? "font-bold text-[#511E0B]" : "text-gray-700"}`}>
+          <RotateCcw size={18} className={isActive("/admin/refunds") ? "text-[#511E0B]" : "text-gray-500"} />
+          <span>Refunds</span>
+        </Link>
+
+        <Link href="/admin/settings" className={`flex items-center gap-3 px-5 py-3 text-[14px] transition-colors hover:bg-gray-50 no-underline ${isActive("/admin/settings") ? "font-bold text-[#511E0B]" : "text-gray-700"}`}>
+          <Settings size={18} className={isActive("/admin/settings") ? "text-[#511E0B]" : "text-gray-500"} />
+          <span>Pengaturan</span>
+        </Link>
+      </nav>
+
+      {/* ── Profile & Logout (bottom) ── */}
+      <div className="border-t border-gray-100 p-3 shrink-0">
+        {/* Profile card — links to /profile */}
+        <Link
+          href="/profile"
+          className="flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-gray-50 transition-colors no-underline group mb-1"
+        >
+          {/* Avatar */}
+          <div className="w-8 h-8 rounded-full bg-[#511E0B] flex items-center justify-center shrink-0 overflow-hidden">
+            {user?.avatar_url ? (
+              <img src={user.avatar_url} alt={user.full_name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-white text-[11px] font-bold">{initials}</span>
+            )}
           </div>
-        )}
+          {/* Name & email */}
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-semibold text-gray-800 truncate leading-tight">
+              {user?.full_name || "Admin"}
+            </p>
+            <p className="text-[11px] text-gray-400 truncate leading-tight">
+              {user?.email || ""}
+            </p>
+          </div>
+          <User size={14} className="text-gray-400 shrink-0 group-hover:text-[#511E0B] transition-colors" />
+        </Link>
+
+        {/* Logout button */}
+        <button
+          onClick={logout}
+          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-[13px] text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors bg-transparent border-none cursor-pointer"
+        >
+          <LogOut size={15} className="shrink-0" />
+          <span>Keluar</span>
+        </button>
       </div>
-
-      <Link href="/admin/orders" className={`flex items-center gap-3 px-5 py-3 text-[14px] transition-colors hover:bg-gray-50 no-underline ${isActive("/admin/orders") ? "font-bold text-[#511E0B]" : "text-gray-700"}`}>
-        <ShoppingBag size={18} className={isActive("/admin/orders") ? "text-[#511E0B]" : "text-gray-500"} />
-        <span>Pesanan Masuk</span>
-      </Link>
-
-      <Link href="/admin/categories" className={`flex items-center gap-3 px-5 py-3 text-[14px] transition-colors hover:bg-gray-50 no-underline ${isActive("/admin/categories") ? "font-bold text-[#511E0B]" : "text-gray-700"}`}>
-        <Tag size={18} className={isActive("/admin/categories") ? "text-[#511E0B]" : "text-gray-500"} />
-        <span>Kategori</span>
-      </Link>
-
-      <Link href="/admin/refunds" className={`flex items-center gap-3 px-5 py-3 text-[14px] transition-colors hover:bg-gray-50 no-underline ${isActive("/admin/refunds") ? "font-bold text-[#511E0B]" : "text-gray-700"}`}>
-        <RotateCcw size={18} className={isActive("/admin/refunds") ? "text-[#511E0B]" : "text-gray-500"} />
-        <span>Refunds</span>
-      </Link>
-
-      <Link href="/admin/settings" className={`flex items-center gap-3 px-5 py-3 text-[14px] transition-colors hover:bg-gray-50 no-underline ${isActive("/admin/settings") ? "font-bold text-[#511E0B]" : "text-gray-700"}`}>
-        <Settings size={18} className={isActive("/admin/settings") ? "text-[#511E0B]" : "text-gray-500"} />
-        <span>Pengaturan</span>
-      </Link>
-    </nav>
+    </div>
   );
 
   return (
@@ -152,17 +200,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       )}
 
       {/* ── Sidebar ──────────────────────────────────────────────────── */}
-      <aside className={`fixed top-16 left-0 bottom-0 w-[211px] bg-white shadow-[2px_2px_10px_rgba(0,0,0,0.15)] z-40 overflow-y-auto transition-transform duration-200
+      <aside className={`fixed top-16 left-0 bottom-0 w-[211px] bg-white shadow-[2px_2px_10px_rgba(0,0,0,0.15)] z-40 flex flex-col transition-transform duration-200
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}>
         {/* Close button — mobile only */}
         <button
           onClick={() => setSidebarOpen(false)}
-          className="lg:hidden absolute top-3 right-3 bg-transparent border-none cursor-pointer text-gray-500 hover:text-black p-0"
+          className="lg:hidden absolute top-3 right-3 bg-transparent border-none cursor-pointer text-gray-500 hover:text-black p-0 z-10"
           aria-label="Tutup menu"
         >
           <X size={18} />
         </button>
-        <NavContent />
+        <SidebarContent />
       </aside>
 
       {/* ── Main Content ─────────────────────────────────────────────── */}
