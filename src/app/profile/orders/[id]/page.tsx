@@ -5,9 +5,10 @@ import { useParams, useRouter } from "next/navigation";
 import { PageWrapper } from "@/app/components/layout/PageWrapper";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/auth-context";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, Package, MapPin, Receipt, FileText } from "lucide-react";
 import Link from "next/link";
-import type { Order, FedExLatestStatus } from "@/types/database";
+import Image from "next/image";
+import type { Order, FedExLatestStatus, Address } from "@/types/database";
 import { mapScanEventsToTimeline, TimelineStep } from "@/app/components/modals/trackingUtils";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -33,6 +34,7 @@ export default function OrderDetailPage() {
   const supabase = createClient();
 
   const [order, setOrder] = useState<Order | null>(null);
+  const [address, setAddress] = useState<Address | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -96,13 +98,45 @@ export default function OrderDetailPage() {
       try {
         const { data, error: dbError } = await supabase
           .from("orders")
-          .select("*")
+          .select(`
+            *,
+            items:order_items (
+              id,
+              quantity,
+              price,
+              product:products (
+                name,
+                image
+              )
+            )
+          `)
           .eq("id", params.id)
           .eq("user_id", user.id)
           .single();
 
         if (dbError) throw dbError;
         setOrder(data);
+
+        // Fetch address for shipping details (Using default or the user's first address since there's no address_id on orders)
+        const { data: addressData } = await supabase
+          .from("addresses")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("is_default", true)
+          .single();
+        
+        if (addressData) {
+          setAddress(addressData);
+        } else {
+          // fallback to any address if no default
+          const { data: anyAddress } = await supabase
+            .from("addresses")
+            .select("*")
+            .eq("user_id", user.id)
+            .limit(1)
+            .single();
+          if (anyAddress) setAddress(anyAddress);
+        }
       } catch (err: any) {
         setError(err.message || "Failed to load order.");
       } finally {
@@ -170,7 +204,7 @@ export default function OrderDetailPage() {
           Order Details
         </h1>
         
-        <div className="flex flex-col lg:flex-row gap-6 md:gap-10 items-start">
+        <div className="flex flex-col lg:flex-row gap-6 md:gap-10 items-stretch">
           {/* Left Column: Tracking & Basic details */}
           <div className="flex-1 w-full space-y-6">
             
@@ -211,11 +245,106 @@ export default function OrderDetailPage() {
               </div>
             </div>
 
-            {/* Total Price Section */}
-            <div className="bg-[#f5f0ea] rounded-[8px] p-[24px] border border-[#e6e0d8]">
+            {/* Address & Note Info */}
+            <div className="bg-white border border-[#d5d5d5] rounded-xl p-6 flex flex-col gap-6">
+              
+              {/* Shipping Address */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <MapPin size={18} className="text-[#511e0b]" />
+                  <h3 className="font-bold text-[16px] text-[#3a302a]">Shipping Address</h3>
+                </div>
+                {address ? (
+                  <div className="text-[14px] text-[#6b6b6b] space-y-1">
+                    <p className="font-bold text-[#3a302a]">{address.name} <span className="font-normal opacity-70">({address.phone})</span></p>
+                    <p>{address.full_address || address.address}</p>
+                    {address.postal_code && <p>Postal Code: {address.postal_code}</p>}
+                  </div>
+                ) : (
+                  <p className="text-[14px] text-[#a6a6a6] italic">No address details available.</p>
+                )}
+              </div>
+
+              {((order.note && order.note.trim() !== '') || order.payment_method) && (
+                <>
+                  <div className="h-px bg-[#f0f0f0] w-full" />
+                  <div className="flex flex-col md:flex-row gap-6">
+                    {order.payment_method && (
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Receipt size={18} className="text-[#511e0b]" />
+                          <h3 className="font-bold text-[16px] text-[#3a302a]">Payment Option</h3>
+                        </div>
+                        <p className="text-[14px] text-[#6b6b6b] capitalize">{order.payment_method.replace('_', ' ')}</p>
+                      </div>
+                    )}
+                    {order.note && order.note.trim() !== '' && (
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <FileText size={18} className="text-[#511e0b]" />
+                          <h3 className="font-bold text-[16px] text-[#3a302a]">Customer Note</h3>
+                        </div>
+                        <p className="text-[14px] text-[#6b6b6b] italic">"{order.note}"</p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Ordered Items Section */}
+            <div className="bg-white border text-left border-[#d5d5d5] rounded-xl p-6">
+              <h2 className="font-bold text-[18px] text-[#3a302a] mb-4">Items in Order</h2>
+              <div className="space-y-4">
+                {order.items?.map((item: any) => (
+                  <div key={item.id} className="flex items-center gap-4 py-3 border-b border-[#f0f0f0] last:border-0 last:pb-0">
+                    <div className="w-16 h-16 bg-[#f5f0ea] rounded-md overflow-hidden flex items-center justify-center shrink-0">
+                      {item.product?.image ? (
+                        <Image
+                          src={item.product.image}
+                          alt={item.product?.name || "Product"}
+                          width={64}
+                          height={64}
+                          className="object-cover w-full h-full mix-blend-multiply"
+                          unoptimized
+                        />
+                      ) : (
+                        <Package className="w-8 h-8 text-[#511e0b] opacity-50" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-[14px] text-[#3a302a] line-clamp-2">{item.product?.name}</p>
+                      <p className="text-[13px] text-[#6b6b6b] mt-1">{item.quantity} x {item.price}</p>
+                    </div>
+                    <div className="font-bold text-[15px] text-[#511e0b]">
+                      {item.price}
+                    </div>
+                  </div>
+                ))}
+                {!order.items?.length && (
+                  <p className="text-center text-sm text-gray-500 py-4">No items record found.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Order Payment Summary */}
+            <div className="bg-[#f5f0ea] rounded-[8px] p-[24px] border border-[#e6e0d8] space-y-3">
+               <div className="flex justify-between items-center text-[#3a302a] text-[14px]">
+                  <span className="ml-2">Subtotal for Products</span>
+                  <span className="pr-2">{order.total_price_raw && order.shipping_cost !== undefined ? `Rp ${(order.total_price_raw - (order.shipping_cost || 0) - (order.service_fee || 0)).toLocaleString("id-ID")}` : "-"}</span>
+               </div>
+               <div className="flex justify-between items-center text-[#3a302a] text-[14px]">
+                  <span className="ml-2">Shipping Information</span>
+                  <span className="pr-2">{order.shipping_cost ? `Rp ${order.shipping_cost.toLocaleString("id-ID")}` : "Rp 0"}</span>
+               </div>
+               <div className="flex justify-between items-center text-[#3a302a] text-[14px]">
+                  <span className="ml-2">Service Fee</span>
+                  <span className="pr-2">{order.service_fee ? `Rp ${order.service_fee.toLocaleString("id-ID")}` : "Rp 0"}</span>
+               </div>
+               <div className="h-px bg-[#d8d0c8] my-3" />
                <div className="flex justify-between items-center text-[#3a302a]">
-                  <span className="text-[16px] ml-2">Total Payment</span>
-                  <span className="text-[24px] font-bold pr-2">{order.total_price}</span>
+                  <span className="text-[16px] ml-2 font-bold">Total Payment</span>
+                  <span className="text-[24px] font-bold pr-2 text-[#511e0b]">{order.total_price}</span>
                </div>
             </div>
 
@@ -264,7 +393,7 @@ export default function OrderDetailPage() {
 
           {/* Right Column: Timeline / History */}
           <div className="w-full lg:w-[420px] 2xl:w-[480px] shrink-0">
-            <div className="bg-[#f2ece4] border border-[rgba(216,208,200,0.3)] rounded-[12px] pt-[32px] px-[32px] pb-[40px] h-[500px] flex flex-col">
+            <div className="bg-[#f2ece4] border border-[rgba(216,208,200,0.3)] rounded-[12px] pt-[32px] px-[32px] pb-[40px] h-full flex flex-col max-h-[85vh] sticky top-24">
               <h3 className="font-['EB_Garamond',serif] font-normal text-[#3a302a] text-[24px] mb-8 leading-tight shrink-0">
                 Delivery History
               </h3>
