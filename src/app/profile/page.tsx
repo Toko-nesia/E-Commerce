@@ -4,10 +4,10 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { PageWrapper } from "../components/layout/PageWrapper";
 import { User, MapPin, FileText, LogOut, Phone, Plus, MoreVertical, Eye, Edit3, X, Camera, Star, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
-import { TrackingModal } from "../components/modals/TrackingModal";
 import { createClient } from "@/lib/supabase/client";
 import { resolveImagePath } from "@/lib/image-paths";
 import type { Address, Order } from "@/types/database";
+import Link from "next/link";
 
 type Tab = "profile" | "orders" | "addresses";
 
@@ -42,30 +42,8 @@ export default function ProfilePage() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMessage, setProfileMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Order detail modal
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-
-  // Tracking modal
-  const [trackingOrder, setTrackingOrder] = useState<Order | null>(null);
-  const [showTrackingModal, setShowTrackingModal] = useState(false);
-
   // Logout modal
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-
-  // Refund modal
-  const [refundOrder, setRefundOrder] = useState<Order | null>(null);
-  const [refundMethod, setRefundMethod] = useState<"bank_transfer" | "ewallet">("bank_transfer");
-  const [refundAccount, setRefundAccount] = useState("");
-  const [refundReason, setRefundReason] = useState("");
-  const [refundSubmitted, setRefundSubmitted] = useState(false);
-  const [refundLoading, setRefundLoading] = useState(false);
-  const [refundError, setRefundError] = useState<string | null>(null);
-
-  // Cancellation state
-  const [showCancelInput, setShowCancelInput] = useState(false);
-  const [cancelReason, setCancelReason] = useState("");
-  const [cancelLoading, setCancelLoading] = useState(false);
-  const [cancelError, setCancelError] = useState<string | null>(null);
 
   // Address state
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -335,36 +313,6 @@ export default function ProfilePage() {
     }
   };
 
-  const handleCancelOrder = async () => {
-    if (!selectedOrder || !cancelReason.trim()) return;
-    if (selectedOrder.status !== "BARU") {
-      setCancelError("Only new orders can be cancelled");
-      return;
-    }
-    setCancelLoading(true);
-    setCancelError(null);
-    try {
-      const { error } = await supabase
-        .from("orders")
-        .update({ status: "DIBATALKAN", cancel_reason: cancelReason.trim() })
-        .eq("id", selectedOrder.id);
-      if (error) throw error;
-      // Refresh orders list
-      setOrders((prev) =>
-        prev.map((o) =>
-          o.id === selectedOrder.id ? { ...o, status: "DIBATALKAN" as const, cancel_reason: cancelReason.trim() } : o
-        )
-      );
-      setSelectedOrder(null);
-      setShowCancelInput(false);
-      setCancelReason("");
-    } catch {
-      setCancelError("Failed to cancel order. Please try again.");
-    } finally {
-      setCancelLoading(false);
-    }
-  };
-
   const sidebarItems = [
     { icon: User, label: "My Profile", id: "profile" as Tab },
     { icon: FileText, label: "Order History", id: "orders" as Tab },
@@ -513,8 +461,8 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="border border-[#b0b0b0] rounded-xl overflow-hidden">
-                  <div className="grid grid-cols-6 bg-[#f5f5f5] px-5 py-3">
-                    {["ORDER ID", "DATE", "STATUS", "TRACKING", "TOTAL", "ACTION"].map((h) => (
+                  <div className="grid grid-cols-5 bg-[#f5f5f5] px-5 py-3">
+                    {["ORDER ID", "DATE", "STATUS", "TOTAL", "ACTION"].map((h) => (
                       <span key={h} className="font-bold text-[11px] text-[#6b6b6b] tracking-wider">{h}</span>
                     ))}
                   </div>
@@ -526,33 +474,21 @@ export default function ProfilePage() {
                       ? new Date(order.created_at).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })
                       : "—";
                     return (
-                      <div key={order.id} className="grid grid-cols-6 px-5 py-4 border-t border-[#d5d5d5] items-center hover:bg-gray-50 transition-colors">
+                      <div key={order.id} className="grid grid-cols-5 px-5 py-4 border-t border-[#d5d5d5] items-center hover:bg-gray-50 transition-colors">
                         <span className="font-bold text-[13px] text-[#511e0b]">{displayId}</span>
                         <span className="text-[13px] text-black">{displayDate}</span>
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[12px] font-bold w-fit ${STATUS_COLOR[order.status] ?? "bg-gray-100 text-gray-500"}`}>
                           {order.status === "DIKIRIM" && <span className="text-blue-500 text-[10px]">●</span>}
                           {STATUS_LABEL[order.status] ?? order.status}
                         </span>
-                        <span className="text-[13px]">
-                          {order.tracking_number ? (
-                            <button
-                              onClick={() => { setTrackingOrder(order); setShowTrackingModal(true); }}
-                              className="bg-transparent border border-[#511e0b] text-[#511e0b] rounded px-2 py-1 text-[11px] font-medium cursor-pointer hover:bg-[#faf5ee] transition-colors"
-                            >
-                              Track Package
-                            </button>
-                          ) : (
-                            <span className="text-[#9b9b9b]">Awaiting shipment</span>
-                          )}
-                        </span>
                         <span className="text-[13px] text-black">{order.total_price}</span>
-                        <button
-                          onClick={() => setSelectedOrder(order)}
+                        <Link
+                          href={`/profile/orders/${order.id}`}
                           className="bg-transparent border-none cursor-pointer p-0 w-fit hover:text-[#511e0b] transition-colors text-[#6b6b6b]"
                           aria-label="View details"
                         >
                           <Eye size={18} />
-                        </button>
+                        </Link>
                       </div>
                     );
                   })}
@@ -659,117 +595,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Order Detail Modal */}
-      {selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => { setSelectedOrder(null); setShowCancelInput(false); setCancelReason(""); setCancelError(null); }}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-[440px] p-8" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="font-bold text-[18px] text-black">Order Details</h3>
-              <button onClick={() => { setSelectedOrder(null); setShowCancelInput(false); setCancelReason(""); setCancelError(null); }} className="text-[#6b6b6b] hover:text-black bg-transparent border-none cursor-pointer p-0">
-                <X size={20} />
-              </button>
-            </div>
-            <div className="space-y-3">
-              {[
-                ["Order ID", selectedOrder.midtrans_order_id ? `#${selectedOrder.midtrans_order_id}` : `#${selectedOrder.id.slice(0, 8).toUpperCase()}`],
-                ["Date", selectedOrder.created_at ? new Date(selectedOrder.created_at).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "—"],
-                ["Status", STATUS_LABEL[selectedOrder.status] ?? selectedOrder.status],
-                ["Total", selectedOrder.total_price],
-                ...(selectedOrder.tracking_number ? [["Tracking No.", selectedOrder.tracking_number]] : []),
-                ...(selectedOrder.estimated_delivery ? [["Est. Delivery", selectedOrder.estimated_delivery]] : []),
-              ].map(([label, value]) => (
-                <div key={label} className="flex justify-between text-[14px]">
-                  <span className="text-[#6b6b6b]">{label}</span>
-                  <span className="font-medium text-black">{value}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Cancel section for BARU orders */}
-            {selectedOrder.status === "BARU" && (
-              <div className="mt-5">
-                {!showCancelInput ? (
-                  <button
-                    onClick={() => { setShowCancelInput(true); setCancelError(null); }}
-                    className="w-full border border-[#df0000] text-[#df0000] rounded-lg py-2.5 font-bold text-[14px] border-solid cursor-pointer hover:bg-red-50 transition-colors bg-transparent"
-                  >
-                    Cancel Order
-                  </button>
-                ) : (
-                  <div className="space-y-3">
-                    <label className="block text-[12px] font-bold text-black">Cancellation Reason *</label>
-                    <textarea
-                      value={cancelReason}
-                      onChange={(e) => setCancelReason(e.target.value)}
-                      placeholder="Please provide a reason for cancellation..."
-                      rows={3}
-                      className="w-full border border-[#b0b0b0] rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#511e0b] resize-none"
-                    />
-                    {cancelError && (
-                      <p className="text-[12px] text-[#df0000]">{cancelError}</p>
-                    )}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => { setShowCancelInput(false); setCancelReason(""); setCancelError(null); }}
-                        className="flex-1 py-2.5 rounded-lg text-[13px] font-medium border border-[#b0b0b0] bg-white text-black cursor-pointer hover:bg-gray-50 transition-colors"
-                      >
-                        Back
-                      </button>
-                      <button
-                        onClick={handleCancelOrder}
-                        disabled={cancelLoading || !cancelReason.trim()}
-                        className="flex-1 py-2.5 rounded-lg text-[13px] font-medium border-none bg-[#df0000] text-white cursor-pointer hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                      >
-                        {cancelLoading && <Loader2 size={14} className="animate-spin" />}
-                        Confirm Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Deny cancellation for non-BARU, non-DIBATALKAN orders */}
-            {selectedOrder.status !== "BARU" && selectedOrder.status !== "DIBATALKAN" && (
-              <p className="mt-4 text-[12px] text-[#9b9b9b] text-center">Only new orders can be cancelled</p>
-            )}
-
-            <button
-              onClick={() => { setSelectedOrder(null); setShowCancelInput(false); setCancelReason(""); setCancelError(null); }}
-              className="w-full mt-4 bg-[#511e0b] text-white rounded-lg py-3 font-bold text-[14px] border-none cursor-pointer hover:bg-[#3d1608] transition-colors"
-            >
-              Close
-            </button>
-            {selectedOrder.status === "DIBATALKAN" && (
-              <button
-                onClick={() => {
-                  setRefundOrder(selectedOrder);
-                  setRefundSubmitted(false);
-                  setRefundAccount("");
-                  setRefundReason("");
-                  setRefundMethod("bank_transfer");
-                  setRefundError(null);
-                  setSelectedOrder(null);
-                  setShowCancelInput(false);
-                  setCancelReason("");
-                }}
-                className="w-full mt-2 border border-[#df0000] text-[#df0000] rounded-lg py-3 font-bold text-[14px] border-solid cursor-pointer hover:bg-red-50 transition-colors bg-transparent"
-              >
-                Request Refund
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-      {/* Tracking Modal */}
-      {trackingOrder && (
-        <TrackingModal
-          isOpen={showTrackingModal}
-          onClose={() => { setShowTrackingModal(false); setTrackingOrder(null); }}
-          order={trackingOrder}
-        />
-      )}
-
       {/* Logout Modal */}
       {showLogoutModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setShowLogoutModal(false)}>
@@ -798,126 +623,6 @@ export default function ProfilePage() {
                 Logout
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Refund Modal */}
-      {refundOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setRefundOrder(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-[460px] p-8" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-[18px] text-black">Refund Request</h3>
-              <button onClick={() => setRefundOrder(null)} className="text-[#6b6b6b] hover:text-black bg-transparent border-none cursor-pointer p-0">
-                <X size={20} />
-              </button>
-            </div>
-
-            {refundSubmitted ? (
-              <div className="text-center py-4">
-                <div className="text-[40px] mb-3">✅</div>
-                <p className="font-bold text-[16px] text-black mb-2">Request Submitted</p>
-                <p className="text-[13px] text-[#6b6b6b]">Our team will process your refund within 3–5 business days.</p>
-                <button
-                  onClick={() => setRefundOrder(null)}
-                  className="mt-6 w-full bg-[#511e0b] text-white rounded-lg py-3 font-bold text-[14px] border-none cursor-pointer hover:bg-[#3d1608] transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-            ) : (
-              <>
-                <p className="text-[13px] text-[#6b6b6b] mb-4">
-                  Order <span className="font-medium text-black">{refundOrder.id}</span> has been cancelled.
-                  Fill in the form below to request a refund.
-                </p>
-
-                <div className="space-y-4">
-                  {/* Reason */}
-                  <div>
-                    <label className="block text-[12px] font-bold text-black mb-1.5">Reason for Refund</label>
-                    <textarea
-                      value={refundReason}
-                      onChange={(e) => setRefundReason(e.target.value)}
-                      placeholder="Explain the reason for your refund request..."
-                      rows={3}
-                      className="w-full border border-[#b0b0b0] rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#511e0b] resize-none"
-                    />
-                  </div>
-
-                  {/* Refund method */}
-                  <div>
-                    <label className="block text-[12px] font-bold text-black mb-1.5">Refund Method</label>
-                    <div className="flex gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setRefundMethod("bank_transfer")}
-                        className={`flex-1 py-2 rounded-lg text-[13px] font-medium border cursor-pointer transition-colors ${refundMethod === "bank_transfer" ? "bg-[#511e0b] text-white border-[#511e0b]" : "bg-white text-black border-[#b0b0b0] hover:border-[#511e0b]"}`}
-                      >
-                        Bank Transfer
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setRefundMethod("ewallet")}
-                        className={`flex-1 py-2 rounded-lg text-[13px] font-medium border cursor-pointer transition-colors ${refundMethod === "ewallet" ? "bg-[#511e0b] text-white border-[#511e0b]" : "bg-white text-black border-[#b0b0b0] hover:border-[#511e0b]"}`}
-                      >
-                        E-Wallet
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Account number */}
-                  <div>
-                    <label className="block text-[12px] font-bold text-black mb-1.5">
-                      {refundMethod === "bank_transfer" ? "Account Number (BCA/Mandiri/BNI)" : "E-Wallet Number (GoPay/OVO/Dana)"}
-                    </label>
-                    <input
-                      type="text"
-                      value={refundAccount}
-                      onChange={(e) => setRefundAccount(e.target.value)}
-                      placeholder={refundMethod === "bank_transfer" ? "e.g. 1234567890" : "e.g. 08123456789"}
-                      className="w-full border border-[#b0b0b0] rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#511e0b]"
-                    />
-                  </div>
-                </div>
-
-                {refundError && (
-                  <p className="mt-3 text-[12px] text-[#df0000]">{refundError}</p>
-                )}
-
-                <button
-                  onClick={async () => {
-                    if (!refundReason.trim() || !refundAccount.trim()) return;
-                    if (!user?.id || !refundOrder?.id) return;
-                    setRefundLoading(true);
-                    setRefundError(null);
-                    try {
-                      const { error } = await supabase
-                        .from("refund_requests")
-                        .insert({
-                          order_id: refundOrder.id,
-                          user_id: user.id,
-                          refund_method: refundMethod,
-                          account_number: refundAccount.trim(),
-                          reason: refundReason.trim(),
-                          status: "pending",
-                        });
-                      if (error) throw error;
-                      setRefundSubmitted(true);
-                    } catch {
-                      setRefundError("Failed to submit refund request. Please try again.");
-                    } finally {
-                      setRefundLoading(false);
-                    }
-                  }}
-                  disabled={!refundReason.trim() || !refundAccount.trim() || refundLoading}
-                  className="w-full mt-6 bg-[#511e0b] text-white rounded-lg py-3 font-bold text-[14px] border-none cursor-pointer hover:bg-[#3d1608] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {refundLoading && <Loader2 size={16} className="animate-spin" />}
-                  Submit Request
-                </button>
-              </>
-            )}
           </div>
         </div>
       )}
