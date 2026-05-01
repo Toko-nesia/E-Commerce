@@ -446,9 +446,9 @@ export default function OrderDetailPage() {
 
                 {/* E-commerce data - Always appended at the bottom to show order lifecycle events */}
                 <div className={`relative mb-8 ${trackingSteps.length > 0 || trackingState === "loading" ? "opacity-60" : ""}`}>
-                  <div className={`absolute left-[-40px] top-[4px] size-[22px] rounded-full border-4 border-[#faf5ee] z-10 ${(order.status === "DIPROSES" && trackingSteps.length === 0 && trackingState !== "loading" && order.status !== "DIBATALKAN") ? "bg-[#c2652a]" : "bg-[#d8d0c8]"}`} />
-                  <div className={`${(order.status === "DIPROSES" && trackingSteps.length === 0 && trackingState !== "loading" && order.status !== "DIBATALKAN") ? "bg-[#faf5ee] border border-[rgba(194,101,42,0.2)] rounded-[8px] p-[17px] shadow-sm" : ""}`}>
-                    <p className={`text-[10px] tracking-[1px] uppercase font-['Manrope'] mb-1.5 ${(order.status === "DIPROSES" && trackingSteps.length === 0 && trackingState !== "loading" && order.status !== "DIBATALKAN") ? "text-[#c2652a]" : "text-[#605850]"}`}>
+                  <div className={`absolute left-[-40px] top-[4px] size-[22px] rounded-full border-4 border-[#faf5ee] z-10 ${(order.status === "DIPROSES" && trackingSteps.length === 0 && trackingState !== "loading") ? "bg-[#c2652a]" : "bg-[#d8d0c8]"}`} />
+                  <div className={`${(order.status === "DIPROSES" && trackingSteps.length === 0 && trackingState !== "loading") ? "bg-[#faf5ee] border border-[rgba(194,101,42,0.2)] rounded-[8px] p-[17px] shadow-sm" : ""}`}>
+                    <p className={`text-[10px] tracking-[1px] uppercase font-['Manrope'] mb-1.5 ${(order.status === "DIPROSES" && trackingSteps.length === 0 && trackingState !== "loading") ? "text-[#c2652a]" : "text-[#605850]"}`}>
                       {(order.status === "DIKIRIM" || order.status === "SELESAI" || order.status === "DIBATALKAN" || trackingSteps.length > 0 || trackingState === "loading") ? "PREVIOUS" : "LATEST"}
                     </p>
                     {order.status === "DIBATALKAN" ? (
