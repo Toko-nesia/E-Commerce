@@ -24,6 +24,26 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Helper: retry a function with exponential backoff for transient errors
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  isTransientError: (result: T) => boolean,
+  maxRetries: number = 1,
+  baseDelay: number = 1000
+): Promise<T> {
+  let result = await fn();
+  let attempt = 0;
+
+  while (isTransientError(result) && attempt < maxRetries) {
+    attempt++;
+    const delay = baseDelay * Math.pow(2, attempt - 1);
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    result = await fn();
+  }
+
+  return result;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<string | null>(null);
@@ -34,13 +54,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
 
+  // AbortController ref to track and cancel active fetchProfile requests
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Guard ref to prevent state updates after SIGNED_OUT
+  const isSignedOutRef = useRef<boolean>(false);
+
   // Fetch profile from the profiles table (role, phone, avatar_url)
   const fetchProfile = useCallback(async (userId: string, email: string, fullName: string) => {
+    // Cancel any previous fetchProfile request
+    abortControllerRef.current?.abort();
+
+    // Create a new AbortController for this request
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const signal = controller.signal;
+
     const { data: profile } = await supabase
       .from("profiles")
       .select("full_name, email, phone, avatar_url, role")
       .eq("id", userId)
       .single();
+
+    // Check if this request was aborted or user signed out after await
+    if (signal.aborted || isSignedOutRef.current) {
+      return;
+    }
 
     if (profile) {
       setUser({
@@ -68,7 +107,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // -------------------------------------------------------------------------
     const initSession = async () => {
       try {
-        const { data: { user: authUser }, error } = await supabase.auth.getUser();
+        // Retry getUser() on transient network errors
+        const { data: { user: authUser }, error } = await retryWithBackoff(
+          () => supabase.auth.getUser(),
+          (result) => {
+            // Only retry on transient errors (network errors, status 0 or 5xx)
+            if (!result.error) return false;
+            const status = (result.error as any).status;
+            return status === 0 || status === undefined || (status >= 500 && status < 600);
+          },
+          1,
+          1000
+        );
 
         if (!mounted) return;
 
@@ -103,9 +153,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") &&
           session?.user
         ) {
+          // Reset signed-out guard before fetching profile
+          isSignedOutRef.current = false;
+
           const meta = session.user.user_metadata;
           await fetchProfile(session.user.id, session.user.email || "", meta?.full_name || "");
         } else if (event === "SIGNED_OUT") {
+          // Set signed-out guard and abort any pending fetchProfile
+          isSignedOutRef.current = true;
+          abortControllerRef.current?.abort();
+
           setUser(null);
           setRole(null);
         }
@@ -114,6 +171,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       mounted = false;
+      // Cancel any pending fetchProfile on unmount
+      abortControllerRef.current?.abort();
       subscription.unsubscribe();
     };
   }, [supabase, fetchProfile]);

@@ -28,7 +28,7 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("profile");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -37,8 +37,8 @@ export default function ProfilePage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Profile loading/saving state
-  const [profileLoading, setProfileLoading] = useState(true);
+  // Profile loading/saving state — follows auth context isLoading
+  const [profileLoading, setProfileLoading] = useState(isLoading);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMessage, setProfileMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -70,39 +70,22 @@ export default function ProfilePage() {
 
   const supabase = createClient();
 
-  // Load profile data from Supabase on mount
+  // Sync form state from auth context (single source of truth)
   useEffect(() => {
-    const loadProfile = async () => {
-      if (!user?.id) {
-        setProfileLoading(false);
-        return;
+    if (isLoading) {
+      setProfileLoading(true);
+      return;
+    }
+    setProfileLoading(false);
+    if (user) {
+      setFullName(user.full_name || "");
+      setEmail(user.email || "");
+      setPhoneNumber(user.phone || "");
+      if (user.avatar_url) {
+        setAvatarPreview(user.avatar_url);
       }
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("full_name, email, phone, avatar_url")
-          .eq("id", user.id)
-          .single();
-        if (error) throw error;
-        if (data) {
-          setFullName(data.full_name || "");
-          setEmail(data.email || "");
-          setPhoneNumber(data.phone || "");
-          if (data.avatar_url) {
-            setAvatarPreview(data.avatar_url);
-          }
-        }
-      } catch {
-        // Fallback to auth context data
-        setFullName(user.full_name || "");
-        setEmail(user.email || "");
-        setPhoneNumber(user.phone || "");
-      } finally {
-        setProfileLoading(false);
-      }
-    };
-    loadProfile();
-  }, [user?.id, supabase, user?.full_name, user?.email, user?.phone]);
+    }
+  }, [user, isLoading]);
 
   // Save profile changes to Supabase
   const handleSaveProfile = async () => {
