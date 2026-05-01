@@ -121,7 +121,10 @@ export default function CheckoutPage() {
     postalCode: string;
     countryCode: string;
   }) => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      setSaveAddressError("User session not found. Please refresh the page.");
+      return;
+    }
     setIsSavingAddress(true);
     setSaveAddressError(null);
 
