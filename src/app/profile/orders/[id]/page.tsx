@@ -221,7 +221,7 @@ export default function OrderDetailPage() {
                     {STATUS_LABEL[order.status] ?? order.status}
                   </span>
                   <p className="text-[14px] text-[#a6a6a6] mt-2 font-medium tracking-tight">
-                    Ordered: {new Date(order.created_at).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })}
+                    Ordered: {new Date(order.created_at || new Date().toISOString()).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })}
                   </p>
                 </div>
               </div>
@@ -466,7 +466,7 @@ export default function OrderDetailPage() {
                   <div className="absolute left-[-40px] top-[4px] size-[22px] bg-[#d8d0c8] rounded-full border-4 border-[#faf5ee] z-10" />
                   <div>
                     <p className="text-[#605850] text-[10px] tracking-[1px] uppercase font-['Manrope'] mb-1.5">
-                      {new Date(order.created_at).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })}
+                      {new Date(order.created_at || new Date().toISOString()).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })}
                     </p>
                     <p className="text-[#3a302a] text-[18px] leading-snug mb-1 font-['EB_Garamond']">Order Created</p>
                     <p className="text-[#605850] text-[14px] font-['Manrope']">Payment verified</p>
