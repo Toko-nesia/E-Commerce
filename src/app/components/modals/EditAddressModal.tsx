@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal } from "./Modal";
 
 interface EditAddressModalProps {
@@ -40,6 +40,17 @@ export function EditAddressModal({
   const [details, setDetails] = useState(initialData?.details || "");
   const [postalCode, setPostalCode] = useState(initialData?.postalCode || "");
   const [countryCode, setCountryCode] = useState(initialData?.countryCode || "JP");
+
+  useEffect(() => {
+    if (isOpen) {
+      setName(initialData?.name || "");
+      setPhone(initialData?.phone || "");
+      setAddress(initialData?.fullAddress || "");
+      setDetails(initialData?.details || "");
+      setPostalCode(initialData?.postalCode || "");
+      setCountryCode(initialData?.countryCode || "JP");
+    }
+  }, [isOpen, initialData]);
 
   const handleSave = () => {
     onSave({ name, phone, address, details, postalCode, countryCode });

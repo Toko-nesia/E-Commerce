@@ -156,7 +156,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <Truck size={18} className="text-[#15A15B] mt-0.5 shrink-0" />
               <div>
                 <p className="text-[14px] text-[#511e0b] font-medium">Estimasi tiba: {shipping.estimatedDelivery}</p>
-                <p className="text-[13px] text-[#6b6b6b] mt-0.5">Minimum berat {shipping.minWeight} per pengiriman</p>
+                <p className="text-[13px] text-[#6b6b6b] mt-0.5">Syarat checkout: Total di keranjang harus mencapai {shipping.minWeight}</p>
               </div>
               <button
                 onClick={() => setShowShippingModal(true)}
