@@ -1,12 +1,13 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@/types/database";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation";
 
 // =============================================================================
-// Auth Context — Supabase Auth implementation
+// Auth Context — Supabase Auth implementation (Best Practice: SSR + getUser)
 // =============================================================================
 
 interface AuthContextType {
@@ -23,17 +24,17 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-import { useRouter } from "next/navigation";
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  const supabase = createClient();
+  // Stable ref so we don't recreate the client on every render
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
-  // Fetch profile from profiles table to get role, phone, avatar_url
+  // Fetch profile from the profiles table (role, phone, avatar_url)
   const fetchProfile = useCallback(async (userId: string, email: string, fullName: string) => {
     const { data: profile } = await supabase
       .from("profiles")
@@ -52,49 +53,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       setRole(profile.role || "user");
     } else {
-      // Fallback if profile not found yet (trigger may not have fired)
-      setUser({
-        id: userId,
-        email,
-        full_name: fullName,
-        role: "user",
-      });
+      // Fallback if profile row doesn't exist yet (trigger may not have fired)
+      setUser({ id: userId, email, full_name: fullName, role: "user" });
       setRole("user");
     }
   }, [supabase]);
 
-  // Listen to auth state changes
   useEffect(() => {
-    // Check initial session
+    let mounted = true;
+
+    // -------------------------------------------------------------------------
+    // BEST PRACTICE: Use getUser() — always verifies token with Supabase server.
+    // getSession() only reads from localStorage and can return stale/expired data.
+    // -------------------------------------------------------------------------
     const initSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          const meta = session.user.user_metadata;
-          await fetchProfile(
-            session.user.id,
-            session.user.email || "",
-            meta?.full_name || ""
-          );
+        const { data: { user: authUser }, error } = await supabase.auth.getUser();
+
+        if (!mounted) return;
+
+        if (authUser && !error) {
+          const meta = authUser.user_metadata;
+          await fetchProfile(authUser.id, authUser.email || "", meta?.full_name || "");
+        } else {
+          setUser(null);
+          setRole(null);
         }
       } catch {
-        // Session check failed, user remains null
+        if (mounted) {
+          setUser(null);
+          setRole(null);
+        }
       } finally {
-        setIsLoading(false);
+        if (mounted) setIsLoading(false);
       }
     };
 
     initSession();
 
+    // -------------------------------------------------------------------------
+    // onAuthStateChange handles token refresh, sign in, sign out events.
+    // The TOKEN_REFRESHED event is critical — without it, sessions expire silently.
+    // -------------------------------------------------------------------------
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, session: Session | null) => {
-        if (event === "SIGNED_IN" && session?.user) {
+        if (!mounted) return;
+
+        if (
+          (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") &&
+          session?.user
+        ) {
           const meta = session.user.user_metadata;
-          await fetchProfile(
-            session.user.id,
-            session.user.email || "",
-            meta?.full_name || ""
-          );
+          await fetchProfile(session.user.id, session.user.email || "", meta?.full_name || "");
         } else if (event === "SIGNED_OUT") {
           setUser(null);
           setRole(null);
@@ -103,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, [supabase, fetchProfile]);
@@ -111,10 +122,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        return { success: false, error: error.message };
-      }
-      const role = (data.user?.app_metadata?.role as string) || 'user';
+      if (error) return { success: false, error: error.message };
+      const role = (data.user?.app_metadata?.role as string) || "user";
       return { success: true, role };
     } catch {
       return { success: false, error: "Login failed" };
@@ -131,9 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
         options: { data: { full_name: name } },
       });
-      if (error) {
-        return { success: false, error: error.message };
-      }
+      if (error) return { success: false, error: error.message };
       return { success: true };
     } catch {
       return { success: false, error: "Registration failed" };
@@ -153,9 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const resetPassword = useCallback(async (email: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email);
-      if (error) {
-        return { success: false, error: error.message };
-      }
+      if (error) return { success: false, error: error.message };
       return { success: true };
     } catch {
       return { success: false, error: "Password reset request failed" };
@@ -165,14 +170,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = useCallback(async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
+        provider: "google",
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
         },
       });
-      if (error) {
-        return { success: false, error: error.message };
-      }
+      if (error) return { success: false, error: error.message };
       return { success: true };
     } catch {
       return { success: false, error: "Google sign-in failed" };
