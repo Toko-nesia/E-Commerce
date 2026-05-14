@@ -355,6 +355,17 @@ export interface FedExPostalValidationResponse {
 }
 
 // ── FedEx Rates and Transit Times API ────────────────────────
+export interface FedExCustomsCommodityRequest {
+  weight: { units: "KG" | "LB"; value: number };
+  numberOfPieces?: number;
+  description: string;
+  countryOfManufacture: string;
+  quantity: number;
+  quantityUnits: "PCS" | string;
+  unitPrice: { amount: number; currency: string };
+  customsValue: { amount: number; currency: string };
+}
+
 export interface FedExRateRequest {
   accountNumber: { value: string };
   requestedShipment: {
@@ -365,6 +376,11 @@ export interface FedExRateRequest {
     serviceType?: string;
     packagingType?: string;
     rateRequestType?: Array<"LIST" | "ACCOUNT" | "PREFERRED">;
+    returnTransitTimes?: boolean;
+    customsClearanceDetail?: {
+      dutiesPayment: { paymentType: "SENDER" | "RECIPIENT" | "THIRD_PARTY" };
+      commodities: FedExCustomsCommodityRequest[];
+    };
     requestedPackageLineItems: Array<{
       weight: { units: "KG" | "LB"; value: number };
       dimensions?: { length: number; width: number; height: number; units: "CM" | "IN" };

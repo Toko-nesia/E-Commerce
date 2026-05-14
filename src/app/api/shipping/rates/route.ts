@@ -1,14 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
-import { getShippingRate } from "@/lib/fedex/service";
-
-const rateRequestSchema = z.object({
-  postalCode: z.string().trim().min(2).max(20),
-  countryCode: z.string().trim().length(2).transform((value) => value.toUpperCase()),
-  totalWeightKg: z.number().positive().max(1000),
-});
+import { createClient } from "@/lib/supabase/server";
+import { estimateShippingRate } from "@/application/shipping/estimate-shipping-rate";
+import { shippingRateRequestSchema } from "@/application/shipping/schemas";
+import { SupabaseCheckoutRepository } from "@/infrastructure/supabase/checkout-repository";
+import { FedExShippingRateProvider } from "@/infrastructure/fedex/shipping-rate-provider";
 
 const requestCounts = new Map<string, { count: number; resetAt: number }>();
+
+const clientErrorPatterns = [
+  "Address not found",
+  "Invalid product id",
+  "Invalid product quantity",
+  "Product ",
+  "Invalid price",
+  "Invalid weight",
+  "Insufficient stock",
+  "Minimum order weight",
+];
 
 function isRateLimited(key: string): boolean {
   const now = Date.now();
@@ -28,7 +36,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Too many shipping rate requests" }, { status: 429 });
     }
 
-    const parsed = rateRequestSchema.safeParse(await request.json().catch(() => null));
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const parsed = shippingRateRequestSchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) {
       return NextResponse.json(
         { error: "Invalid shipping rate request" },
@@ -36,16 +54,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { postalCode, countryCode, totalWeightKg } = parsed.data;
-    const result = await getShippingRate(postalCode, countryCode, totalWeightKg);
+    const result = await estimateShippingRate(
+      {
+        userId: user.id,
+        addressId: parsed.data.addressId,
+        items: parsed.data.items,
+      },
+      {
+        repository: new SupabaseCheckoutRepository(),
+        shipping: new FedExShippingRateProvider(),
+      },
+    );
 
     return NextResponse.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[/api/shipping/rates] Error:", message);
+    const status = message.includes("Address not found")
+      ? 404
+      : clientErrorPatterns.some((pattern) => message.includes(pattern))
+        ? 400
+        : 503;
     return NextResponse.json(
-      { error: "Shipping rate unavailable", detail: message },
-      { status: 503 }
+      {
+        error: status === 503 ? "Shipping rate unavailable" : message,
+        detail: message,
+      },
+      { status }
     );
   }
 }

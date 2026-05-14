@@ -8,6 +8,7 @@ import type {
   FedExLocationResponse,
 } from "@/types/database";
 import { createServiceClient } from "@/lib/supabase/service";
+import type { ShippingCommodity, ShippingDestination } from "@/domain/checkout";
 
 // =============================================================================
 // Validation helpers
@@ -112,6 +113,154 @@ export interface ShippingRateResult {
   shippingCost: number;
   serviceName: string;
   estimatedDelivery: string;
+  rateType: "ACCOUNT";
+  currency: "IDR";
+  totalDeclaredValue: number;
+  totalWeightKg: number;
+  fedExRateDetail?: unknown;
+}
+
+export interface ShippingRateInput {
+  destination: ShippingDestination;
+  commodities: ShippingCommodity[];
+}
+
+interface OriginAddress {
+  postalCode: string;
+  countryCode: string;
+}
+
+function roundMoney(amount: number): number {
+  return Math.round(amount);
+}
+
+function normalizeFedExDescription(commodity: ShippingCommodity): string {
+  return `${commodity.name} - ${commodity.category}`
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 100);
+}
+
+export function summarizeShippingCommodities(commodities: ShippingCommodity[]) {
+  const totalWeightKg = commodities.reduce((sum, item) => sum + item.lineWeightKg, 0);
+  const totalDeclaredValue = commodities.reduce((sum, item) => sum + item.lineValueIdr, 0);
+
+  if (!commodities.length) {
+    throw new Error("Shipping commodities are required.");
+  }
+  if (!Number.isFinite(totalWeightKg) || totalWeightKg <= 0) {
+    throw new Error("Shipping weight is invalid.");
+  }
+  if (!Number.isFinite(totalDeclaredValue) || totalDeclaredValue <= 0) {
+    throw new Error("Shipping declared value is invalid.");
+  }
+
+  return {
+    totalWeightKg,
+    totalDeclaredValue,
+  };
+}
+
+export function buildFedExCommodities(commodities: ShippingCommodity[]) {
+  return commodities.map((commodity) => ({
+    weight: { units: "KG", value: commodity.lineWeightKg },
+    numberOfPieces: 1,
+    description: normalizeFedExDescription(commodity),
+    countryOfManufacture: commodity.countryOfManufacture,
+    quantity: commodity.quantity,
+    quantityUnits: "PCS",
+    unitPrice: { amount: roundMoney(commodity.unitPriceIdr), currency: "IDR" },
+    customsValue: { amount: roundMoney(commodity.lineValueIdr), currency: "IDR" },
+  }));
+}
+
+function buildCustomsClearanceDetail(commodities: ShippingCommodity[]) {
+  return {
+    dutiesPayment: { paymentType: "SENDER" },
+    commodities: buildFedExCommodities(commodities),
+  };
+}
+
+export function buildFedExRateRequest(input: {
+  accountNumber: string;
+  origin: OriginAddress;
+  destination: ShippingDestination;
+  shipDate: string;
+  commodities: ShippingCommodity[];
+}) {
+  const { totalWeightKg } = summarizeShippingCommodities(input.commodities);
+
+  return {
+    accountNumber: { value: input.accountNumber },
+    requestedShipment: {
+      shipper: { address: { postalCode: input.origin.postalCode, countryCode: input.origin.countryCode } },
+      recipient: {
+        address: {
+          postalCode: input.destination.postalCode,
+          countryCode: input.destination.countryCode,
+        },
+      },
+      shipDatestamp: input.shipDate,
+      pickupType: "DROPOFF_AT_FEDEX_LOCATION",
+      serviceType: "INTERNATIONAL_ECONOMY",
+      packagingType: "YOUR_PACKAGING",
+      rateRequestType: ["ACCOUNT"],
+      returnTransitTimes: true,
+      customsClearanceDetail: buildCustomsClearanceDetail(input.commodities),
+      requestedPackageLineItems: [
+        { weight: { units: "KG", value: totalWeightKg } },
+      ],
+    },
+  };
+}
+
+export function buildFedExTransitTimesRequest(input: {
+  origin: OriginAddress;
+  destination: ShippingDestination;
+  shipDate: string;
+  commodities: ShippingCommodity[];
+}) {
+  const { totalWeightKg } = summarizeShippingCommodities(input.commodities);
+
+  return {
+    requestedShipment: {
+      shipper: { address: { postalCode: input.origin.postalCode, countryCode: input.origin.countryCode } },
+      recipients: [{ address: { postalCode: input.destination.postalCode, countryCode: input.destination.countryCode } }],
+      packagingType: "YOUR_PACKAGING",
+      pickupType: "DROPOFF_AT_FEDEX_LOCATION",
+      shipDatestamp: input.shipDate,
+      serviceType: "INTERNATIONAL_ECONOMY",
+      requestedPackageLineItems: [{ weight: { units: "KG", value: totalWeightKg } }],
+      customsClearanceDetail: buildCustomsClearanceDetail(input.commodities),
+    },
+    carrierCodes: ["FDXE"],
+  };
+}
+
+function formatFedExDate(raw: string): string {
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return "";
+
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "2-digit",
+    timeZone: "UTC",
+  }).format(parsed);
+}
+
+type RateReplyDetail = NonNullable<NonNullable<FedExRatesResponse["output"]>["rateReplyDetails"]>[number];
+
+function readEstimatedDelivery(detail: RateReplyDetail | undefined): string {
+  const raw =
+    detail?.operationalDetail?.deliveryDate ||
+    detail?.operationalDetail?.commitDate ||
+    detail?.commit?.commitTimestamp ||
+    (detail?.commit?.dateDetail as { day?: string } | undefined)?.day ||
+    "";
+
+  return raw ? formatFedExDate(raw) : "";
 }
 
 /**
@@ -152,9 +301,7 @@ async function getOriginAddress(): Promise<{ postalCode: string; countryCode: st
  * Returns cost in IDR (FedEx production API returns IDR directly for Indonesian accounts).
  */
 export async function getShippingRate(
-  recipientPostalCode: string,
-  recipientCountryCode: string,
-  totalWeightKg: number
+  input: ShippingRateInput
 ): Promise<ShippingRateResult> {
   if (!hasRateCredentials()) {
     throw new Error("FedEx Rate API credentials not configured. Set FEDEX_CLIENT_ID, FEDEX_CLIENT_SECRET, and FEDEX_ACCOUNT_NUMBER.");
@@ -165,27 +312,15 @@ export async function getShippingRate(
 
   const today = new Date().toISOString().split("T")[0];
   const origin = await getOriginAddress();
+  const totals = summarizeShippingCommodities(input.commodities);
 
-  const rateRequest = {
-    accountNumber: { value: process.env.FEDEX_ACCOUNT_NUMBER! },
-    requestedShipment: {
-      shipper: { address: { postalCode: origin.postalCode, countryCode: origin.countryCode } },
-      recipient: {
-        address: {
-          postalCode: recipientPostalCode,
-          countryCode: recipientCountryCode,
-        },
-      },
-      shipDatestamp: today,
-      pickupType: "DROPOFF_AT_FEDEX_LOCATION",
-      serviceType: "INTERNATIONAL_ECONOMY",
-      packagingType: "YOUR_PACKAGING",
-      rateRequestType: ["LIST"],
-      requestedPackageLineItems: [
-        { weight: { units: "KG", value: totalWeightKg } },
-      ],
-    },
-  };
+  const rateRequest = buildFedExRateRequest({
+    accountNumber: process.env.FEDEX_ACCOUNT_NUMBER!,
+    origin,
+    destination: input.destination,
+    shipDate: today,
+    commodities: input.commodities,
+  });
 
   const res = await fetch(`${baseUrl}/rate/v1/rates/quotes`, {
     method: "POST",
@@ -216,72 +351,47 @@ export async function getShippingRate(
     details[0];
 
   const ratedDetail = preferred.ratedShipmentDetails?.find(
-    (r) => r.rateType === "LIST"
-  ) ?? preferred.ratedShipmentDetails?.[0];
+    (r) => r.rateType === "ACCOUNT"
+  );
+
+  if (!ratedDetail) {
+    throw new Error("FedEx ACCOUNT rate unavailable.");
+  }
 
   // FedEx production returns rates in IDR directly — no USD conversion needed
   // totalNetCharge is a plain number (e.g. 445.54), NOT { amount, currency }
   const shippingCost = Math.round(ratedDetail?.totalNetCharge ?? 0);
+  if (!Number.isFinite(shippingCost) || shippingCost <= 0) {
+    throw new Error("FedEx ACCOUNT rate amount unavailable.");
+  }
 
   // ── Step 2: Fetch real estimated delivery from /availability/v1/transittimes ──
-  let estimatedDelivery = "";
+  let estimatedDelivery = readEstimatedDelivery(preferred);
   try {
-    const transitBody = {
-      requestedShipment: {
-        shipper: { address: { postalCode: origin.postalCode, countryCode: origin.countryCode } },
-        recipients: [{ address: { postalCode: recipientPostalCode, countryCode: recipientCountryCode } }],
-        packagingType: "YOUR_PACKAGING",
-        pickupType: "DROPOFF_AT_FEDEX_LOCATION",
-        shipDatestamp: today,
-        serviceType: "INTERNATIONAL_ECONOMY",
-        requestedPackageLineItems: [{ weight: { units: "KG", value: totalWeightKg } }],
-        // Required for international shipments
-        customsClearanceDetail: {
-          dutiesPayment: { paymentType: "SENDER" },
-          commodities: [
-            {
-              weight: { units: "KG", value: totalWeightKg },
-              numberOfPieces: 1,
-              description: "General merchandise",
-              countryOfManufacture: origin.countryCode,
-              quantity: 1,
-              quantityUnits: "PCS",
-              unitPrice: { amount: 1, currency: "USD" },
-              customsValue: { amount: 1, currency: "USD" },
-            },
-          ],
-        },
-      },
-      carrierCodes: ["FDXE"],
-    };
+    if (!estimatedDelivery) {
+      const transitBody = buildFedExTransitTimesRequest({
+        origin,
+        destination: input.destination,
+        shipDate: today,
+        commodities: input.commodities,
+      });
 
-    const transitRes = await fetch(`${baseUrl}/availability/v1/transittimes`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, "X-locale": "en_US" },
-      body: JSON.stringify(transitBody),
-    });
+      const transitRes = await fetch(`${baseUrl}/availability/v1/transittimes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, "X-locale": "en_US" },
+        body: JSON.stringify(transitBody),
+      });
 
-    if (transitRes.ok) {
-      const transitData = await transitRes.json();
-      const details: Array<{
-        serviceType?: string;
-        commit?: { dateDetail?: { dayOfWeek?: string; day?: string } };
-      }> = transitData?.output?.transitTimes?.[0]?.transitTimeDetails ?? [];
+      if (transitRes.ok) {
+        const transitData = await transitRes.json();
+        const details: Array<{
+          serviceType?: string;
+          commit?: { dateDetail?: { dayOfWeek?: string; day?: string } };
+        }> = transitData?.output?.transitTimes?.[0]?.transitTimeDetails ?? [];
 
-      const ieDetail = details.find((d) => d.serviceType === "INTERNATIONAL_ECONOMY") ?? details[0];
-
-      // FedEx returns "day": "May-07-2026" and "dayOfWeek": "Thu"
-      const rawDay = ieDetail?.commit?.dateDetail?.day ?? "";
-      if (rawDay) {
-        const parsed = new Date(rawDay);
-        // Format: "Thursday, May 07, 2026"
-        estimatedDelivery = new Intl.DateTimeFormat("en-US", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "2-digit",
-          timeZone: "UTC",
-        }).format(parsed);
+        const ieDetail = details.find((d) => d.serviceType === "INTERNATIONAL_ECONOMY") ?? details[0];
+        const rawDay = ieDetail?.commit?.dateDetail?.day ?? "";
+        estimatedDelivery = rawDay ? formatFedExDate(rawDay) : "";
       }
     }
   } catch {
@@ -292,6 +402,15 @@ export async function getShippingRate(
     shippingCost,
     serviceName: preferred.serviceName ?? preferred.serviceType,
     estimatedDelivery,
+    rateType: "ACCOUNT",
+    currency: "IDR",
+    totalDeclaredValue: totals.totalDeclaredValue,
+    totalWeightKg: totals.totalWeightKg,
+    fedExRateDetail: {
+      serviceType: preferred.serviceType,
+      serviceName: preferred.serviceName,
+      ratedShipmentDetail: ratedDetail,
+    },
   };
 }
 

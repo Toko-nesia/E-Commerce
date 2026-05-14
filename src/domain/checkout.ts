@@ -11,6 +11,7 @@ export interface CheckoutItemInput {
 export interface CheckoutProduct {
   id: number;
   name: string;
+  category: string;
   priceRaw: number;
   price: string;
   weightKg: number;
@@ -30,6 +31,23 @@ export interface CheckoutPricing {
   serviceFee: number;
   grandTotal: number;
   totalWeightKg: number;
+}
+
+export interface ShippingCommodity {
+  productId: number;
+  name: string;
+  category: string;
+  quantity: number;
+  unitPriceIdr: number;
+  lineValueIdr: number;
+  unitWeightKg: number;
+  lineWeightKg: number;
+  countryOfManufacture: "ID";
+}
+
+export interface ShippingDestination {
+  postalCode: string;
+  countryCode: string;
 }
 
 export function normalizeCheckoutItems(items: CheckoutItemInput[]): CheckoutItemInput[] {
@@ -61,6 +79,12 @@ export function priceCheckoutItems(
     if (!product) {
       throw new Error(`Product ${item.productId} is no longer available.`);
     }
+    if (!Number.isFinite(product.priceRaw) || product.priceRaw <= 0) {
+      throw new Error(`Invalid price for ${product.name}.`);
+    }
+    if (!Number.isFinite(product.weightKg) || product.weightKg <= 0) {
+      throw new Error(`Invalid weight for ${product.name}.`);
+    }
     if (product.stock < item.quantity) {
       throw new Error(`Insufficient stock for ${product.name}.`);
     }
@@ -71,6 +95,20 @@ export function priceCheckoutItems(
       lineWeightKg: product.weightKg * item.quantity,
     };
   });
+}
+
+export function buildShippingCommodities(pricedItems: PricedCheckoutItem[]): ShippingCommodity[] {
+  return pricedItems.map((item) => ({
+    productId: item.product.id,
+    name: item.product.name,
+    category: item.product.category,
+    quantity: item.quantity,
+    unitPriceIdr: item.product.priceRaw,
+    lineValueIdr: item.lineTotal,
+    unitWeightKg: item.product.weightKg,
+    lineWeightKg: item.lineWeightKg,
+    countryOfManufacture: "ID",
+  }));
 }
 
 export function calculateCheckoutPricing(

@@ -29,6 +29,7 @@ const address: CheckoutAddress = {
 const product: CheckoutProduct = {
   id: 1,
   name: "Kopi Aceh",
+  category: "Coffee",
   price: "Rp100.000",
   priceRaw: 100_000,
   stock: 10,

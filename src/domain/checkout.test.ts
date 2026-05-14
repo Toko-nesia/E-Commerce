@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildMidtransItemDetails,
+  buildShippingCommodities,
   calculateCheckoutPricing,
   createCartFingerprint,
   normalizeCheckoutItems,
@@ -12,6 +13,7 @@ const products: CheckoutProduct[] = [
   {
     id: 1,
     name: "Kopi Aceh",
+    category: "Coffee",
     price: "Rp100.000",
     priceRaw: 100_000,
     stock: 10,
@@ -20,6 +22,7 @@ const products: CheckoutProduct[] = [
   {
     id: 2,
     name: "Keripik Balado",
+    category: "Snacks",
     price: "Rp50.000",
     priceRaw: 50_000,
     stock: 10,
@@ -80,5 +83,23 @@ describe("checkout domain", () => {
     const grossAmount = itemDetails.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
     expect(grossAmount).toBe(pricing.grandTotal);
+  });
+
+  it("builds shipping commodities from priced checkout items", () => {
+    const priced = priceCheckoutItems([{ productId: 1, quantity: 2 }], products);
+
+    expect(buildShippingCommodities(priced)).toEqual([
+      {
+        productId: 1,
+        name: "Kopi Aceh",
+        category: "Coffee",
+        quantity: 2,
+        unitPriceIdr: 100_000,
+        lineValueIdr: 200_000,
+        unitWeightKg: 12,
+        lineWeightKg: 24,
+        countryOfManufacture: "ID",
+      },
+    ]);
   });
 });

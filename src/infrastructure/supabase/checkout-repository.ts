@@ -30,6 +30,7 @@ function toProduct(row: Record<string, any>): CheckoutProduct {
   return {
     id: Number(row.id),
     name: row.name,
+    category: row.category,
     priceRaw: Number(row.price_raw),
     price: row.price,
     weightKg: Number(row.weight_kg ?? 0),
@@ -92,7 +93,7 @@ export class SupabaseCheckoutRepository implements CheckoutRepository {
   async getProductsByIds(productIds: number[]): Promise<CheckoutProduct[]> {
     const { data, error } = await this.supabase
       .from("products")
-      .select("id, name, price, price_raw, weight_kg, stock")
+      .select("id, name, category, price, price_raw, weight_kg, stock")
       .in("id", productIds);
 
     if (error) {

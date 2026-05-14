@@ -1,6 +1,7 @@
 import {
   SNAP_TOKEN_TTL_MS,
   buildMidtransItemDetails,
+  buildShippingCommodities,
   calculateCheckoutPricing,
   createCartFingerprint,
   formatRp,
@@ -9,6 +10,8 @@ import {
   type CheckoutItemInput,
   type CheckoutPricing,
   type CheckoutProduct,
+  type ShippingCommodity,
+  type ShippingDestination,
 } from "@/domain/checkout";
 
 export interface CheckoutAddress {
@@ -71,13 +74,16 @@ export interface CheckoutRepository {
 
 export interface ShippingRateProvider {
   getShippingRate(input: {
-    postalCode: string;
-    countryCode: string;
-    totalWeightKg: number;
+    destination: ShippingDestination;
+    commodities: ShippingCommodity[];
   }): Promise<{
     shippingCost: number;
     serviceName: string;
     estimatedDelivery: string;
+    rateType?: "ACCOUNT";
+    currency?: "IDR";
+    totalDeclaredValue?: number;
+    totalWeightKg?: number;
   }>;
 }
 
@@ -165,11 +171,13 @@ export async function createCheckoutIntent(
 
   const products = await deps.repository.getProductsByIds(normalizedItems.map((item) => item.productId));
   const pricedItems = priceCheckoutItems(normalizedItems, products);
-  const weightOnlyPricing = calculateCheckoutPricing(pricedItems, 0);
+  calculateCheckoutPricing(pricedItems, 0);
   const shippingRate = await deps.shipping.getShippingRate({
-    postalCode: address.postalCode,
-    countryCode: address.countryCode,
-    totalWeightKg: weightOnlyPricing.totalWeightKg,
+    destination: {
+      postalCode: address.postalCode,
+      countryCode: address.countryCode,
+    },
+    commodities: buildShippingCommodities(pricedItems),
   });
   const pricing = calculateCheckoutPricing(pricedItems, shippingRate.shippingCost);
   const cartFingerprint = createCartFingerprint({

@@ -199,15 +199,22 @@ export default function CheckoutPage() {
     setShippingLoading(true);
     setShippingError(null);
     setShippingCost(null);
-
-    const postalCode = address.postal_code || "100-0001";
-    const countryCode = address.country_code || "JP";
+    if (items.length === 0) {
+      setShippingLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch("/api/shipping/rates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ postalCode, countryCode, totalWeightKg: totalWeight }),
+        body: JSON.stringify({
+          addressId: address.id,
+          items: items.map(({ product, qty }) => ({
+            productId: product.id,
+            quantity: qty,
+          })),
+        }),
       });
 
       if (!res.ok) {
@@ -225,7 +232,7 @@ export default function CheckoutPage() {
     } finally {
       setShippingLoading(false);
     }
-  }, [totalWeight]);
+  }, [items]);
 
   useEffect(() => {
     if (currentAddress) {
