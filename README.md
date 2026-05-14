@@ -65,6 +65,11 @@ Important live database guarantees:
 - Stock decrement is guarded by a server-side RPC that locks and decrements only once.
 - RLS policies use explicit roles and `(select auth.uid())` patterns for better planner behavior.
 
+Storage buckets are grouped by asset ownership:
+
+- `product-images`: product catalog images uploaded through admin product workflows.
+- `site-assets`: public page assets grouped by domain, such as `brands/`, `home/`, `about/`, `auth/`, and `profile/`.
+
 ## Scripts
 
 ```bash
