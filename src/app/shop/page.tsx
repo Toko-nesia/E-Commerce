@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { PageWrapper } from "../components/layout/PageWrapper";
 import { Search, ChevronDown, SlidersHorizontal, RefreshCw } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { resolveImagePath } from "@/lib/image-paths";
 import type { Product, Category } from "@/types/database";
 
@@ -21,6 +20,7 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 export default function ShopPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,47 +30,35 @@ export default function ShopPage() {
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const supabase = createClient();
+      const params = new URLSearchParams({
+        search: searchQuery,
+        sort: sortBy,
+        page: String(currentPage),
+        pageSize: String(PRODUCTS_PER_PAGE),
+      });
+      const res = await fetch(`/api/catalog/products?${params.toString()}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to load products");
 
-      const [productsRes, categoriesRes] = await Promise.all([
-        supabase.from("products").select("*"),
-        supabase.from("categories").select("*"),
-      ]);
-
-      if (productsRes.error) throw new Error(productsRes.error.message);
-      if (categoriesRes.error) throw new Error(categoriesRes.error.message);
-
-      setProducts(productsRes.data ?? []);
-      setCategories(categoriesRes.data ?? []);
+      setProducts(data.products ?? []);
+      setCategories(data.categories ?? []);
+      setTotal(data.total ?? 0);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load data");
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, searchQuery, sortBy]);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
-  const filtered = useMemo(() => {
-    let result = products.filter((p) => {
-      const q = searchQuery.toLowerCase();
-      return p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q);
-    });
-
-    if (sortBy === "price-asc") result = [...result].sort((a, b) => a.price_raw - b.price_raw);
-    else if (sortBy === "price-desc") result = [...result].sort((a, b) => b.price_raw - a.price_raw);
-
-    return result;
-  }, [products, searchQuery, sortBy]);
-
-  const totalPages = Math.ceil(filtered.length / PRODUCTS_PER_PAGE);
-  const paginated = filtered.slice((currentPage - 1) * PRODUCTS_PER_PAGE, currentPage * PRODUCTS_PER_PAGE);
+  const totalPages = Math.ceil(total / PRODUCTS_PER_PAGE);
 
   const handleSearch = (q: string) => {
     setSearchQuery(q);
@@ -143,7 +131,7 @@ export default function ShopPage() {
                     className="block text-[14px] font-bold text-[#511e0b] no-underline py-1.5 hover:text-[#3d1608]"
                     onClick={() => setMobileSidebarOpen(false)}
                   >
-                    All <span className="text-[#fbbe48]">({products.length})</span>
+                    All <span className="text-[#fbbe48]">({total})</span>
                   </Link>
                   {categories.map((c) => (
                     <Link
@@ -167,7 +155,7 @@ export default function ShopPage() {
                 <h1 className="font-bold text-[28px] md:text-[32px] text-[#511e0b]">All Products</h1>
                 {!loading && (
                   <p className="text-[13px] text-[#6b6b6b] mt-0.5">
-                    Showing {Math.min((currentPage - 1) * PRODUCTS_PER_PAGE + 1, filtered.length)}–{Math.min(currentPage * PRODUCTS_PER_PAGE, filtered.length)} of {filtered.length} products
+                    Showing {Math.min((currentPage - 1) * PRODUCTS_PER_PAGE + 1, total)}-{Math.min(currentPage * PRODUCTS_PER_PAGE, total)} of {total} products
                   </p>
                 )}
               </div>
@@ -211,7 +199,7 @@ export default function ShopPage() {
                   </div>
                 ))}
               </div>
-            ) : paginated.length === 0 ? (
+            ) : products.length === 0 ? (
               <div className="text-center py-24">
                 <p className="text-[#6b6b6b] text-[15px]">No products found for &ldquo;{searchQuery}&rdquo;</p>
                 <button onClick={() => handleSearch("")} className="mt-3 text-[#511e0b] underline text-[13px] bg-transparent border-none cursor-pointer">
@@ -220,7 +208,7 @@ export default function ShopPage() {
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {paginated.map((p) => (
+                {products.map((p) => (
                   <Link href={`/product/${p.id}`} key={p.id} className="no-underline group">
                     <div className="bg-white rounded-xl overflow-hidden border border-[#e0e0e0] hover:shadow-md transition-all duration-200 group-hover:-translate-y-0.5 flex flex-col h-full">
                       <div className="relative w-full aspect-[4/3] bg-[#f8f8f8] overflow-hidden">

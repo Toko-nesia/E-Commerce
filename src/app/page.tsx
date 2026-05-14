@@ -51,7 +51,7 @@ export default function HomePage() {
         if (error) {
           console.error("Error fetching trending products:", error.message);
         } else {
-          setTrendingProducts(data ?? []);
+          setTrendingProducts((data ?? []) as Product[]);
         }
       } catch (err) {
         console.error("Failed to fetch trending products:", err);

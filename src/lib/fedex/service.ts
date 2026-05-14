@@ -28,6 +28,15 @@ export function saveTrackingNumber(order: Order, resi: string): Order {
 // OAuth2 token helper
 // =============================================================================
 
+type TokenCache = { token: string; expiresAt: number };
+
+let trackingTokenCache: TokenCache | null = null;
+let rateTokenCache: TokenCache | null = null;
+let originAddressCache: {
+  value: { postalCode: string; countryCode: string };
+  expiresAt: number;
+} | null = null;
+
 const FEDEX_BASE_URL = () =>
   process.env.FEDEX_API_URL ?? "https://apis.fedex.com";
 
@@ -35,6 +44,10 @@ const FEDEX_TRACKING_BASE_URL = () =>
   process.env.FEDEX_TRACKING_API_URL ?? "https://apis-sandbox.fedex.com";
 
 async function fetchOAuthToken(): Promise<string> {
+  if (trackingTokenCache && trackingTokenCache.expiresAt > Date.now()) {
+    return trackingTokenCache.token;
+  }
+
   const apiKey = process.env.FEDEX_API_KEY!;
   const secretKey = process.env.FEDEX_SECRET_KEY!;
   const baseUrl = FEDEX_TRACKING_BASE_URL();
@@ -49,11 +62,20 @@ async function fetchOAuthToken(): Promise<string> {
   });
   if (!res.ok) throw new Error(`FedEx OAuth failed: ${res.status}`);
   const data = await res.json();
-  return data.access_token as string;
+  const token = data.access_token as string;
+  trackingTokenCache = {
+    token,
+    expiresAt: Date.now() + Math.max(30, Number(data.expires_in ?? 3600) - 60) * 1000,
+  };
+  return token;
 }
 
 /** OAuth2 token using FEDEX_CLIENT_ID / FEDEX_CLIENT_SECRET env vars */
 async function fetchRateOAuthToken(): Promise<string> {
+  if (rateTokenCache && rateTokenCache.expiresAt > Date.now()) {
+    return rateTokenCache.token;
+  }
+
   const baseUrl = FEDEX_BASE_URL();
   const res = await fetch(`${baseUrl}/oauth/token`, {
     method: "POST",
@@ -66,7 +88,12 @@ async function fetchRateOAuthToken(): Promise<string> {
   });
   if (!res.ok) throw new Error(`FedEx OAuth failed: ${res.status}`);
   const data = await res.json();
-  return data.access_token as string;
+  const token = data.access_token as string;
+  rateTokenCache = {
+    token,
+    expiresAt: Date.now() + Math.max(30, Number(data.expires_in ?? 3600) - 60) * 1000,
+  };
+  return token;
 }
 
 function hasCredentials(): boolean {
@@ -92,6 +119,10 @@ export interface ShippingRateResult {
  * Falls back to hardcoded defaults if DB is unavailable.
  */
 async function getOriginAddress(): Promise<{ postalCode: string; countryCode: string }> {
+  if (originAddressCache && originAddressCache.expiresAt > Date.now()) {
+    return originAddressCache.value;
+  }
+
   try {
     const supabase = createServiceClient();
     const { data } = await supabase
@@ -101,15 +132,19 @@ async function getOriginAddress(): Promise<{ postalCode: string; countryCode: st
 
     if (data && data.length > 0) {
       const map = Object.fromEntries(data.map((r: { key: string; value: string }) => [r.key, r.value]));
-      return {
+      const value = {
         postalCode: map["origin_postal_code"] ?? "65143",
         countryCode: map["origin_country_code"] ?? "ID",
       };
+      originAddressCache = { value, expiresAt: Date.now() + 5 * 60 * 1000 };
+      return value;
     }
   } catch (err) {
     console.warn("Failed to fetch origin address from DB, using default:", err);
   }
-  return { postalCode: "65143", countryCode: "ID" };
+  const fallback = { postalCode: "65143", countryCode: "ID" };
+  originAddressCache = { value: fallback, expiresAt: Date.now() + 60 * 1000 };
+  return fallback;
 }
 
 /**

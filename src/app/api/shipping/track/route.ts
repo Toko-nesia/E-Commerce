@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { FedExService } from "@/lib/fedex/service";
+import { validateTrackingNumber } from "@/lib/fedex/service";
 
 export async function GET(req: Request) {
   try {
@@ -8,6 +9,9 @@ export async function GET(req: Request) {
 
     if (!trackingNumber) {
       return NextResponse.json({ error: "Missing tracking_number" }, { status: 400 });
+    }
+    if (!validateTrackingNumber(trackingNumber)) {
+      return NextResponse.json({ error: "Invalid tracking_number" }, { status: 400 });
     }
 
     // Call the server-side FedEx service

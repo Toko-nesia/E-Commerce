@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Shield, Check, Edit3 } from "lucide-react";
@@ -41,6 +41,13 @@ function formatRp(amount: number): string {
   return "Rp" + amount.toLocaleString("id-ID");
 }
 
+function createIdempotencyKey(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, totalPrice, totalWeight, canCheckout, clearCart } = useCart();
@@ -54,6 +61,7 @@ export default function CheckoutPage() {
   const [note, setNote] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
+  const [idempotencyKey, setIdempotencyKey] = useState(createIdempotencyKey);
 
   // Addresses
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -235,40 +243,46 @@ export default function CheckoutPage() {
   const grandTotal = totalPrice + (shippingCost ?? 0) + serviceFee;
   const grandTotalJpy = Math.round(grandTotal * exchangeRate);
 
+  const checkoutSessionFingerprint = useMemo(() => {
+    return JSON.stringify({
+      addressId: selectedAddress,
+      items: items
+        .map(({ product, qty }) => ({ id: product.id, qty }))
+        .sort((a, b) => a.id - b.id),
+    });
+  }, [items, selectedAddress]);
+
+  useEffect(() => {
+    setIdempotencyKey(createIdempotencyKey());
+  }, [checkoutSessionFingerprint]);
+
   const handlePay = async () => {
-    if (!currentAddress || !shippingCost) return;
+    if (isProcessing || !currentAddress || shippingCost === null) return;
     setIsProcessing(true);
     setPayError(null);
 
     try {
-      const orderId = `ZB-${Date.now()}`;
-
-      const res = await fetch("/api/midtrans/create-transaction", {
+      const res = await fetch("/api/checkout/intents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          orderId,
-          grossAmount: grandTotal,
-          userId: user?.id,
-          shippingCost,
-          serviceFee,
+          idempotencyKey,
+          addressId: currentAddress.id,
           note,
-          customerDetails: {
-            first_name: currentAddress.name,
-            phone: currentAddress.phone,
-          },
           cartItems: items.map(({ product, qty }) => ({
-            id: product.id,
-            price: product.price_raw,
-            qty,
-            name: product.name,
+            productId: product.id,
+            quantity: qty,
+          })),
+          items: items.map(({ product, qty }) => ({
+            productId: product.id,
+            quantity: qty,
           })),
         }),
       });
 
       const data = await res.json();
 
-      if (!res.ok || !data.token) {
+      if (!res.ok || !data.snapToken) {
         throw new Error(data.error ?? "Failed to create payment");
       }
 
@@ -290,13 +304,15 @@ export default function CheckoutPage() {
         });
       }
 
-      window.snap!.pay(data.token, {
+      window.snap!.pay(data.snapToken, {
         onSuccess: () => {
           clearCart();
+          setIdempotencyKey(createIdempotencyKey());
           router.push("/order-success");
         },
         onPending: () => {
           clearCart();
+          setIdempotencyKey(createIdempotencyKey());
           router.push("/order-success");
         },
         onError: () => {

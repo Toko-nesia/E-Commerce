@@ -1,105 +1,75 @@
-# Tokonesia (トコネシア)
-### Indonesian Products for Japan
+# Tokonesia
 
-Cross-border e-commerce platform connecting Indonesian brands with customers in Japan.
-
----
+Cross-border e-commerce app for Indonesian products sold to customers in Japan.
 
 ## Getting Started
 
-1. Copy `.env.example` to `.env.local` and fill in all values
-2. Run the image upload script (one-time):
-   ```bash
-   node scripts/upload-images.mjs
-   ```
-3. Start the dev server:
-   ```bash
-   npm run dev
-   ```
+1. Copy `.env.example` to `.env.local` and fill in the values.
+2. Install dependencies with `npm install`.
+3. Start the dev server with `npm run dev`.
 
----
+Live Supabase is the source of truth for database schema and storage. This repo intentionally does not keep a root `supabase/` folder.
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 15 (App Router) |
-| Language | TypeScript 5 |
-| Styling | Tailwind CSS v4 |
-| UI Components | Radix UI + MUI |
-| Backend | Supabase (Auth + PostgreSQL + Storage) |
+| Framework | Next.js 16 App Router |
+| UI | React 19, Tailwind CSS v4, Radix UI, MUI |
+| Backend | Supabase Auth, PostgreSQL, Storage |
 | Payment | Midtrans Snap |
-| Shipping | FedEx Rate API |
-| Exchange Rate | ExchangeRate-API |
-
----
+| Shipping | FedEx Rate and Tracking APIs |
+| Runtime validation | Zod |
+| Tests | Vitest |
 
 ## Environment Variables
 
-See `.env.example` for all required variables:
+See `.env.example` for all required variables.
 
-- `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY`
-- `MIDTRANS_SERVER_KEY` / `NEXT_PUBLIC_MIDTRANS_CLIENT_KEY`
-- `FEDEX_CLIENT_ID` / `FEDEX_CLIENT_SECRET` / `FEDEX_ACCOUNT_NUMBER` / `FEDEX_API_URL` — Rate API (shipping cost)
-- `FEDEX_API_KEY` / `FEDEX_SECRET_KEY` — Basic Visibility / Tracking API (separate credentials)
-- `EXCHANGE_RATE_API_KEY`
+- Supabase: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` or `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- Midtrans: `MIDTRANS_SERVER_KEY`, `NEXT_PUBLIC_MIDTRANS_CLIENT_KEY`, `MIDTRANS_IS_PRODUCTION`, `NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION`
+- FedEx: `FEDEX_CLIENT_ID`, `FEDEX_CLIENT_SECRET`, `FEDEX_ACCOUNT_NUMBER`, `FEDEX_API_URL`, `FEDEX_API_KEY`, `FEDEX_SECRET_KEY`, `FEDEX_TRACKING_API_URL`
+- Exchange rate: `EXCHANGE_RATE_API_KEY`
 
----
-
-## Demo Credentials
-
-| Role | Email | Password |
-|---|---|---|
-| Admin | admin@tokonesia.com | Admin123! |
-| User | haruka@example.com | User123! |
-| User | keiko@example.com | User123! |
-
----
-
-## One-Time Setup
-
-After setting env vars, run the image upload script to migrate images from `public/images/` to Supabase Storage:
-
-```bash
-node scripts/upload-images.mjs
-```
-
-Then enable the custom access token hook in Supabase Dashboard:
-**Authentication → Hooks → Custom Access Token** → select `public.custom_access_token_hook`
-
----
-
-## Project Structure
+## Architecture
 
 ```
 src/
-├── app/
-│   ├── admin/          # Admin dashboard (products, orders, categories, users, refunds)
-│   ├── api/            # API routes (Midtrans, FedEx, exchange rate)
-│   ├── cart/           # Shopping cart (weight-based checkout gate)
-│   ├── checkout/       # Checkout (FedEx shipping + exchange rate)
-│   ├── profile/        # User profile, order history, addresses
-│   ├── shop/           # Product listing & filtering
-│   ├── product/[id]/   # Product detail
-│   └── components/     # Shared layout, modals, UI
-├── contexts/           # AuthContext (Supabase), CartContext
-├── lib/                # Supabase clients, FedEx, utilities
-├── middleware.ts        # Route protection + role-based access
-└── types/database.ts   # TypeScript interfaces
-supabase/
-├── functions/          # Edge Functions (refresh-exchange-rate)
-└── migrations/         # Database migrations
-scripts/
-├── upload-images.mjs   # Upload public/images/ to Supabase Storage
-└── seed-products-categories-brands.sql  # Re-seed products/categories/brands
+  app/                 Next.js pages, route handlers, and thin adapters
+  application/         Use cases and request/response schemas
+  domain/              Pure business rules for checkout, payment, pricing
+  infrastructure/      Supabase, Midtrans, FedEx implementations
+  contexts/            Client UI state providers
+  lib/                 Framework and shared utility glue
+  types/               App interfaces and generated live Supabase types
 ```
 
----
+Key backend entry points:
 
-## Running Tests
+- `POST /api/checkout/intents` creates or reuses an idempotent checkout intent.
+- `POST /api/midtrans/notification` applies verified Midtrans events through the payment use case and database RPC.
+- `POST /api/midtrans/create-transaction` is a compatibility shim and no longer creates orders from untrusted client totals.
+
+## Supabase
+
+Generate live project types into source code, not into a root Supabase folder:
 
 ```bash
-npx vitest run
+npx supabase gen types typescript --project-id qvyeihaetcwwsypymjtp --schema public > src/types/supabase.ts
 ```
 
-62 property-based tests covering all correctness properties.
+Important live database guarantees:
+
+- `orders(user_id, idempotency_key)` has a unique partial index.
+- `payment_events.event_hash` deduplicates repeated webhooks.
+- Stock decrement is guarded by a server-side RPC that locks and decrements only once.
+- RLS policies use explicit roles and `(select auth.uid())` patterns for better planner behavior.
+
+## Scripts
+
+```bash
+npm run dev
+npm run typecheck
+npm run test
+npm run build
+```

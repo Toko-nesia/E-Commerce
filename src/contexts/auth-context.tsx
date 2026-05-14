@@ -1,14 +1,17 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@/types/database";
-import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
-import { useRouter } from "next/navigation";
-
-// =============================================================================
-// Auth Context — Supabase Auth implementation (Best Practice: SSR + getUser)
-// =============================================================================
 
 interface AuthContextType {
   user: User | null;
@@ -24,197 +27,98 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Helper: retry a function with exponential backoff for transient errors
-async function retryWithBackoff<T>(
-  fn: () => Promise<T>,
-  isTransientError: (result: T) => boolean,
-  maxRetries: number = 1,
-  baseDelay: number = 1000
-): Promise<T> {
-  let result = await fn();
-  let attempt = 0;
-
-  while (isTransientError(result) && attempt < maxRetries) {
-    attempt++;
-    const delay = baseDelay * Math.pow(2, attempt - 1);
-    await new Promise((resolve) => setTimeout(resolve, delay));
-    result = await fn();
-  }
-
-  return result;
-}
-
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [role, setRole] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export function AuthProvider({
+  children,
+  initialUser = null,
+}: {
+  children: ReactNode;
+  initialUser?: User | null;
+}) {
+  const [user, setUser] = useState<User | null>(initialUser);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-
-  // Stable ref so we don't recreate the client on every render
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
 
-  // AbortController ref to track and cancel active fetchProfile requests
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  // Guard ref to prevent state updates after SIGNED_OUT
-  const isSignedOutRef = useRef<boolean>(false);
-
-  // Fetch profile from the profiles table (role, phone, avatar_url)
-  const fetchProfile = useCallback(async (userId: string, email: string, fullName: string) => {
-    // Cancel any previous fetchProfile request
-    abortControllerRef.current?.abort();
-
-    // Create a new AbortController for this request
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-    const signal = controller.signal;
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("full_name, email, phone, avatar_url, role")
-      .eq("id", userId)
-      .single();
-
-    // Check if this request was aborted or user signed out after await
-    if (signal.aborted || isSignedOutRef.current) {
-      return;
-    }
-
-    if (profile) {
-      setUser({
-        id: userId,
-        email: profile.email || email,
-        full_name: profile.full_name || fullName,
-        phone: profile.phone || undefined,
-        avatar_url: profile.avatar_url || undefined,
-        role: profile.role || "user",
-      });
-      setRole(profile.role || "user");
-    } else {
-      // Fallback if profile row doesn't exist yet (trigger may not have fired)
-      setUser({ id: userId, email, full_name: fullName, role: "user" });
-      setRole("user");
-    }
-  }, [supabase]);
+  useEffect(() => {
+    setUser(initialUser);
+  }, [initialUser]);
 
   useEffect(() => {
-    let mounted = true;
-
-    // -------------------------------------------------------------------------
-    // BEST PRACTICE: Use getUser() — always verifies token with Supabase server.
-    // getSession() only reads from localStorage and can return stale/expired data.
-    // -------------------------------------------------------------------------
-    const initSession = async () => {
-      try {
-        // Retry getUser() on transient network errors
-        const { data: { user: authUser }, error } = await retryWithBackoff(
-          () => supabase.auth.getUser(),
-          (result) => {
-            // Only retry on transient errors (network errors, status 0 or 5xx)
-            if (!result.error) return false;
-            const status = (result.error as any).status;
-            return status === 0 || status === undefined || (status >= 500 && status < 600);
-          },
-          1,
-          1000
-        );
-
-        if (!mounted) return;
-
-        if (authUser && !error) {
-          const meta = authUser.user_metadata;
-          await fetchProfile(authUser.id, authUser.email || "", meta?.full_name || "");
-        } else {
-          setUser(null);
-          setRole(null);
-        }
-      } catch {
-        if (mounted) {
-          setUser(null);
-          setRole(null);
-        }
-      } finally {
-        if (mounted) setIsLoading(false);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        setUser(null);
       }
-    };
 
-    initSession();
-
-    // -------------------------------------------------------------------------
-    // onAuthStateChange handles token refresh, sign in, sign out events.
-    // The TOKEN_REFRESHED event is critical — without it, sessions expire silently.
-    // -------------------------------------------------------------------------
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: AuthChangeEvent, session: Session | null) => {
-        if (!mounted) return;
-
-        if (
-          (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") &&
-          session?.user
-        ) {
-          // Reset signed-out guard before fetching profile
-          isSignedOutRef.current = false;
-
-          const meta = session.user.user_metadata;
-          await fetchProfile(session.user.id, session.user.email || "", meta?.full_name || "");
-        } else if (event === "SIGNED_OUT") {
-          // Set signed-out guard and abort any pending fetchProfile
-          isSignedOutRef.current = true;
-          abortControllerRef.current?.abort();
-
-          setUser(null);
-          setRole(null);
-        }
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
+        router.refresh();
       }
-    );
+    });
 
-    return () => {
-      mounted = false;
-      // Cancel any pending fetchProfile on unmount
-      abortControllerRef.current?.abort();
-      subscription.unsubscribe();
-    };
-  }, [supabase, fetchProfile]);
+    return () => subscription.unsubscribe();
+  }, [router, supabase]);
 
   const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return { success: false, error: error.message };
-      const role = (data.user?.app_metadata?.role as string) || "user";
-      return { success: true, role };
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        return { success: false, error: data.error ?? "Login failed" };
+      }
+
+      setUser(data.user ?? null);
+      router.refresh();
+      return { success: true, role: data.role ?? data.user?.role ?? "user" };
     } catch {
       return { success: false, error: "Login failed" };
     } finally {
       setIsLoading(false);
     }
-  }, [supabase]);
+  }, [router]);
 
   const register = useCallback(async (name: string, email: string, password: string) => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: name } },
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
       });
-      if (error) return { success: false, error: error.message };
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        return { success: false, error: data.error ?? "Registration failed" };
+      }
+
+      if (data.user) setUser(data.user);
+      router.refresh();
       return { success: true };
     } catch {
       return { success: false, error: "Registration failed" };
     } finally {
       setIsLoading(false);
     }
-  }, [supabase]);
+  }, [router]);
 
   const logout = useCallback(async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setRole(null);
-    router.push("/");
-    router.refresh();
-  }, [supabase, router]);
+    setIsLoading(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      setUser(null);
+      router.push("/");
+      router.refresh();
+    } finally {
+      setIsLoading(false);
+    }
+  }, [router]);
 
   const resetPassword = useCallback(async (email: string) => {
     try {
@@ -240,6 +144,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { success: false, error: "Google sign-in failed" };
     }
   }, [supabase]);
+
+  const role = user?.role ?? null;
 
   return (
     <AuthContext.Provider

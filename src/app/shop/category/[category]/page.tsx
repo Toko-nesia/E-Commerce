@@ -1,10 +1,9 @@
 "use client";
 
-import { use, useState, useMemo, useEffect } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { PageWrapper } from "../../../components/layout/PageWrapper";
 import { Search, ChevronDown, RefreshCw } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { resolveImagePath } from "@/lib/image-paths";
 import type { Product, Category } from "@/types/database";
 
@@ -26,35 +25,27 @@ export default function ShopCategoryPage({ params }: { params: Promise<{ categor
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const supabase = createClient();
     async function fetchData() {
       setLoading(true);
-      const [prodRes, catRes] = await Promise.all([
-        supabase.from("products").select("*"),
-        supabase.from("categories").select("*"),
-      ]);
-      if (prodRes.data) setProducts(prodRes.data as Product[]);
-      if (catRes.data) setCategories(catRes.data as Category[]);
+      const params = new URLSearchParams({
+        category,
+        search: searchQuery,
+        sort: sortBy === "harga-asc" ? "price-asc" : sortBy === "harga-desc" ? "price-desc" : "relevance",
+        page: "1",
+        pageSize: "50",
+      });
+      const res = await fetch(`/api/catalog/products?${params.toString()}`);
+      const data = await res.json();
+      if (res.ok) {
+        setProducts(data.products ?? []);
+        setCategories(data.categories ?? []);
+      }
       setLoading(false);
     }
     fetchData();
-  }, []);
+  }, [category, searchQuery, sortBy]);
 
   const activeCategory = categories.find((c) => c.slug === category);
-
-  const filteredProducts = useMemo(() => {
-    let result = products.filter((p) => {
-      const matchCategory = activeCategory ? p.category === activeCategory.name : true;
-      const q = searchQuery.toLowerCase();
-      const matchSearch = p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q);
-      return matchCategory && matchSearch;
-    });
-
-    if (sortBy === "harga-asc") result = [...result].sort((a, b) => a.price_raw - b.price_raw);
-    else if (sortBy === "harga-desc") result = [...result].sort((a, b) => b.price_raw - a.price_raw);
-
-    return result;
-  }, [products, searchQuery, sortBy, activeCategory]);
 
   const title = activeCategory ? activeCategory.name.toUpperCase() : "SEMUA PRODUK";
   const currentSortLabel = SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? "Relevansi";
@@ -111,7 +102,7 @@ export default function ShopCategoryPage({ params }: { params: Promise<{ categor
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
             <div>
               <h1 className="font-bold text-[28px] md:text-[32px] text-[#511e0b]">{title}</h1>
-              <p className="text-[13px] text-[#6b6b6b] mt-0.5">Menampilkan {filteredProducts.length} produk</p>
+              <p className="text-[13px] text-[#6b6b6b] mt-0.5">Menampilkan {products.length} produk</p>
             </div>
 
             {/* Sort dropdown */}
@@ -139,7 +130,7 @@ export default function ShopCategoryPage({ params }: { params: Promise<{ categor
             </div>
           </div>
 
-          {filteredProducts.length === 0 ? (
+          {products.length === 0 ? (
             <div className="text-center py-24">
               <p className="text-[#6b6b6b] text-[15px]">Produk tidak ditemukan.</p>
               <button onClick={() => setSearchQuery("")} className="mt-3 text-[#511e0b] underline text-[13px] bg-transparent border-none cursor-pointer">
@@ -148,7 +139,7 @@ export default function ShopCategoryPage({ params }: { params: Promise<{ categor
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {filteredProducts.map((p) => (
+              {products.map((p) => (
                 <Link href={`/product/${p.id}`} key={p.id} className="no-underline group">
                   <div className="bg-white rounded-xl overflow-hidden border border-[#e0e0e0] hover:shadow-md transition-all duration-200 group-hover:-translate-y-0.5">
                     <div className="relative w-full h-[180px] md:h-[205px] bg-[#f8f8f8] overflow-hidden">

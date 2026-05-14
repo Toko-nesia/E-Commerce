@@ -29,6 +29,7 @@ const STATUS_COLOR: Record<string, string> = {
 
 export default function OrderDetailPage() {
   const params = useParams();
+  const orderId = Array.isArray(params.id) ? params.id[0] : params.id;
   const router = useRouter();
   const { user } = useAuth();
   const supabase = createClient();
@@ -91,7 +92,7 @@ export default function OrderDetailPage() {
   useEffect(() => {
     const fetchOrder = async () => {
       // Tunggu client mount / id ready
-      if (!user?.id || !params.id) {
+      if (!user?.id || !orderId) {
           if (!user?.id) setLoading(false);
           return;
       }
@@ -110,7 +111,7 @@ export default function OrderDetailPage() {
               )
             )
           `)
-          .eq("id", params.id)
+          .eq("id", orderId)
           .eq("user_id", user.id)
           .single();
 
@@ -144,7 +145,7 @@ export default function OrderDetailPage() {
       }
     };
     fetchOrder();
-  }, [user?.id, params.id, supabase]);
+  }, [user?.id, orderId, supabase]);
 
   const handleCancelOrder = async () => {
     if (!order || !cancelReason.trim() || order.status !== "BARU") return;

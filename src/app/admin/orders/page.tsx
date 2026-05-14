@@ -10,6 +10,7 @@ import {
   requiresTrackingNumber,
   requiresCancelReason,
 } from "@/lib/order-status-utils";
+import type { TablesUpdate } from "@/types/supabase";
 
 interface OrderRow {
   id: string;
@@ -115,7 +116,7 @@ export default function OrdersPage() {
     setSaving(true); setSaveError(null);
     try {
       const supabase = createClient();
-      const updates: Record<string, unknown> = { status: newStatus, updated_at: new Date().toISOString() };
+      const updates: TablesUpdate<"orders"> = { status: newStatus, updated_at: new Date().toISOString() };
       if (showTrackingInput) updates.tracking_number = trackingInput.trim();
       if (showCancelReason) updates.cancel_reason = cancelReason.trim();
 

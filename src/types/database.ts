@@ -12,16 +12,17 @@ export interface Product {
   category: string;
   price: string;
   price_raw: number;
-  badge: string;
-  badge_color: string;
-  badge_width?: string;
+  badge: string | null;
+  badge_color: string | null;
+  badge_width?: string | null;
   image: string;
-  img_style?: string;
-  description?: string;
-  specifications?: Record<string, string>;
+  img_style?: string | null;
+  description?: string | null;
+  specifications?: Record<string, string> | null;
   stock: number;
   weight_kg?: number;
   created_at?: string;
+  updated_at?: string;
 }
 
 export interface Category {
@@ -52,13 +53,13 @@ export interface User {
 export interface Address {
   id: string;
   user_id?: string;
-  label?: string;
+  label?: string | null;
   name: string;
   phone: string;
   address: string;
-  full_address?: string;
-  details?: string;
-  postal_code?: string;
+  full_address?: string | null;
+  details?: string | null;
+  postal_code?: string | null;
   country_code?: string;
   is_default?: boolean;
 }
@@ -66,33 +67,48 @@ export interface Address {
 export interface Order {
   id: string;
   user_id?: string;
-  date: string;
-  status: "BARU" | "DIPROSES" | "DIKIRIM" | "SELESAI" | "DIBATALKAN";
-  status_color: string;
-  total_price: string;
-  total_price_raw?: number;
-  shipping_cost?: number;
-  service_fee?: number;
-  note?: string;
+  date?: string;
+  status: string;
+  status_color?: string | null;
+  total_price?: string | null;
+  total_price_raw?: number | null;
+  shipping_cost?: number | null;
+  service_fee?: number | null;
+  note?: string | null;
   items?: OrderItem[];
   created_at?: string;
-  tracking_number?: string;
-  estimated_delivery?: string;
-  cancel_reason?: string;
+  updated_at?: string;
+  idempotency_key?: string | null;
+  cart_fingerprint?: string | null;
+  address_id?: string | null;
+  address_snapshot?: unknown;
+  cart_snapshot?: unknown;
+  pricing_snapshot?: unknown;
+  shipping_snapshot?: unknown;
+  snap_token?: string | null;
+  snap_redirect_url?: string | null;
+  snap_token_expires_at?: string | null;
+  stock_decremented_at?: string | null;
+  paid_at?: string | null;
+  tracking_number?: string | null;
+  estimated_delivery?: string | null;
+  cancel_reason?: string | null;
   // Midtrans payment fields
-  payment_method?: MidtransPaymentType;
-  midtrans_order_id?: string;
-  midtrans_transaction_id?: string;
-  payment_status?: MidtransPaymentStatus;
-  payment_url?: string;
+  payment_method?: MidtransPaymentType | string | null;
+  midtrans_order_id?: string | null;
+  midtrans_transaction_id?: string | null;
+  payment_status?: MidtransPaymentStatus | string;
+  payment_url?: string | null;
 }
 
 export interface OrderItem {
-  id: string;
-  order_id: string;
-  product_id: number;
+  id: string | number;
+  order_id?: string;
+  product_id?: number;
   quantity: number;
-  price: string;
+  price: string | null;
+  price_raw?: number;
+  product?: { name?: string | null; image?: string | null } | null;
 }
 
 export interface ExchangeRate {
