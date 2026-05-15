@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { PageWrapper } from "@/app/components/layout/PageWrapper";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/auth-context";
@@ -10,27 +10,12 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Order, FedExLatestStatus, Address } from "@/types/database";
 import { mapScanEventsToTimeline, TimelineStep } from "@/app/components/modals/trackingUtils";
-
-const STATUS_LABEL: Record<string, string> = {
-  BARU: "New",
-  DIPROSES: "Processing",
-  DIKIRIM: "Shipped",
-  SELESAI: "Completed",
-  DIBATALKAN: "Cancelled",
-};
-
-const STATUS_COLOR: Record<string, string> = {
-  BARU: "bg-[#FFF3CD] text-[#FBBE48]",
-  DIPROSES: "bg-orange-50 text-orange-500",
-  DIKIRIM: "bg-blue-50 text-blue-500",
-  SELESAI: "bg-green-50 text-[#15a15b]",
-  DIBATALKAN: "bg-red-50 text-[#df0000]",
-};
+import { ORDER_STATUS_COLOR, ORDER_STATUS_LABEL, REFUND_STATUS_LABEL, type RefundStatus } from "@/domain/order-status";
+import { resolveImagePath } from "@/lib/image-paths";
 
 export default function OrderDetailPage() {
   const params = useParams();
   const orderId = Array.isArray(params.id) ? params.id[0] : params.id;
-  const router = useRouter();
   const { user } = useAuth();
   const supabase = createClient();
 
@@ -48,7 +33,21 @@ export default function OrderDetailPage() {
   // Tracking / FedEx State
   const [trackingState, setTrackingState] = useState<"loading" | "found" | "not_found" | "idle">("idle");
   const [trackingSteps, setTrackingSteps] = useState<TimelineStep[]>([]);
-  const [currentStatus, setCurrentStatus] = useState<string | null>(null);
+  const [refundRequest, setRefundRequest] = useState<{
+    id: string;
+    status: RefundStatus;
+    reason: string;
+    rejection_reason?: string | null;
+    account_name?: string | null;
+    payout_provider?: string | null;
+    account_number?: string | null;
+  } | null>(null);
+  const [payoutMethod, setPayoutMethod] = useState<"bank_transfer" | "e_wallet">("bank_transfer");
+  const [payoutProvider, setPayoutProvider] = useState("");
+  const [payoutAccountName, setPayoutAccountName] = useState("");
+  const [payoutAccountNumber, setPayoutAccountNumber] = useState("");
+  const [payoutSaving, setPayoutSaving] = useState(false);
+  const [payoutError, setPayoutError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!order?.tracking_number) {
@@ -59,7 +58,6 @@ export default function OrderDetailPage() {
     // fetch from our proxy API to avoid exposing secrets
     setTrackingState("loading");
     setTrackingSteps([]);
-    setCurrentStatus(null);
     
     fetch(`/api/shipping/track?tracking_number=${order.tracking_number}`)
       .then((res) => {
@@ -81,7 +79,6 @@ export default function OrderDetailPage() {
          timeline = timeline.reverse();
 
          setTrackingSteps(timeline);
-         setCurrentStatus(latestStatus?.statusByLocale ?? null);
          setTrackingState("found");
       })
       .catch(() => {
@@ -117,27 +114,18 @@ export default function OrderDetailPage() {
 
         if (dbError) throw dbError;
         setOrder(data);
+        const snapshot = data.address_snapshot as Partial<Address> | null;
+        setAddress(snapshot?.name ? snapshot as Address : null);
 
-        // Fetch address for shipping details (Using default or the user's first address since there's no address_id on orders)
-        const { data: addressData } = await supabase
-          .from("addresses")
-          .select("*")
+        const { data: refundData } = await supabase
+          .from("refund_requests")
+          .select("id, status, reason, rejection_reason, account_name, payout_provider, account_number")
+          .eq("order_id", orderId)
           .eq("user_id", user.id)
-          .eq("is_default", true)
-          .single();
-        
-        if (addressData) {
-          setAddress(addressData);
-        } else {
-          // fallback to any address if no default
-          const { data: anyAddress } = await supabase
-            .from("addresses")
-            .select("*")
-            .eq("user_id", user.id)
-            .limit(1)
-            .single();
-          if (anyAddress) setAddress(anyAddress);
-        }
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        setRefundRequest((refundData as any) ?? null);
       } catch (err: any) {
         setError(err.message || "Failed to load order.");
       } finally {
@@ -148,22 +136,50 @@ export default function OrderDetailPage() {
   }, [user?.id, orderId, supabase]);
 
   const handleCancelOrder = async () => {
-    if (!order || !cancelReason.trim() || order.status !== "BARU") return;
+    if (!order || !cancelReason.trim() || !["BARU", "DIPROSES", "DIKIRIM"].includes(order.status)) return;
     setCancelLoading(true);
     setCancelError(null);
     try {
-      const { error: dbError } = await supabase
-        .from("orders")
-        .update({ status: "DIBATALKAN", cancel_reason: cancelReason.trim() })
-        .eq("id", order.id);
-      if (dbError) throw dbError;
-      setOrder({ ...order, status: "DIBATALKAN", cancel_reason: cancelReason.trim() });
+      const res = await fetch(`/api/orders/${order.id}/cancellation-requests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: cancelReason.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Failed to request cancellation.");
+      setOrder({ ...order, status: "CANCEL_REQUESTED", cancel_reason: cancelReason.trim() });
       setShowCancelInput(false);
       setCancelReason("");
-    } catch {
-      setCancelError("Failed to cancel order. Please try again.");
+    } catch (error) {
+      setCancelError(error instanceof Error ? error.message : "Failed to request cancellation. Please try again.");
     } finally {
       setCancelLoading(false);
+    }
+  };
+
+  const handleSubmitPayout = async () => {
+    if (!refundRequest) return;
+    setPayoutSaving(true);
+    setPayoutError(null);
+    try {
+      const res = await fetch(`/api/refunds/${refundRequest.id}/payout`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          refundMethod: payoutMethod,
+          payoutProvider,
+          accountName: payoutAccountName,
+          accountNumber: payoutAccountNumber,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Failed to submit payout details.");
+      setRefundRequest({ ...refundRequest, status: "awaiting_manual_transfer", account_name: payoutAccountName, payout_provider: payoutProvider, account_number: payoutAccountNumber });
+      if (order) setOrder({ ...order, status: "REFUND_INFO_SUBMITTED" });
+    } catch (error) {
+      setPayoutError(error instanceof Error ? error.message : "Failed to submit payout details.");
+    } finally {
+      setPayoutSaving(false);
     }
   };
 
@@ -215,11 +231,11 @@ export default function OrderDetailPage() {
               <div className="border border-[#511e0b] rounded-[8px] p-[32px] flex flex-col justify-between bg-white overflow-hidden min-h-[199px]">
                 <div>
                   <p className="text-[12px] text-[#605850] opacity-90 tracking-[2.4px] uppercase font-['Inter'] mb-2">Order ID</p>
-                  <p className="text-[26px] md:text-[30px] font-normal text-[#3a302a] leading-[1.2]">{displayId}</p>
+                  <p className="text-[18px] md:text-[24px] font-normal text-[#3a302a] leading-[1.2] break-all max-w-full">{displayId}</p>
                 </div>
                 <div className="mt-6 flex flex-col items-start">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-[12px] font-bold w-fit ${STATUS_COLOR[order.status] ?? "bg-gray-100 text-gray-500"}`}>
-                    {STATUS_LABEL[order.status] ?? order.status}
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-[12px] font-bold w-fit max-w-full ${ORDER_STATUS_COLOR[order.status as keyof typeof ORDER_STATUS_COLOR] ?? "bg-gray-100 text-gray-500"}`}>
+                    <span className="truncate">{ORDER_STATUS_LABEL[order.status as keyof typeof ORDER_STATUS_LABEL] ?? order.status}</span>
                   </span>
                   <p className="text-[14px] text-[#a6a6a6] mt-2 font-medium tracking-tight">
                     Ordered: {new Date(order.created_at || new Date().toISOString()).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })}
@@ -231,7 +247,7 @@ export default function OrderDetailPage() {
               <div className="bg-[#511e0b] text-white rounded-[8px] p-[32px] flex flex-col justify-between shadow-sm min-h-[199px]">
                 <div>
                   <p className="text-[12px] opacity-80 tracking-[2.4px] uppercase font-['Inter'] mb-2">Tracking No / AWB</p>
-                  <p className="text-[26px] md:text-[30px] font-normal italic font-['EB_Garamond'] opacity-100 leading-[1.2]">
+                  <p className="text-[18px] md:text-[24px] font-normal italic font-['EB_Garamond'] opacity-100 leading-[1.2] break-all">
                     {order.tracking_number || "Awaiting Tracking No"}
                   </p>
                 </div>
@@ -285,7 +301,7 @@ export default function OrderDetailPage() {
                           <FileText size={18} className="text-[#511e0b]" />
                           <h3 className="font-bold text-[16px] text-[#3a302a]">Customer Note</h3>
                         </div>
-                        <p className="text-[14px] text-[#6b6b6b] italic">"{order.note}"</p>
+                        <p className="text-[14px] text-[#6b6b6b] italic">&quot;{order.note}&quot;</p>
                       </div>
                     )}
                   </div>
@@ -302,7 +318,7 @@ export default function OrderDetailPage() {
                     <div className="w-16 h-16 bg-[#f5f0ea] rounded-md overflow-hidden flex items-center justify-center shrink-0">
                       {item.product?.image ? (
                         <Image
-                          src={item.product.image}
+                          src={resolveImagePath(item.product.image)}
                           alt={item.product?.name || "Product"}
                           width={64}
                           height={64}
@@ -350,14 +366,14 @@ export default function OrderDetailPage() {
             </div>
 
             {/* Cancel Section */}
-            {order.status === "BARU" && (
+            {["BARU", "DIPROSES", "DIKIRIM"].includes(order.status) && (
               <div className="bg-white border text-center border-[#d5d5d5] rounded-xl p-6 mt-4">
                 {!showCancelInput ? (
                   <button
                     onClick={() => { setShowCancelInput(true); setCancelError(null); }}
                     className="w-full bg-white border border-[#df0000] text-[#df0000] rounded-lg py-3 font-bold text-[14px] border-solid cursor-pointer hover:bg-red-50 transition-colors"
                   >
-                    Cancel Order
+                    Request Cancellation
                   </button>
                 ) : (
                   <div className="space-y-4 text-left">
@@ -383,9 +399,63 @@ export default function OrderDetailPage() {
                         className="flex-1 py-2.5 rounded-lg text-[14px] font-medium border-none bg-[#df0000] text-white cursor-pointer hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       >
                         {cancelLoading && <Loader2 size={14} className="animate-spin" />}
-                        Confirm Cancel
+                        Submit Request
                       </button>
                     </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {refundRequest && (
+              <div className="bg-white border text-left border-[#d5d5d5] rounded-xl p-6 mt-4">
+                <h2 className="font-bold text-[18px] text-[#3a302a] mb-2">Cancellation & Refund</h2>
+                <p className="text-[13px] text-[#6b6b6b] mb-3">
+                  Status: <span className="font-semibold text-[#511e0b]">{REFUND_STATUS_LABEL[refundRequest.status] ?? refundRequest.status}</span>
+                </p>
+                <p className="text-[13px] text-[#6b6b6b] mb-4">Reason: {refundRequest.reason}</p>
+                {refundRequest.rejection_reason && (
+                  <p className="text-[13px] text-[#df0000] mb-4">Rejected: {refundRequest.rejection_reason}</p>
+                )}
+
+                {refundRequest.status === "awaiting_buyer_payout" && (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[12px] font-bold text-black mb-1.5">Refund Method</label>
+                        <select
+                          value={payoutMethod}
+                          onChange={(event) => setPayoutMethod(event.target.value as "bank_transfer" | "e_wallet")}
+                          className="w-full border border-[#b0b0b0] rounded-lg px-3 py-2 text-[14px] outline-none focus:border-[#511e0b] bg-white"
+                        >
+                          <option value="bank_transfer">Bank transfer</option>
+                          <option value="e_wallet">E-wallet</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[12px] font-bold text-black mb-1.5">Bank / E-wallet Provider</label>
+                        <input value={payoutProvider} onChange={(event) => setPayoutProvider(event.target.value)} className="w-full border border-[#b0b0b0] rounded-lg px-3 py-2 text-[14px] outline-none focus:border-[#511e0b]" placeholder="BCA, Mandiri, GoPay..." />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[12px] font-bold text-black mb-1.5">Account Name</label>
+                        <input value={payoutAccountName} onChange={(event) => setPayoutAccountName(event.target.value)} className="w-full border border-[#b0b0b0] rounded-lg px-3 py-2 text-[14px] outline-none focus:border-[#511e0b]" />
+                      </div>
+                      <div>
+                        <label className="block text-[12px] font-bold text-black mb-1.5">Account / Wallet Number</label>
+                        <input value={payoutAccountNumber} onChange={(event) => setPayoutAccountNumber(event.target.value)} className="w-full border border-[#b0b0b0] rounded-lg px-3 py-2 text-[14px] outline-none focus:border-[#511e0b]" />
+                      </div>
+                    </div>
+                    {payoutError && <p className="text-[12px] text-[#df0000]">{payoutError}</p>}
+                    <button
+                      onClick={handleSubmitPayout}
+                      disabled={payoutSaving || !payoutProvider.trim() || !payoutAccountName.trim() || !payoutAccountNumber.trim()}
+                      className="w-full bg-[#511e0b] text-white rounded-lg py-3 font-bold text-[14px] border-none cursor-pointer hover:bg-[#3d1608] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {payoutSaving && <Loader2 size={14} className="animate-spin" />}
+                      Submit Refund Details
+                    </button>
                   </div>
                 )}
               </div>

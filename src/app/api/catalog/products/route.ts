@@ -14,7 +14,9 @@ export async function GET(req: Request) {
     });
 
     const result = await new SupabaseCatalogRepository().searchProducts(input);
-    return NextResponse.json(result);
+    return NextResponse.json(result, {
+      headers: { "Cache-Control": "no-store" },
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to load products";
     return NextResponse.json({ error: message }, { status: 500 });

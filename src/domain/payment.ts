@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-
-export type OrderStatus = "BARU" | "DIPROSES" | "DIKIRIM" | "SELESAI" | "DIBATALKAN";
+import type { OrderStatus } from "@/domain/order-status";
+export type { OrderStatus } from "@/domain/order-status";
 export type PaymentStatus =
   | "pending"
   | "settlement"

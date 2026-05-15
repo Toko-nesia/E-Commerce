@@ -23,10 +23,10 @@ export class SupabasePaymentEventRepository implements PaymentEventRepository {
       p_event_hash: input.eventHash,
       p_event_type: input.eventType,
       p_transaction_status: input.transactionStatus,
-      p_fraud_status: input.fraudStatus,
+      p_fraud_status: input.fraudStatus as string,
       p_payment_status: input.paymentStatus,
       p_order_status: input.orderStatus,
-      p_transaction_id: input.transactionId,
+      p_transaction_id: input.transactionId as string,
       p_payload: input.payload as Json,
     });
 

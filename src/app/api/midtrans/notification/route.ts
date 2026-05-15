@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     const verified = await (coreApi as any).transaction.notification(notification);
     const result = await applyMidtransNotification(verified, new SupabasePaymentEventRepository());
 
-    console.log("[midtrans/notification] applied:", result);
+    console.info("[midtrans/notification] applied:", result);
     return NextResponse.json({ status: "ok" });
   } catch (error) {
     console.error("[midtrans/notification] failed:", error);

@@ -4,15 +4,26 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { resolveImagePath } from "@/lib/image-paths";
+import { normalizePhoneNumber } from "@/domain/validation";
 
 export default function CompleteDataPage() {
   const router = useRouter();
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [agreed, setAgreed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    try {
+      normalizePhoneNumber(phone);
+      if (address.trim().length < 5) throw new Error("Enter a valid address.");
+      if (!agreed) throw new Error("Please agree to the Terms of Service and Privacy Policy.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Please check your data.");
+      return;
+    }
     router.push("/");
   };
 
@@ -41,6 +52,7 @@ export default function CompleteDataPage() {
                 I agree to the <span className="text-[#a24141]">Terms of Service</span> and <span className="text-[#a24141]">Privacy Policy</span>.
               </span>
             </div>
+            {error && <p className="text-[#a24141] font-['Manrope',sans-serif] text-[13px] text-center">{error}</p>}
             <div className="flex gap-4">
               <button type="button" onClick={() => router.back()} className="flex-1 bg-[#FDF9F5] text-[#511e0b] rounded-[8px] h-[53px] font-['Manrope:Bold',sans-serif] font-bold text-[14px] tracking-[1.4px] uppercase shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] cursor-pointer border-none hover:bg-[#f0e8dc] transition-colors">
                 RETURN

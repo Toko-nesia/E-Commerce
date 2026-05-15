@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Plus, AlertTriangle, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Category } from "@/types/database";
@@ -30,15 +30,15 @@ export default function CategoriesPage() {
   const [formName, setFormName] = useState("");
   const [formCount, setFormCount] = useState("");
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     const supabase = createClient();
     const { data } = await supabase.from("categories").select("*").order("name");
     if (data) setCatList(data as Category[]);
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   const openAdd = () => {
     setFormName("");

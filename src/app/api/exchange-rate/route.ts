@@ -20,10 +20,12 @@ export async function GET() {
     }
 
     return NextResponse.json({
-      rate: data.rate,
+      rate: Number(data.rate),
       updated_at: data.updated_at,
       base_currency: data.base_currency,
       target_currency: data.target_currency,
+    }, {
+      headers: { 'Cache-Control': 'no-store' },
     });
   } catch {
     return NextResponse.json(

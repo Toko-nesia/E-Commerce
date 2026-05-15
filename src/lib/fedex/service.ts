@@ -263,37 +263,42 @@ function readEstimatedDelivery(detail: RateReplyDetail | undefined): string {
   return raw ? formatFedExDate(raw) : "";
 }
 
+function assertOriginAddressConfigured(input: { postalCode?: string; countryCode?: string }) {
+  if (!input.postalCode || !input.countryCode) {
+    throw new Error("Shipping origin is not configured. Set origin_postal_code and origin_country_code in admin store settings.");
+  }
+
+  return {
+    postalCode: input.postalCode,
+    countryCode: input.countryCode,
+  };
+}
+
 /**
  * Fetch origin address settings from store_settings table.
- * Falls back to hardcoded defaults if DB is unavailable.
  */
 async function getOriginAddress(): Promise<{ postalCode: string; countryCode: string }> {
   if (originAddressCache && originAddressCache.expiresAt > Date.now()) {
     return originAddressCache.value;
   }
 
-  try {
-    const supabase = createServiceClient();
-    const { data } = await supabase
-      .from("store_settings")
-      .select("key, value")
-      .in("key", ["origin_postal_code", "origin_country_code"]);
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from("store_settings")
+    .select("key, value")
+    .in("key", ["origin_postal_code", "origin_country_code"]);
 
-    if (data && data.length > 0) {
-      const map = Object.fromEntries(data.map((r: { key: string; value: string }) => [r.key, r.value]));
-      const value = {
-        postalCode: map["origin_postal_code"] ?? "65143",
-        countryCode: map["origin_country_code"] ?? "ID",
-      };
-      originAddressCache = { value, expiresAt: Date.now() + 5 * 60 * 1000 };
-      return value;
-    }
-  } catch (err) {
-    console.warn("Failed to fetch origin address from DB, using default:", err);
+  if (error) {
+    throw new Error(`Failed to fetch shipping origin settings: ${error.message}`);
   }
-  const fallback = { postalCode: "65143", countryCode: "ID" };
-  originAddressCache = { value: fallback, expiresAt: Date.now() + 60 * 1000 };
-  return fallback;
+
+  const map = Object.fromEntries((data ?? []).map((r: { key: string; value: string }) => [r.key, r.value]));
+  const value = assertOriginAddressConfigured({
+    postalCode: map["origin_postal_code"]?.trim(),
+    countryCode: map["origin_country_code"]?.trim().toUpperCase(),
+  });
+  originAddressCache = { value, expiresAt: Date.now() + 5 * 60 * 1000 };
+  return value;
 }
 
 /**
@@ -425,7 +430,7 @@ export const FedExService = {
     const baseUrl = FEDEX_TRACKING_BASE_URL();
     const res = await fetch(`${baseUrl}/track/v1/trackingnumbers`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, "X-locale": "en_US" },
       body: JSON.stringify({
         includeDetailedScans: true,
         trackingInfo: [{ trackingNumberInfo: { trackingNumber } }],

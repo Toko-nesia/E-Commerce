@@ -15,19 +15,15 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const supabase = createClient();
     async function fetchData() {
-      setLoading(true);
       const [prodRes, catRes] = await Promise.all([
         supabase.from("products").select("*"),
         supabase.from("categories").select("*"),
       ]);
       if (prodRes.data) setProductList(prodRes.data as Product[]);
       if (catRes.data) setCategories(catRes.data as Category[]);
-      setLoading(false);
     }
     fetchData();
   }, []);

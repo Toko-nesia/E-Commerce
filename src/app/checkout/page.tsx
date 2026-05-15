@@ -11,6 +11,7 @@ import { EditAddressModal } from "../components/modals/EditAddressModal";
 import { useCart } from "@/contexts/cart-context";
 import { useAuth } from "@/contexts/auth-context";
 import { createClient } from "@/lib/supabase/client";
+import { normalizePhoneNumber } from "@/domain/validation";
 import type { Address } from "@/types/database";
 
 const paymentMethods = [
@@ -50,7 +51,7 @@ function createIdempotencyKey(): string {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, totalPrice, totalWeight, canCheckout, clearCart } = useCart();
+  const { items, totalPrice, canCheckout, clearCart, resolveCartStock } = useCart();
   const { user } = useAuth();
 
   const [paymentModal, setPaymentModal] = useState(false);
@@ -60,6 +61,7 @@ export default function CheckoutPage() {
   const [selectedAddress, setSelectedAddress] = useState("");
   const [note, setNote] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [redirectingToResult, setRedirectingToResult] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState(createIdempotencyKey);
 
@@ -137,6 +139,7 @@ export default function CheckoutPage() {
     setSaveAddressError(null);
 
     try {
+      const normalizedPhone = normalizePhoneNumber(data.phone);
       const supabase = createClient();
       const isFirst = addresses.length === 0;
 
@@ -146,7 +149,7 @@ export default function CheckoutPage() {
         .insert({
           user_id: user.id,
           name: data.name.trim(),
-          phone: data.phone.trim(),
+          phone: normalizedPhone,
           address: data.address.trim(),
           full_address: data.address.trim(),
           details: data.details.trim(),
@@ -186,7 +189,7 @@ export default function CheckoutPage() {
           }
         }
       } catch {
-        // keep default fallback rate
+        // Keep the default display rate when the exchange-rate endpoint is unavailable.
       }
     };
     fetchExchangeRate();
@@ -269,6 +272,11 @@ export default function CheckoutPage() {
     setPayError(null);
 
     try {
+      const stockIssues = await resolveCartStock();
+      if (stockIssues.length > 0) {
+        throw new Error(stockIssues[0]);
+      }
+
       const res = await fetch("/api/checkout/intents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -292,6 +300,7 @@ export default function CheckoutPage() {
       if (!res.ok || !data.snapToken) {
         throw new Error(data.error ?? "Failed to create payment");
       }
+      const resultOrderId = data.orderId as string;
 
       // Load Midtrans Snap JS if not already loaded
       if (!window.snap) {
@@ -313,18 +322,20 @@ export default function CheckoutPage() {
 
       window.snap!.pay(data.snapToken, {
         onSuccess: () => {
+          setRedirectingToResult(true);
           clearCart();
           setIdempotencyKey(createIdempotencyKey());
-          router.push("/order-success");
+          router.replace(`/order-success?orderId=${resultOrderId}`);
         },
         onPending: () => {
+          setRedirectingToResult(true);
           clearCart();
           setIdempotencyKey(createIdempotencyKey());
-          router.push("/order-success");
+          router.replace(`/order-success?orderId=${resultOrderId}`);
         },
         onError: () => {
-          setPayError("Payment failed. Please try again.");
-          setIsProcessing(false);
+          setRedirectingToResult(true);
+          router.replace(`/order-failed?orderId=${resultOrderId}`);
         },
         onClose: () => {
           setIsProcessing(false);
@@ -336,6 +347,14 @@ export default function CheckoutPage() {
       setIsProcessing(false);
     }
   };
+
+  if (redirectingToResult) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-[#f8f8f8]">
+        <p className="text-[#6b6b6b] text-[16px]">Redirecting to your order...</p>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -467,7 +486,7 @@ export default function CheckoutPage() {
             {items.map(({ product, qty }) => (
               <div key={product.id} className="flex gap-3">
                 <div className="w-[72px] h-[72px] overflow-hidden shrink-0 rounded-md bg-white">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  { }
                   <img alt={product.name} className="w-full h-full object-cover" src={product.image} />
                 </div>
                 <div className="flex-1 min-w-0">

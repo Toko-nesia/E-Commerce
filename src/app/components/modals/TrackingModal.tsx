@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Modal } from "./Modal";
-import { FedExService } from "@/lib/fedex/service";
 import type { Order, FedExDateAndTime, FedExLatestStatus } from "@/types/database";
 import { mapScanEventsToTimeline } from "./trackingUtils";
 
@@ -20,7 +19,7 @@ function getEstimatedDelivery(dateAndTimes?: FedExDateAndTime[]): string | null 
   if (!dateAndTimes) return null;
   const entry = dateAndTimes.find((d) => d.type === "ESTIMATED_DELIVERY");
   if (!entry) return null;
-  return new Date(entry.dateTime).toLocaleString("id-ID", {
+  return new Date(entry.dateTime).toLocaleString("en-US", {
     day: "2-digit",
     month: "long",
     year: "numeric",
@@ -41,7 +40,11 @@ export function TrackingModal({ isOpen, onClose, order }: TrackingModalProps) {
     setEstimatedDelivery(null);
     setCurrentStatus(null);
 
-    FedExService.trackShipment(order.tracking_number)
+    fetch(`/api/shipping/track?tracking_number=${order.tracking_number}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Tracking fetch failed");
+        return res.json();
+      })
       .then((response) => {
         const trackResult =
           response.output?.completeTrackResults?.[0]?.trackResults?.[0];
@@ -74,10 +77,10 @@ export function TrackingModal({ isOpen, onClose, order }: TrackingModalProps) {
       <div className="p-6 pt-10 max-h-[80vh] overflow-y-auto">
         {/* Header */}
         <h2 className="text-lg font-semibold text-[#511e0b] mb-1">
-          Lacak Paket
+          Track Package
         </h2>
         <p className="text-sm text-gray-500 mb-4">
-          No. Resi:{" "}
+          Tracking number:{" "}
           <span className="font-medium text-gray-700">
             {order.tracking_number}
           </span>
@@ -88,7 +91,7 @@ export function TrackingModal({ isOpen, onClose, order }: TrackingModalProps) {
           <div className="bg-[#fdf6f2] rounded-lg p-3 mb-5 flex flex-col gap-1">
             {currentStatus && (
               <p className="text-sm">
-                <span className="text-gray-500">Status saat ini: </span>
+                <span className="text-gray-500">Current status: </span>
                 <span className="font-semibold text-[#511e0b]">
                   {currentStatus}
                 </span>
@@ -96,7 +99,7 @@ export function TrackingModal({ isOpen, onClose, order }: TrackingModalProps) {
             )}
             {estimatedDelivery && (
               <p className="text-sm">
-                <span className="text-gray-500">Estimasi tiba: </span>
+                <span className="text-gray-500">Estimated delivery: </span>
                 <span className="font-semibold text-gray-700">
                   {estimatedDelivery}
                 </span>
@@ -123,7 +126,7 @@ export function TrackingModal({ isOpen, onClose, order }: TrackingModalProps) {
         {/* Not found state */}
         {trackingState === "not_found" && (
           <div className="py-6 text-center text-sm text-gray-500">
-            Data tracking belum tersedia. Silakan coba beberapa saat lagi.
+            Tracking data is not available yet. Please check again later.
           </div>
         )}
 
@@ -179,16 +182,16 @@ export function TrackingModal({ isOpen, onClose, order }: TrackingModalProps) {
           </ol>
         )}
 
-        {/* Footer — tracking number + CS info */}
+        {/* Footer - tracking number + CS info */}
         <div className="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-400 space-y-1">
           <p>
-            No. Resi FedEx:{" "}
+            FedEx tracking number:{" "}
             <span className="font-medium text-gray-600">
               {order.tracking_number}
             </span>
           </p>
           <p>
-            Butuh bantuan? Hubungi CS Tokonesia:{" "}
+            Need help? Contact Tokonesia support:{" "}
             <a
               href="mailto:cs@tokonesia.com"
               className="text-[#511e0b] underline"

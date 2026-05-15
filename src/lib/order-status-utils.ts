@@ -1,12 +1,17 @@
 // Pure order status transition utilities — used by admin pages and property tests
 
-export type OrderStatus = 'BARU' | 'DIPROSES' | 'DIKIRIM' | 'SELESAI' | 'DIBATALKAN';
+import type { OrderStatus } from "@/domain/order-status";
+export type { OrderStatus } from "@/domain/order-status";
 
 const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  BARU: ['DIPROSES', 'DIBATALKAN'],
-  DIPROSES: ['DIKIRIM', 'DIBATALKAN'],
-  DIKIRIM: ['SELESAI'],
+  BARU: ["DIPROSES", "CANCEL_REQUESTED", "CANCEL_APPROVED", "DIBATALKAN"],
+  DIPROSES: ["DIKIRIM", "CANCEL_REQUESTED", "CANCEL_APPROVED", "DIBATALKAN"],
+  DIKIRIM: ["SELESAI"],
   SELESAI: [],
+  CANCEL_REQUESTED: ["CANCEL_APPROVED", "DIBATALKAN"],
+  CANCEL_APPROVED: ["REFUND_INFO_SUBMITTED"],
+  REFUND_INFO_SUBMITTED: ["REFUNDED"],
+  REFUNDED: [],
   DIBATALKAN: [],
 };
 
@@ -23,5 +28,5 @@ export function requiresTrackingNumber(to: OrderStatus): boolean {
 }
 
 export function requiresCancelReason(to: OrderStatus): boolean {
-  return to === 'DIBATALKAN';
+  return to === "DIBATALKAN" || to === "CANCEL_APPROVED";
 }

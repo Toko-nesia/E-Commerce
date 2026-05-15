@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PageWrapper } from "./components/layout/PageWrapper";
-import { createClient } from "@/lib/supabase/client";
 import { resolveImagePath } from "@/lib/image-paths";
 import type { Product } from "@/types/database";
 
@@ -42,17 +41,10 @@ export default function HomePage() {
   useEffect(() => {
     async function fetchTrendingProducts() {
       try {
-        const supabase = createClient();
-        const { data, error } = await supabase
-          .from("products")
-          .select("*")
-          .limit(4);
-
-        if (error) {
-          console.error("Error fetching trending products:", error.message);
-        } else {
-          setTrendingProducts((data ?? []) as Product[]);
-        }
+        const response = await fetch("/api/catalog/trending?limit=4", { cache: "no-store" });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error ?? "Failed to load trending products");
+        setTrendingProducts((data.products ?? []) as Product[]);
       } catch (err) {
         console.error("Failed to fetch trending products:", err);
       } finally {
@@ -121,18 +113,18 @@ export default function HomePage() {
         ) : (
           <div className="flex flex-wrap justify-center gap-6 md:gap-8 mt-8 md:mt-10">
             {trendingProducts.map((p) => (
-              <Link href="/shop" key={p.id} className="flex flex-col items-center no-underline group">
-                <div className="relative w-[160px] md:w-[205px] h-[175px] md:h-[224px] overflow-hidden shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] group-hover:scale-[1.03] transition-transform duration-200 rounded-sm">
+              <Link href={`/product/${p.id}`} key={p.id} className="flex flex-col items-center no-underline group min-w-0">
+                <div className="relative w-[160px] md:w-[205px] h-[175px] md:h-[224px] overflow-hidden shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] group-hover:scale-[1.03] transition-transform duration-200 rounded-sm bg-[#f8f8f8]">
                   <img
                     alt={p.name}
-                    className={`absolute max-w-none object-cover pointer-events-none ${p.img_style ?? "w-full h-full left-0 top-0"}`}
+                    className="w-full h-full object-cover object-center pointer-events-none transition-transform duration-300 group-hover:scale-105"
                     src={resolveImagePath(p.image)}
                   />
                   <div className="absolute top-[8px] left-[10px] bg-white rounded-[15px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] px-3 py-0.5">
                     <span className="font-medium text-[12px] text-black">TOP</span>
                   </div>
                 </div>
-                <p className="text-[15px] text-[#511e0b] text-center mt-2.5">{p.name}</p>
+                <p className="text-[15px] text-[#511e0b] text-center mt-2.5 max-w-[160px] md:max-w-[205px] line-clamp-2">{p.name}</p>
               </Link>
             ))}
           </div>
@@ -188,7 +180,7 @@ export default function HomePage() {
           {whyChooseUs.map((item) => (
             <div key={item.title} className="flex flex-col items-center max-w-[200px]">
               <div className="w-[64px] h-[64px] flex items-center justify-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
+                { }
                 <img
                   alt={item.title}
                   className="w-full h-full object-contain"

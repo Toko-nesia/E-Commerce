@@ -6,26 +6,12 @@ import { User, MapPin, FileText, LogOut, Phone, Plus, MoreVertical, Eye, Edit3, 
 import { useAuth } from "@/contexts/auth-context";
 import { createClient } from "@/lib/supabase/client";
 import { resolveImagePath } from "@/lib/image-paths";
+import { ORDER_STATUS_COLOR, ORDER_STATUS_LABEL } from "@/domain/order-status";
+import { normalizePhoneNumber } from "@/domain/validation";
 import type { Address, Order } from "@/types/database";
 import Link from "next/link";
 
 type Tab = "profile" | "orders" | "addresses";
-
-const STATUS_LABEL: Record<string, string> = {
-  BARU: "New",
-  DIPROSES: "Processing",
-  DIKIRIM: "Shipped",
-  SELESAI: "Completed",
-  DIBATALKAN: "Cancelled",
-};
-
-const STATUS_COLOR: Record<string, string> = {
-  BARU: "bg-[#FFF3CD] text-[#FBBE48]",
-  DIPROSES: "bg-orange-50 text-orange-500",
-  DIKIRIM: "bg-blue-50 text-blue-500",
-  SELESAI: "bg-green-50 text-[#15a15b]",
-  DIBATALKAN: "bg-red-50 text-[#df0000]",
-};
 
 export default function ProfilePage() {
   const { user, logout, isLoading } = useAuth();
@@ -112,7 +98,7 @@ export default function ProfilePage() {
       // Update profile in database
       const updatePayload: { full_name: string; phone: string; avatar_url?: string } = {
         full_name: fullName.trim(),
-        phone: phoneNumber.trim(),
+        phone: phoneNumber.trim() ? normalizePhoneNumber(phoneNumber) : "",
       };
       if (avatarUrl) {
         updatePayload.avatar_url = avatarUrl;
@@ -126,8 +112,8 @@ export default function ProfilePage() {
 
       setProfileMessage({ type: "success", text: "Profile updated successfully!" });
       setAvatarFile(null);
-    } catch {
-      setProfileMessage({ type: "error", text: "Failed to save profile. Please try again." });
+    } catch (error) {
+      setProfileMessage({ type: "error", text: error instanceof Error ? error.message : "Failed to save profile. Please try again." });
     } finally {
       setProfileSaving(false);
     }
@@ -217,11 +203,12 @@ export default function ProfilePage() {
     setAddressSaving(true);
     setAddressError(null);
     try {
+      const normalizedPhone = normalizePhoneNumber(addrPhone);
       const payload = {
         user_id: user.id,
         label: addrLabel.trim() || null,
         name: addrName.trim(),
-        phone: addrPhone.trim(),
+        phone: normalizedPhone,
         address: addrAddress.trim(),
         postal_code: addrPostalCode.trim() || null,
         country_code: addrCountryCode.trim() || "JP",
@@ -318,7 +305,7 @@ export default function ProfilePage() {
           <div className="flex flex-col items-center">
             <div className="relative">
               <div className="rounded-full w-[88px] h-[88px] overflow-hidden border-4 border-white shadow-md">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
+                { }
                 <img
                   alt="Avatar"
                   className="w-full h-full object-cover"
@@ -444,9 +431,9 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="border border-[#b0b0b0] rounded-xl overflow-hidden">
-                  <div className="grid grid-cols-5 bg-[#f5f5f5] px-5 py-3">
+                  <div className="hidden md:grid grid-cols-[minmax(0,2fr)_1fr_1.2fr_1fr_0.5fr] gap-3 bg-[#f5f5f5] px-5 py-3">
                     {["ORDER ID", "DATE", "STATUS", "TOTAL", "ACTION"].map((h) => (
-                      <span key={h} className="font-bold text-[11px] text-[#6b6b6b] tracking-wider">{h}</span>
+                      <span key={h} className="font-bold text-[11px] text-[#6b6b6b] tracking-wider min-w-0">{h}</span>
                     ))}
                   </div>
                   {orders.map((order) => {
@@ -457,14 +444,14 @@ export default function ProfilePage() {
                       ? new Date(order.created_at).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })
                       : "—";
                     return (
-                      <div key={order.id} className="grid grid-cols-5 px-5 py-4 border-t border-[#d5d5d5] items-center hover:bg-gray-50 transition-colors">
-                        <span className="font-bold text-[13px] text-[#511e0b]">{displayId}</span>
-                        <span className="text-[13px] text-black">{displayDate}</span>
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[12px] font-bold w-fit ${STATUS_COLOR[order.status] ?? "bg-gray-100 text-gray-500"}`}>
+                      <div key={order.id} className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_1fr_1.2fr_1fr_0.5fr] gap-2 md:gap-3 px-5 py-4 border-t border-[#d5d5d5] md:items-center hover:bg-gray-50 transition-colors">
+                        <span className="font-bold text-[13px] text-[#511e0b] min-w-0 break-all"><span className="md:hidden text-[#6b6b6b] font-bold mr-2">Order:</span>{displayId}</span>
+                        <span className="text-[13px] text-black min-w-0"><span className="md:hidden text-[#6b6b6b] font-bold mr-2">Date:</span>{displayDate}</span>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[12px] font-bold w-fit max-w-full ${ORDER_STATUS_COLOR[order.status as keyof typeof ORDER_STATUS_COLOR] ?? "bg-gray-100 text-gray-500"}`}>
                           {order.status === "DIKIRIM" && <span className="text-blue-500 text-[10px]">●</span>}
-                          {STATUS_LABEL[order.status] ?? order.status}
+                          <span className="truncate">{ORDER_STATUS_LABEL[order.status as keyof typeof ORDER_STATUS_LABEL] ?? order.status}</span>
                         </span>
-                        <span className="text-[13px] text-black">{order.total_price}</span>
+                        <span className="text-[13px] text-black min-w-0 break-words"><span className="md:hidden text-[#6b6b6b] font-bold mr-2">Total:</span>{order.total_price}</span>
                         <Link
                           href={`/profile/orders/${order.id}`}
                           className="bg-transparent border-none cursor-pointer p-0 w-fit hover:text-[#511e0b] transition-colors text-[#6b6b6b]"

@@ -4,12 +4,31 @@ import type {
   ProductSearchInput,
   ProductSearchResult,
 } from "@/application/catalog/search-products";
+import type {
+  NormalizedTrendingProductsInput,
+  TrendingProductsResult,
+} from "@/application/catalog/trending-products";
 import type { Category, Product } from "@/types/database";
 
 type SupabaseClient = ReturnType<typeof createServiceClient>;
 
 export class SupabaseCatalogRepository implements CatalogRepository {
   constructor(private readonly supabase: SupabaseClient = createServiceClient()) {}
+
+  async getTrendingProducts(input: NormalizedTrendingProductsInput): Promise<TrendingProductsResult> {
+    const { data, error } = await this.supabase.rpc("get_trending_products", {
+      p_limit: input.limit,
+      p_now: input.now.toISOString(),
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return {
+      products: (data ?? []) as Product[],
+    };
+  }
 
   async searchProducts(input: ProductSearchInput): Promise<ProductSearchResult> {
     const [{ data: categoriesData, error: categoriesError }, productsResult] = await Promise.all([

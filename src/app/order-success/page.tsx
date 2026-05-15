@@ -1,20 +1,46 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle, Package, ShoppingBag } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { CheckCircle, Loader2, Package, ShoppingBag } from "lucide-react";
 import { useEffect, useState } from "react";
+import { ORDER_STATUS_COLOR, ORDER_STATUS_LABEL, isOrderStatus } from "@/domain/order-status";
+
+interface OrderResult {
+  id: string;
+  midtrans_order_id: string | null;
+  status: string;
+  total_price: string | null;
+  estimated_delivery: string | null;
+  payment_status: string;
+}
 
 export default function OrderSuccessPage() {
-  const [orderNumber, setOrderNumber] = useState("");
+  const searchParams = useSearchParams();
+  const orderId = searchParams.get("orderId") ?? "";
+  const [order, setOrder] = useState<OrderResult | null>(null);
+  const [loading, setLoading] = useState(Boolean(orderId));
+  const [error, setError] = useState<string | null>(orderId ? null : "Order ID is missing.");
 
   useEffect(() => {
-    // Generate order number once on mount
-    setOrderNumber(`#ZB-${Date.now().toString().slice(-6)}`);
-  }, []);
+    if (!orderId) return;
+    setLoading(true);
+    fetch(`/api/orders/${orderId}/result`, { cache: "no-store" })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error ?? "Failed to load order.");
+        setOrder(data.order);
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load order."))
+      .finally(() => setLoading(false));
+  }, [orderId]);
+
+  const displayId = order?.midtrans_order_id ? `#${order.midtrans_order_id}` : order ? `#${order.id.slice(0, 8).toUpperCase()}` : "";
+  const statusLabel = order && isOrderStatus(order.status) ? ORDER_STATUS_LABEL[order.status] : order?.status ?? "New";
+  const statusColor = order && isOrderStatus(order.status) ? ORDER_STATUS_COLOR[order.status] : "bg-gray-100 text-gray-600";
 
   return (
     <div className="min-h-screen bg-[#FDF9F5] flex flex-col">
-      {/* Header */}
       <header className="bg-white h-20 flex items-center px-6 md:px-12 shadow-sm">
         <Link href="/" className="font-bold text-[18px] text-black tracking-tight no-underline flex items-center gap-2">
           <span>トコネシア</span>
@@ -23,66 +49,68 @@ export default function OrderSuccessPage() {
         </Link>
       </header>
 
-      {/* Content */}
-      <div className="flex-1 flex items-center justify-center px-6 py-16">
-        <div className="bg-white rounded-2xl shadow-lg p-10 max-w-[480px] w-full text-center">
-          {/* Icon */}
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 py-16">
+        <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-10 max-w-[480px] w-full text-center">
           <div className="flex justify-center mb-6">
             <div className="bg-[#e8f5ee] rounded-full p-5">
               <CheckCircle size={52} className="text-[#15a15b]" />
             </div>
           </div>
 
-          {/* Title */}
           <h1 className="font-bold text-[26px] text-[#511e0b] mb-2">Order Placed!</h1>
-          <p className="text-[14px] text-[#6b6b6b] mb-6">
-            Thank you for shopping at Tokonesia. Your order is being processed.
-          </p>
+          <p className="text-[14px] text-[#6b6b6b] mb-6">Thank you for shopping at Tokonesia. Your order is being processed.</p>
 
-          {/* Order number */}
-          {orderNumber && (
-            <div className="bg-[#FDF9F5] rounded-xl px-6 py-4 mb-6">
-              <p className="text-[12px] text-[#6b6b6b] uppercase tracking-wider mb-1">Order Number</p>
-              <p className="font-bold text-[22px] text-[#511e0b]">{orderNumber}</p>
+          {loading && (
+            <div className="flex items-center justify-center gap-2 text-[#6b6b6b] py-8">
+              <Loader2 size={18} className="animate-spin" />
+              Loading order...
             </div>
           )}
 
-          {/* Info cards */}
-          <div className="grid grid-cols-2 gap-3 mb-8">
-            <div className="bg-[#f8f8f8] rounded-xl p-4 text-left">
-              <p className="text-[11px] text-[#6b6b6b] uppercase tracking-wider mb-1">Shipping</p>
-              <p className="text-[13px] font-medium text-black">Air Shipping</p>
-              <p className="text-[12px] text-[#6b6b6b]">Est. Apr 12 – Jun 21</p>
+          {error && !loading && (
+            <div className="bg-red-50 border border-red-200 text-[#df0000] rounded-xl p-4 mb-6 text-[13px]">
+              {error}
             </div>
-            <div className="bg-[#f8f8f8] rounded-xl p-4 text-left">
-              <p className="text-[11px] text-[#6b6b6b] uppercase tracking-wider mb-1">Status</p>
-              <div className="inline-flex items-center gap-1.5 bg-[#FFF3CD] rounded-full px-2 py-0.5 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#FBBE48] shrink-0" />
-                <span className="text-[12px] font-bold text-[#FBBE48]">NEW</span>
+          )}
+
+          {order && !loading && (
+            <>
+              <div className="bg-[#FDF9F5] rounded-xl px-6 py-4 mb-6 min-w-0">
+                <p className="text-[12px] text-[#6b6b6b] uppercase tracking-wider mb-1">Order Number</p>
+                <p className="font-bold text-[18px] sm:text-[22px] text-[#511e0b] break-all">{displayId}</p>
               </div>
-              <p className="text-[12px] text-[#6b6b6b] mt-1">Will be processed shortly</p>
-            </div>
-          </div>
 
-          {/* Payment Instructions */}
-          <div className="bg-[#f8f8f8] rounded-xl p-4 text-left mb-6">
-            <p className="text-[11px] text-[#6b6b6b] uppercase tracking-wider mb-2">Payment</p>
-            <p className="text-[13px] text-[#6b6b6b]">
-              Your payment has been submitted via Midtrans. You will receive a confirmation email once it is verified.
-            </p>
-          </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+                <div className="bg-[#f8f8f8] rounded-xl p-4 text-left min-w-0">
+                  <p className="text-[11px] text-[#6b6b6b] uppercase tracking-wider mb-1">Shipping</p>
+                  <p className="text-[13px] font-medium text-black">Air Shipping</p>
+                  <p className="text-[12px] text-[#6b6b6b] break-words">{order.estimated_delivery || "Calculated by FedEx"}</p>
+                </div>
+                <div className="bg-[#f8f8f8] rounded-xl p-4 text-left">
+                  <p className="text-[11px] text-[#6b6b6b] uppercase tracking-wider mb-1">Status</p>
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 mt-0.5 text-[12px] font-bold ${statusColor}`}>
+                    {statusLabel}
+                  </span>
+                  <p className="text-[12px] text-[#6b6b6b] mt-1">Will be processed shortly</p>
+                </div>
+              </div>
 
-          {/* Divider */}
+              <div className="bg-[#f8f8f8] rounded-xl p-4 text-left mb-6">
+                <p className="text-[11px] text-[#6b6b6b] uppercase tracking-wider mb-2">Payment</p>
+                <p className="text-[13px] text-[#6b6b6b]">Payment status: <span className="font-semibold">{order.payment_status}</span></p>
+              </div>
+            </>
+          )}
+
           <div className="h-px bg-[#e0e0e0] mb-8" />
 
-          {/* CTAs */}
           <div className="flex flex-col gap-3">
             <Link
-              href="/profile"
+              href={order?.id ? `/profile/orders/${order.id}` : "/profile"}
               className="w-full bg-[#511e0b] text-white rounded-xl py-3.5 font-bold text-[15px] no-underline hover:bg-[#3d1608] transition-colors flex items-center justify-center gap-2"
             >
               <Package size={18} />
-              View My Orders
+              View Your Order
             </Link>
             <Link
               href="/shop"
@@ -92,21 +120,9 @@ export default function OrderSuccessPage() {
               Continue Shopping
             </Link>
           </div>
-
-          {/* Footer note */}
-          <p className="text-[12px] text-[#6b6b6b] mt-6">
-            Order confirmation will be sent to your email.
-            If you have any questions, contact our team.
-          </p>
         </div>
-      </div>
-
-      {/* Brand footer */}
-      <div className="text-center py-6">
-        <p className="text-[12px] text-[#6b6b6b]">
-          © 2026 Tokonesia (トコネシア) — Indonesian Products for Japan
-        </p>
       </div>
     </div>
   );
 }
+

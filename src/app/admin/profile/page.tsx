@@ -152,7 +152,7 @@ export default function AdminProfilePage() {
               <div className="relative shrink-0">
                 <div className="w-[72px] h-[72px] rounded-full bg-[#511e0b] flex items-center justify-center overflow-hidden border-2 border-[#d0d0d0]">
                   {avatarPreview ? (
-                    // eslint-disable-next-line @next/next/no-img-element
+                     
                     <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-white text-[22px] font-bold">{initials}</span>

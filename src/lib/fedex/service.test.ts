@@ -63,7 +63,7 @@ describe("FedEx shipping payload builders", () => {
   it("requests only ACCOUNT rates and omits package dimensions", () => {
     const request = buildFedExRateRequest({
       accountNumber: "123456789",
-      origin: { postalCode: "65143", countryCode: "ID" },
+      origin: { postalCode: "10000", countryCode: "ID" },
       destination: { postalCode: "1000001", countryCode: "JP" },
       shipDate: "2026-05-14",
       commodities,
@@ -83,7 +83,7 @@ describe("FedEx shipping payload builders", () => {
 
   it("uses the same customs payload for transit fallback", () => {
     const request = buildFedExTransitTimesRequest({
-      origin: { postalCode: "65143", countryCode: "ID" },
+      origin: { postalCode: "10000", countryCode: "ID" },
       destination: { postalCode: "1000001", countryCode: "JP" },
       shipDate: "2026-05-14",
       commodities,

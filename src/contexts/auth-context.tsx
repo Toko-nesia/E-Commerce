@@ -95,7 +95,12 @@ export function AuthProvider({
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        return { success: false, error: data.error ?? "Registration failed" };
+        return {
+          success: false,
+          error: Array.isArray(data.issues) && data.issues.length > 0
+            ? data.issues[0]
+            : data.error ?? "Registration failed",
+        };
       }
 
       if (data.user) setUser(data.user);

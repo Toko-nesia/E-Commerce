@@ -115,7 +115,7 @@ export default function AboutPage() {
           {whyChooseUs.map((item) => (
             <div key={item.title} className="flex flex-col items-center max-w-[200px]">
               <div className="w-[64px] h-[64px] flex items-center justify-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
+                { }
                 <img
                   alt={item.title}
                   className="w-full h-full object-contain"

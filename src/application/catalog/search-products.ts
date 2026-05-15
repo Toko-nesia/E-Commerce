@@ -1,4 +1,9 @@
 import type { Category, Product } from "@/types/database";
+import type {
+  CatalogTrendingRepository,
+  NormalizedTrendingProductsInput,
+  TrendingProductsResult,
+} from "@/application/catalog/trending-products";
 
 export type ProductSort = "relevance" | "price-asc" | "price-desc";
 
@@ -19,8 +24,11 @@ export interface ProductSearchResult {
 }
 
 export interface CatalogRepository {
+  getTrendingProducts(input: NormalizedTrendingProductsInput): Promise<TrendingProductsResult>;
   searchProducts(input: ProductSearchInput): Promise<ProductSearchResult>;
 }
+
+export type { CatalogTrendingRepository };
 
 export function normalizeProductSearchInput(input: Partial<ProductSearchInput>): ProductSearchInput {
   return {

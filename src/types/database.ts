@@ -126,8 +126,22 @@ export interface RefundRequest {
   refund_method: string;
   account_number: string;
   reason: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'awaiting_seller_review' | 'rejected' | 'awaiting_buyer_payout' | 'awaiting_manual_transfer' | 'refunded';
   admin_note?: string;
+  initiated_by?: "buyer" | "seller";
+  initiated_by_user_id?: string;
+  previous_order_status?: string;
+  refund_amount?: number;
+  account_name?: string;
+  payout_provider?: string;
+  seller_reason?: string;
+  buyer_reason?: string;
+  review_note?: string;
+  rejection_reason?: string;
+  transfer_note?: string;
+  reviewed_at?: string;
+  payout_submitted_at?: string;
+  refunded_at?: string;
   created_at?: string;
   updated_at?: string;
 }

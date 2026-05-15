@@ -10,6 +10,7 @@ import {
   requiresTrackingNumber,
   requiresCancelReason,
 } from "@/lib/order-status-utils";
+import { ORDER_STATUSES, ORDER_STATUS_COLOR, ORDER_STATUS_LABEL } from "@/domain/order-status";
 import type { TablesUpdate } from "@/types/supabase";
 
 interface OrderRow {
@@ -25,20 +26,8 @@ interface OrderRow {
 
 const STATUS_TABS = [
   { label: "All", value: "" },
-  { label: "BARU", value: "BARU" },
-  { label: "DIPROSES", value: "DIPROSES" },
-  { label: "DIKIRIM", value: "DIKIRIM" },
-  { label: "SELESAI", value: "SELESAI" },
-  { label: "DIBATALKAN", value: "DIBATALKAN" },
+  ...ORDER_STATUSES.map((status) => ({ label: ORDER_STATUS_LABEL[status], value: status })),
 ];
-
-const STATUS_STYLES: Record<string, string> = {
-  BARU: "bg-[#FFF3CD] text-[#FBBE48]",
-  DIPROSES: "bg-orange-50 text-orange-500",
-  DIKIRIM: "bg-blue-50 text-blue-500",
-  SELESAI: "bg-green-50 text-[#15A15B]",
-  DIBATALKAN: "bg-red-50 text-[#DF0000]",
-};
 
 const PAGE_SIZE = 20;
 
@@ -116,6 +105,18 @@ export default function OrdersPage() {
     setSaving(true); setSaveError(null);
     try {
       const supabase = createClient();
+      if (newStatus === "CANCEL_APPROVED") {
+        const res = await fetch(`/api/admin/orders/${selectedOrder.id}/cancellations`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reason: cancelReason.trim() }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error ?? "Failed to create seller cancellation.");
+        await fetchOrders(activeTab, page);
+        setShowModal(false);
+        return;
+      }
       const updates: TablesUpdate<"orders"> = { status: newStatus, updated_at: new Date().toISOString() };
       if (showTrackingInput) updates.tracking_number = trackingInput.trim();
       if (showCancelReason) updates.cancel_reason = cancelReason.trim();
@@ -172,7 +173,7 @@ export default function OrdersPage() {
                       <td className="px-4 py-4 text-[13px] text-black text-center">{firstItem?.quantity ?? 0}</td>
                       <td className="px-4 py-4 text-[13px] text-black font-medium whitespace-nowrap">{order.total_price}</td>
                       <td className="px-4 py-4">
-                        <span className={`inline-block px-2 py-1 rounded text-[12px] font-bold whitespace-nowrap ${STATUS_STYLES[order.status] ?? "bg-gray-100 text-gray-500"}`}>{order.status}</span>
+                        <span className={`inline-block px-2 py-1 rounded text-[12px] font-bold whitespace-nowrap ${ORDER_STATUS_COLOR[order.status as keyof typeof ORDER_STATUS_COLOR] ?? "bg-gray-100 text-gray-500"}`}>{ORDER_STATUS_LABEL[order.status as keyof typeof ORDER_STATUS_LABEL] ?? order.status}</span>
                       </td>
                       <td className="px-4 py-4 text-[13px] text-black whitespace-nowrap">{order.tracking_number || "—"}</td>
                       <td className="px-4 py-4">

@@ -2,12 +2,12 @@ import type { FedExScanEvent } from "@/types/database";
 
 // ── Event type → UI label mapping ────────────────────────────
 export const EVENT_TYPE_LABEL: Record<string, string> = {
-  OC: "Pesanan Dibuat",
-  PU: "Diproses",
-  DP: "Dikirim",
-  IT: "Dalam Perjalanan",
-  AR: "Tiba di Tujuan",
-  DL: "Terkirim",
+  OC: "Shipment information sent",
+  PU: "Picked up",
+  DP: "Departed FedEx location",
+  IT: "In transit",
+  AR: "Arrived at FedEx location",
+  DL: "Delivered",
 };
 
 export interface TimelineStep {
@@ -28,13 +28,14 @@ export function mapScanEventsToTimeline(
   );
 
   return sorted.map((event, index) => {
-    const label = EVENT_TYPE_LABEL[event.eventType] ?? event.eventDescription;
-    const timestamp = new Date(event.date).toLocaleString("id-ID", {
+    const label = event.eventDescription || EVENT_TYPE_LABEL[event.eventType] || "Tracking update";
+    const timestamp = new Date(event.date).toLocaleString("en-US", {
       day: "2-digit",
       month: "short",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      hour12: false,
     });
     const city = event.scanLocation?.city ?? "";
     const country = event.scanLocation?.countryName ?? "";

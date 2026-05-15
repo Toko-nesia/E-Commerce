@@ -10,17 +10,17 @@ interface Setting {
 }
 
 const SETTING_LABELS: Record<string, string> = {
-  origin_name: "Nama Pengirim / Gudang",
-  origin_address: "Alamat Lengkap",
-  origin_postal_code: "Kode Pos",
-  origin_country_code: "Kode Negara (2 huruf)",
+  origin_name: "Sender / Warehouse Name",
+  origin_address: "Full Address",
+  origin_postal_code: "Postal Code",
+  origin_country_code: "Country Code (2 letters)",
 };
 
 const SETTING_PLACEHOLDERS: Record<string, string> = {
-  origin_name: "Tokonesia Warehouse",
-  origin_address: "Jl. Raya Malang No. 1",
-  origin_postal_code: "65143",
-  origin_country_code: "ID",
+  origin_name: "Enter sender or warehouse name",
+  origin_address: "Enter full origin address",
+  origin_postal_code: "Enter origin postal code",
+  origin_country_code: "Enter country code",
 };
 
 const SETTING_ORDER = [
@@ -42,7 +42,7 @@ export default function AdminSettingsPage() {
       setLoading(true);
       const res = await fetch("/api/admin/settings");
       if (!res.ok) {
-        setError("Gagal memuat pengaturan.");
+        setError("Failed to load settings.");
       } else {
         const data: Setting[] = await res.json();
         const map: Record<string, string> = {};
@@ -72,7 +72,7 @@ export default function AdminSettingsPage() {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setError("Gagal menyimpan: " + (data.error ?? res.statusText));
+      setError("Failed to save: " + (data.error ?? res.statusText));
     } else {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -82,19 +82,19 @@ export default function AdminSettingsPage() {
 
   return (
     <div>
-      <h1 className="font-bold text-[20px] text-black mb-6">Pengaturan Toko</h1>
+      <h1 className="font-bold text-[20px] text-black mb-6">Store Settings</h1>
 
       <div className="bg-white rounded-xl shadow-sm border border-[#d0d0d0] p-6 max-w-[600px]">
-        <h2 className="font-bold text-[16px] text-[#511e0b] mb-1">Alamat Asal Pengiriman</h2>
+        <h2 className="font-bold text-[16px] text-[#511e0b] mb-1">Shipping Origin Address</h2>
         <p className="text-[13px] text-[#6b6b6b] mb-6">
-          Alamat ini digunakan sebagai titik asal saat menghitung ongkos kirim FedEx.
-          Pastikan kode pos sesuai dengan yang terdaftar di akun FedEx.
+          This address is used as the origin when calculating FedEx shipping rates.
+          Make sure the postal code matches the merchant FedEx account.
         </p>
 
         {loading ? (
           <div className="flex items-center gap-2 py-8 justify-center">
             <Loader2 size={18} className="animate-spin text-[#511e0b]" />
-            <span className="text-[14px] text-[#6b6b6b]">Memuat pengaturan...</span>
+            <span className="text-[14px] text-[#6b6b6b]">Loading settings...</span>
           </div>
         ) : (
           <div className="space-y-4">
@@ -128,11 +128,11 @@ export default function AdminSettingsPage() {
               className="flex items-center gap-2 bg-[#511e0b] text-white rounded-lg px-5 py-2.5 text-[14px] font-bold border-none cursor-pointer hover:bg-[#3d1608] transition-colors disabled:opacity-60 disabled:cursor-not-allowed mt-2"
             >
               {saving ? (
-                <><Loader2 size={15} className="animate-spin" /> Menyimpan...</>
+                <><Loader2 size={15} className="animate-spin" /> Saving...</>
               ) : saved ? (
-                <><CheckCircle size={15} /> Tersimpan!</>
+                <><CheckCircle size={15} /> Saved</>
               ) : (
-                <><Save size={15} /> Simpan Pengaturan</>
+                <><Save size={15} /> Save Settings</>
               )}
             </button>
           </div>

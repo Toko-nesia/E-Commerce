@@ -1,19 +1,38 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Minus, Plus, X, ShoppingBag } from "lucide-react";
 import { PageWrapper } from "@/app/components/layout/PageWrapper";
 import { useCart } from "@/contexts/cart-context";
+import { resolveImagePath } from "@/lib/image-paths";
 
 function formatRp(amount: number): string {
   return "Rp" + amount.toLocaleString("id-ID");
 }
 
 export default function CartPage() {
-  const { items, updateQty, removeFromCart, totalPrice, totalWeight, canCheckout } = useCart();
+  const { items, updateQty, removeFromCart, totalPrice, totalWeight, canCheckout, resolveCartStock } = useCart();
+  const [stockMessages, setStockMessages] = useState<string[]>([]);
 
   const serviceFee = Math.round(totalPrice * 0.01);
   const subtotalWithFee = totalPrice + serviceFee;
+
+  const refreshCartStock = useCallback(async () => {
+    try {
+      const issues = await resolveCartStock();
+      setStockMessages(issues);
+    } catch (error) {
+      setStockMessages([error instanceof Error ? error.message : "Failed to refresh cart stock."]);
+    }
+  }, [resolveCartStock]);
+
+  useEffect(() => {
+    refreshCartStock();
+    const onFocus = () => refreshCartStock();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [refreshCartStock]);
 
   return (
     <PageWrapper mobileFooter={false}>
@@ -37,15 +56,22 @@ export default function CartPage() {
           <div className="flex flex-col lg:flex-row gap-6 items-start">
             {/* Cart Items */}
             <div className="flex-1 flex flex-col gap-3 w-full">
+              {stockMessages.length > 0 && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800">
+                  {stockMessages.map((message) => (
+                    <p key={message}>{message}</p>
+                  ))}
+                </div>
+              )}
               {items.map(({ product, qty }) => (
                 <div
                   key={product.id}
                   className="bg-white rounded-xl shadow-sm border border-[#e0e0e0] p-4 flex gap-4 items-center"
                 >
                   <div className="w-[88px] h-[88px] shrink-0 overflow-hidden rounded-lg bg-[#F8F8F8]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    { }
                     <img
-                      src={product.image}
+                      src={resolveImagePath(product.image)}
                       alt={product.name}
                       className="w-full h-full object-cover"
                     />
@@ -62,14 +88,18 @@ export default function CartPage() {
                     <div className="flex items-center border border-[#511e0b] rounded-md px-3 h-9 gap-3">
                       <button
                         onClick={() => updateQty(product.id, qty - 1)}
-                        className="bg-transparent border-none cursor-pointer text-[#511e0b] p-0 hover:text-black transition-colors"
+                        className="bg-transparent border-none cursor-pointer text-[#511e0b] p-0 hover:text-black transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         aria-label="Decrease quantity"
                       >
                         <Minus size={13} />
                       </button>
                       <span className="text-[14px] text-[#511e0b] font-medium min-w-[20px] text-center">{qty}</span>
                       <button
-                        onClick={() => updateQty(product.id, qty + 1)}
+                        onClick={() => {
+                          const result = updateQty(product.id, qty + 1);
+                          setStockMessages(result.message ? [result.message] : []);
+                        }}
+                        disabled={qty >= (product.stock ?? 0)}
                         className="bg-transparent border-none cursor-pointer text-[#511e0b] p-0 hover:text-black transition-colors"
                         aria-label="Increase quantity"
                       >

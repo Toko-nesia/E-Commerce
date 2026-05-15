@@ -207,7 +207,7 @@ export default function AddProductPage() {
                 <label className="cursor-pointer inline-block">
                   <div className="w-[82px] h-[82px] border border-dashed border-[#d0d0d0] rounded flex flex-col items-center justify-center gap-1 bg-gray-50 hover:bg-gray-100 transition-colors overflow-hidden">
                     {photoPreview ? (
-                      // eslint-disable-next-line @next/next/no-img-element
+                       
                       <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
                       <>
