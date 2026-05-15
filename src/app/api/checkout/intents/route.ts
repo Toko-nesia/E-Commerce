@@ -10,6 +10,7 @@ import {
 import { SupabaseCheckoutRepository } from "@/infrastructure/supabase/checkout-repository";
 import { FedExShippingRateProvider } from "@/infrastructure/fedex/shipping-rate-provider";
 import { MidtransSnapPaymentGateway } from "@/infrastructure/midtrans/snap-payment-gateway";
+import { notifyOrderEvent } from "@/infrastructure/notifications/notify-order-event";
 
 export async function POST(req: Request) {
   try {
@@ -38,6 +39,8 @@ export async function POST(req: Request) {
         paymentGateway: new MidtransSnapPaymentGateway(),
       },
     );
+
+    await notifyOrderEvent({ eventType: "payment_pending", orderId: result.orderId });
 
     return NextResponse.json(result);
   } catch (error) {

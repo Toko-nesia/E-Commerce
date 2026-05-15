@@ -127,6 +127,112 @@ export type Database = {
         }
         Relationships: []
       }
+      email_events: {
+        Row: {
+          attempt_count: number
+          audience: string
+          created_at: string
+          dedupe_key: string
+          event_type: string
+          failed_at: string | null
+          html_content: string
+          id: string
+          last_error: string | null
+          order_id: string | null
+          payload: Json
+          provider: string
+          provider_message_id: string | null
+          queued_at: string
+          recipient_email: string
+          recipient_name: string | null
+          refund_request_id: string | null
+          sending_at: string | null
+          sent_at: string | null
+          skipped_at: string | null
+          status: string
+          subject: string
+          text_content: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          attempt_count?: number
+          audience?: string
+          created_at?: string
+          dedupe_key: string
+          event_type: string
+          failed_at?: string | null
+          html_content: string
+          id?: string
+          last_error?: string | null
+          order_id?: string | null
+          payload?: Json
+          provider?: string
+          provider_message_id?: string | null
+          queued_at?: string
+          recipient_email: string
+          recipient_name?: string | null
+          refund_request_id?: string | null
+          sending_at?: string | null
+          sent_at?: string | null
+          skipped_at?: string | null
+          status?: string
+          subject: string
+          text_content: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          attempt_count?: number
+          audience?: string
+          created_at?: string
+          dedupe_key?: string
+          event_type?: string
+          failed_at?: string | null
+          html_content?: string
+          id?: string
+          last_error?: string | null
+          order_id?: string | null
+          payload?: Json
+          provider?: string
+          provider_message_id?: string | null
+          queued_at?: string
+          recipient_email?: string
+          recipient_name?: string | null
+          refund_request_id?: string | null
+          sending_at?: string | null
+          sent_at?: string | null
+          skipped_at?: string | null
+          status?: string
+          subject?: string
+          text_content?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_events_refund_request_id_fkey"
+            columns: ["refund_request_id"]
+            isOneToOne: false
+            referencedRelation: "refund_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exchange_rates: {
         Row: {
           base_currency: string
@@ -459,6 +565,7 @@ export type Database = {
           account_number: string
           admin_note: string | null
           buyer_reason: string | null
+          cancelled_at: string | null
           created_at: string
           id: string
           initiated_by: string | null
@@ -485,6 +592,7 @@ export type Database = {
           account_number: string
           admin_note?: string | null
           buyer_reason?: string | null
+          cancelled_at?: string | null
           created_at?: string
           id?: string
           initiated_by?: string | null
@@ -511,6 +619,7 @@ export type Database = {
           account_number?: string
           admin_note?: string | null
           buyer_reason?: string | null
+          cancelled_at?: string | null
           created_at?: string
           id?: string
           initiated_by?: string | null

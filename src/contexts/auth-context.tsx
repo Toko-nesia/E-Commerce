@@ -18,8 +18,8 @@ interface AuthContextType {
   isLoggedIn: boolean;
   isLoading: boolean;
   role: string | null;
-  login: (email: string, password: string) => Promise<{ success: boolean; role?: string; error?: string }>;
-  register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; role?: string; error?: string; requiresVerification?: boolean; email?: string }>;
+  register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string; requiresVerification?: boolean; email?: string }>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
   signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
@@ -71,7 +71,12 @@ export function AuthProvider({
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        return { success: false, error: data.error ?? "Login failed" };
+        return {
+          success: false,
+          error: data.error ?? "Login failed",
+          requiresVerification: data.requiresVerification,
+          email: data.email,
+        };
       }
 
       setUser(data.user ?? null);
@@ -105,7 +110,11 @@ export function AuthProvider({
 
       if (data.user) setUser(data.user);
       router.refresh();
-      return { success: true };
+      return {
+        success: true,
+        requiresVerification: data.requiresVerification,
+        email: data.email,
+      };
     } catch {
       return { success: false, error: "Registration failed" };
     } finally {

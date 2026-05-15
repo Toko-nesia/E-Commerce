@@ -27,6 +27,7 @@ interface RefundRow {
 
 const STATUS_STYLE: Record<string, string> = {
   awaiting_seller_review: "bg-yellow-50 text-yellow-700",
+  cancelled_by_buyer: "bg-gray-100 text-gray-700",
   awaiting_buyer_payout: "bg-purple-50 text-purple-700",
   awaiting_manual_transfer: "bg-blue-50 text-blue-700",
   refunded: "bg-green-50 text-green-700",
@@ -241,4 +242,3 @@ export default function AdminRefundsPage() {
     </div>
   );
 }
-

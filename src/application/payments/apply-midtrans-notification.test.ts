@@ -4,10 +4,10 @@ import { applyMidtransNotification, type PaymentEventRepository } from "@/applic
 describe("applyMidtransNotification", () => {
   it("turns a paid notification into one deterministic payment event", async () => {
     const repository: PaymentEventRepository = {
-      applyMidtransPaymentEvent: vi.fn(async () => ({ inserted: true })),
+      applyMidtransPaymentEvent: vi.fn(async () => ({ status: "processed", order_id: "order-1" })),
     };
 
-    await applyMidtransNotification(
+    const result = await applyMidtransNotification(
       {
         order_id: "ZB-ORDER-1",
         transaction_status: "settlement",
@@ -27,6 +27,13 @@ describe("applyMidtransNotification", () => {
         transactionId: "trx-1",
       }),
     );
+    expect(result).toEqual({
+      status: "processed",
+      orderId: "order-1",
+      paymentStatus: "settlement",
+      orderStatus: "DIPROSES",
+      transactionStatus: "settlement",
+    });
   });
 
   it("ignores unknown statuses without touching order state", async () => {

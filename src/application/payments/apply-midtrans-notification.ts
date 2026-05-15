@@ -22,17 +22,25 @@ export interface PaymentEventRepository {
   }): Promise<unknown>;
 }
 
+export interface ApplyMidtransNotificationResult {
+  status: string;
+  orderId?: string;
+  paymentStatus?: string;
+  orderStatus?: string;
+  transactionStatus: string;
+}
+
 export async function applyMidtransNotification(
   notification: VerifiedMidtransNotification,
   repository: PaymentEventRepository,
-): Promise<unknown> {
+): Promise<ApplyMidtransNotificationResult> {
   const mapping = mapMidtransStatus(notification.transaction_status, notification.fraud_status);
 
   if (!mapping) {
     return { status: "ignored_unknown_status", transactionStatus: notification.transaction_status };
   }
 
-  return repository.applyMidtransPaymentEvent({
+  const result = await repository.applyMidtransPaymentEvent({
     midtransOrderId: notification.order_id,
     eventHash: createPaymentEventHash(notification),
     eventType: "midtrans.notification",
@@ -43,4 +51,13 @@ export async function applyMidtransNotification(
     transactionId: notification.transaction_id ?? null,
     payload: notification,
   });
+
+  const repositoryResult = (result ?? {}) as { status?: string; order_id?: string; orderId?: string };
+  return {
+    status: repositoryResult.status ?? "processed",
+    orderId: repositoryResult.order_id ?? repositoryResult.orderId,
+    paymentStatus: mapping.paymentStatus,
+    orderStatus: mapping.orderStatus,
+    transactionStatus: notification.transaction_status,
+  };
 }

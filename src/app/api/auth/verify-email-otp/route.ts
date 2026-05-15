@@ -2,29 +2,26 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
-const loginSchema = z.object({
+const verifyEmailOtpSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(1),
+  token: z.string().trim().regex(/^\d{6}$/, "Enter the 6-digit verification code."),
 });
 
 export async function POST(req: Request) {
-  const parsed = loginSchema.safeParse(await req.json().catch(() => null));
+  const parsed = verifyEmailOtpSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid login payload" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid verification payload" }, { status: 400 });
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithPassword(parsed.data);
+  const { data, error } = await supabase.auth.verifyOtp({
+    email: parsed.data.email,
+    token: parsed.data.token,
+    type: "email",
+  });
+
   if (error || !data.user) {
-    const message = error?.message ?? "Login failed";
-    if (message.toLowerCase().includes("email not confirmed")) {
-      return NextResponse.json({
-        error: "Please verify your email before logging in.",
-        requiresVerification: true,
-        email: parsed.data.email,
-      }, { status: 403 });
-    }
-    return NextResponse.json({ error: message }, { status: 401 });
+    return NextResponse.json({ error: error?.message ?? "Verification failed" }, { status: 400 });
   }
 
   const { data: profile } = await supabase
@@ -34,13 +31,19 @@ export async function POST(req: Request) {
     .maybeSingle();
 
   const role = profile?.role || (data.user.app_metadata?.role as string | undefined) || "user";
+  const redirectTo = role === "admin"
+    ? "/admin"
+    : profile?.phone
+      ? "/"
+      : "/complete-data";
 
   return NextResponse.json({
     success: true,
+    redirectTo,
     role,
     user: {
       id: data.user.id,
-      email: profile?.email || data.user.email || "",
+      email: profile?.email || data.user.email || parsed.data.email,
       full_name: profile?.full_name || data.user.user_metadata?.full_name || "",
       phone: profile?.phone || undefined,
       avatar_url: profile?.avatar_url || undefined,

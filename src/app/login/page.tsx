@@ -33,6 +33,8 @@ export default function LoginPage() {
         const redirectTo = params.get("redirect");
         router.push(redirectTo || "/");
       }
+    } else if (result.requiresVerification) {
+      router.push(`/verify-email?email=${encodeURIComponent(result.email || email)}`);
     } else {
       setError(result.error || "Login failed");
     }

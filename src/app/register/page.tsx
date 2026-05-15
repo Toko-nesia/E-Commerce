@@ -38,7 +38,7 @@ export default function RegisterPage() {
     }
     const result = await register(name, email, password);
     if (result.success) {
-      router.push("/complete-data");
+      router.push(`/verify-email?email=${encodeURIComponent(result.email || email)}`);
     } else {
       setError(result.error || "Registration failed");
     }

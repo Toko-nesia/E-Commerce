@@ -1,6 +1,18 @@
+import type { EmailEventType } from "@/domain/notifications";
+
 type ServiceClient = any;
+type RefundNotificationSender = (input: {
+  eventType: EmailEventType;
+  orderId: string;
+  refundRequestId: string;
+}) => Promise<void>;
 
 const BUYER_REQUESTABLE_STATUSES = new Set(["BARU", "DIPROSES", "DIKIRIM"]);
+const ACTIVE_CANCELLATION_STATUSES = [
+  "awaiting_seller_review",
+  "awaiting_buyer_payout",
+  "awaiting_manual_transfer",
+];
 
 async function getUserRole(supabase: ServiceClient, userId: string): Promise<string> {
   const { data, error } = await supabase
@@ -10,6 +22,16 @@ async function getUserRole(supabase: ServiceClient, userId: string): Promise<str
     .maybeSingle();
   if (error) throw new Error(error.message);
   return data?.role ?? "user";
+}
+
+async function notifyRefundEvents(
+  notify: RefundNotificationSender | undefined,
+  events: EmailEventType[],
+  orderId: string,
+  refundRequestId: string,
+) {
+  if (!notify) return;
+  await Promise.all(events.map((eventType) => notify({ eventType, orderId, refundRequestId })));
 }
 
 export async function assertAdmin(supabase: ServiceClient, userId: string) {
@@ -24,6 +46,7 @@ export async function createBuyerCancellationRequest(input: {
   userId: string;
   orderId: string;
   reason: string;
+  notify?: RefundNotificationSender;
 }) {
   const { data: order, error: orderError } = await input.supabase
     .from("orders")
@@ -37,11 +60,26 @@ export async function createBuyerCancellationRequest(input: {
     throw new Error("This order cannot be cancelled by buyer request.");
   }
 
+  const { data: priorBuyerRequest, error: priorBuyerRequestError } = await input.supabase
+    .from("refund_requests")
+    .select("id, status")
+    .eq("order_id", input.orderId)
+    .eq("user_id", input.userId)
+    .eq("initiated_by", "buyer")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (priorBuyerRequestError) throw new Error(priorBuyerRequestError.message);
+  if (priorBuyerRequest) {
+    throw new Error("Cancellation request can only be submitted once for this order.");
+  }
+
   const { data: existing, error: existingError } = await input.supabase
     .from("refund_requests")
     .select("id")
     .eq("order_id", input.orderId)
-    .in("status", ["awaiting_seller_review", "awaiting_buyer_payout", "awaiting_manual_transfer"])
+    .in("status", ACTIVE_CANCELLATION_STATUSES)
+    .limit(1)
     .maybeSingle();
   if (existingError) throw new Error(existingError.message);
   if (existing) throw new Error("A cancellation request is already active for this order.");
@@ -71,7 +109,70 @@ export async function createBuyerCancellationRequest(input: {
     .eq("id", input.orderId);
   if (updateError) throw new Error(updateError.message);
 
+  await notifyRefundEvents(input.notify, [
+    "buyer_cancellation_requested",
+    "admin_buyer_cancellation_requested",
+  ], input.orderId, refund.id);
+
   return refund;
+}
+
+export async function cancelBuyerCancellationRequest(input: {
+  supabase: ServiceClient;
+  userId: string;
+  orderId: string;
+  notify?: RefundNotificationSender;
+}) {
+  const { data: refund, error: refundError } = await input.supabase
+    .from("refund_requests")
+    .select("id, order_id, user_id, status, initiated_by, previous_order_status")
+    .eq("order_id", input.orderId)
+    .eq("user_id", input.userId)
+    .eq("initiated_by", "buyer")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (refundError) throw new Error(refundError.message);
+  if (!refund) throw new Error("Cancellation request not found.");
+  if (refund.status !== "awaiting_seller_review") {
+    throw new Error("Cancellation request can no longer be cancelled.");
+  }
+
+  const nextOrderStatus = BUYER_REQUESTABLE_STATUSES.has(refund.previous_order_status)
+    ? refund.previous_order_status
+    : "DIPROSES";
+  const now = new Date().toISOString();
+
+  const { data: updatedRefund, error: updateRefundError } = await input.supabase
+    .from("refund_requests")
+    .update({
+      status: "cancelled_by_buyer",
+      cancelled_at: now,
+      updated_at: now,
+    })
+    .eq("id", refund.id)
+    .eq("status", "awaiting_seller_review")
+    .select("*")
+    .single();
+  if (updateRefundError) throw new Error(updateRefundError.message);
+
+  const { error: orderError } = await input.supabase
+    .from("orders")
+    .update({
+      status: nextOrderStatus,
+      cancel_reason: null,
+      updated_at: now,
+    })
+    .eq("id", input.orderId)
+    .eq("user_id", input.userId);
+  if (orderError) throw new Error(orderError.message);
+
+  await notifyRefundEvents(input.notify, [
+    "buyer_cancellation_withdrawn",
+    "admin_buyer_cancellation_withdrawn",
+  ], input.orderId, updatedRefund.id);
+
+  return { refund: updatedRefund, orderStatus: nextOrderStatus };
 }
 
 export async function createSellerCancellation(input: {
@@ -79,6 +180,7 @@ export async function createSellerCancellation(input: {
   adminUserId: string;
   orderId: string;
   reason: string;
+  notify?: RefundNotificationSender;
 }) {
   await assertAdmin(input.supabase, input.adminUserId);
   const { data: order, error: orderError } = await input.supabase
@@ -118,6 +220,8 @@ export async function createSellerCancellation(input: {
     .eq("id", input.orderId);
   if (updateError) throw new Error(updateError.message);
 
+  await notifyRefundEvents(input.notify, ["seller_cancellation_approved"], input.orderId, refund.id);
+
   return refund;
 }
 
@@ -128,6 +232,7 @@ export async function reviewRefundRequest(input: {
   action: "approve" | "reject";
   note?: string;
   rejectionReason?: string;
+  notify?: RefundNotificationSender;
 }) {
   await assertAdmin(input.supabase, input.adminUserId);
   const { data: refund, error } = await input.supabase
@@ -159,6 +264,7 @@ export async function reviewRefundRequest(input: {
       .update({ status: refund.previous_order_status || "DIPROSES", updated_at: new Date().toISOString() })
       .eq("id", refund.order_id);
     if (orderError) throw new Error(orderError.message);
+    await notifyRefundEvents(input.notify, ["buyer_cancellation_rejected"], refund.order_id, input.refundId);
     return { status: "rejected" };
   }
 
@@ -179,6 +285,7 @@ export async function reviewRefundRequest(input: {
     .update({ status: "CANCEL_APPROVED", updated_at: new Date().toISOString() })
     .eq("id", refund.order_id);
   if (orderError) throw new Error(orderError.message);
+  await notifyRefundEvents(input.notify, ["seller_cancellation_approved"], refund.order_id, input.refundId);
   return { status: "approved" };
 }
 
@@ -190,6 +297,7 @@ export async function submitRefundPayout(input: {
   payoutProvider: string;
   accountName: string;
   accountNumber: string;
+  notify?: RefundNotificationSender;
 }) {
   const { data: refund, error } = await input.supabase
     .from("refund_requests")
@@ -223,6 +331,11 @@ export async function submitRefundPayout(input: {
     .eq("id", refund.order_id);
   if (orderError) throw new Error(orderError.message);
 
+  await notifyRefundEvents(input.notify, [
+    "buyer_payout_submitted",
+    "admin_buyer_payout_submitted",
+  ], refund.order_id, input.refundId);
+
   return { status: "awaiting_manual_transfer" };
 }
 
@@ -231,6 +344,7 @@ export async function markRefunded(input: {
   adminUserId: string;
   refundId: string;
   transferNote?: string;
+  notify?: RefundNotificationSender;
 }) {
   await assertAdmin(input.supabase, input.adminUserId);
   const { data: refund, error } = await input.supabase
@@ -260,6 +374,8 @@ export async function markRefunded(input: {
     .update({ status: "REFUNDED", payment_status: "refund", updated_at: new Date().toISOString() })
     .eq("id", refund.order_id);
   if (orderError) throw new Error(orderError.message);
+
+  await notifyRefundEvents(input.notify, ["refund_completed"], refund.order_id, input.refundId);
 
   return { status: "refunded" };
 }

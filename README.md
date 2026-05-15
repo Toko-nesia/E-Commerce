@@ -1,6 +1,6 @@
 # Tokonesia
 
-Tokonesia is a cross-border e-commerce app for Indonesian products sold to customers in Japan. The app uses Next.js App Router for the web and API boundary, Supabase for auth/database/storage, Midtrans Snap for payment, and FedEx APIs for shipping rates and tracking.
+Tokonesia is a cross-border e-commerce app for Indonesian products sold to customers in Japan. The app uses Next.js App Router for the web and API boundary, Supabase for auth/database/storage, Midtrans Snap for payment, FedEx APIs for shipping rates and tracking, and Brevo for transactional email.
 
 ## Tech Stack
 
@@ -11,6 +11,7 @@ Tokonesia is a cross-border e-commerce app for Indonesian products sold to custo
 | Backend | Supabase Auth, PostgreSQL, Storage |
 | Payment | Midtrans Snap |
 | Shipping | FedEx Rate and Tracking APIs |
+| Email | Supabase Auth SMTP and Brevo Transactional Email API |
 | Runtime validation | Zod |
 | Tests | Vitest |
 
@@ -34,6 +35,7 @@ Required application variables are listed in `.env.example`.
 - Midtrans: `MIDTRANS_SERVER_KEY`, `NEXT_PUBLIC_MIDTRANS_CLIENT_KEY`, `MIDTRANS_IS_PRODUCTION`, `NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION`
 - FedEx Rate API: `FEDEX_CLIENT_ID`, `FEDEX_CLIENT_SECRET`, `FEDEX_ACCOUNT_NUMBER`, `FEDEX_API_URL`
 - FedEx Tracking API: `FEDEX_API_KEY`, `FEDEX_SECRET_KEY`, `FEDEX_TRACKING_API_URL`
+- Brevo: `BREVO_API_KEY`, `BREVO_SMTP_USER`, `BREVO_SMTP_KEY`, `EMAIL_FROM_ADDRESS`, `EMAIL_FROM_NAME`, `EMAIL_REPLY_TO_ADDRESS`
 
 Do not commit real secrets. `SUPABASE_DB_PASSWORD` is only needed temporarily for linked Supabase CLI maintenance, not for normal app runtime or production deployment.
 
@@ -62,6 +64,9 @@ Key backend entry points:
 
 - `POST /api/checkout/intents` creates or reuses an idempotent checkout intent.
 - `POST /api/midtrans/notification` applies verified Midtrans events through the payment use case.
+- `POST /api/auth/verify-email-otp` verifies Supabase email OTP after registration.
+- `POST /api/auth/resend-email-otp` resends a pending signup verification code.
+- `PATCH /api/admin/orders/:id/status` updates order status server-side and dispatches order emails.
 - `POST /api/shipping/rates` calculates server-side FedEx rate estimates from validated cart and address data.
 - `POST /api/catalog/cart/resolve` revalidates cart stock against live product data.
 - Refund and cancellation transitions are handled through API routes, not direct client table updates.
@@ -86,9 +91,16 @@ Important database guarantees:
 
 - `orders(user_id, idempotency_key)` prevents duplicate checkout intents.
 - `payment_events.event_hash` deduplicates repeated payment webhooks.
+- `email_events.dedupe_key` prevents duplicate transactional emails for the same event and recipient.
 - Stock decrement is guarded by a server-side RPC and only happens once per paid order.
 - RLS policies use explicit roles and `(select auth.uid())` patterns where applicable.
 - Phone, quantity, refund, and checkout boundaries are validated at API/use-case level with Zod.
+
+Auth and email:
+
+- Email/password registration uses Supabase email OTP confirmation. Unverified users are kept in Supabase Auth and can resend OTP; they are not deleted automatically.
+- Supabase Custom SMTP is configured through `supabase/config.toml` for Auth emails.
+- Business emails are sent by the app through Brevo Transactional Email API and audited in `email_events`.
 
 Storage buckets:
 

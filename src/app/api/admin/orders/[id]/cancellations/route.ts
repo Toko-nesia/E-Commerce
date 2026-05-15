@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { createSellerCancellationSchema } from "@/application/refunds/schemas";
 import { createSellerCancellation } from "@/application/refunds/refund-flow";
+import { notifyOrderEvent } from "@/infrastructure/notifications/notify-order-event";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -23,6 +24,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       adminUserId: user.id,
       orderId: id,
       reason: body.reason,
+      notify: notifyOrderEvent,
     });
 
     return NextResponse.json({ refund });
@@ -32,4 +34,3 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: message }, { status });
   }
 }
-

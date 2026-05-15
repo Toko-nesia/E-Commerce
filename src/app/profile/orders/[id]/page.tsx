@@ -37,6 +37,9 @@ export default function OrderDetailPage() {
     id: string;
     status: RefundStatus;
     reason: string;
+    initiated_by?: "buyer" | "seller" | null;
+    previous_order_status?: string | null;
+    cancelled_at?: string | null;
     rejection_reason?: string | null;
     account_name?: string | null;
     payout_provider?: string | null;
@@ -48,6 +51,8 @@ export default function OrderDetailPage() {
   const [payoutAccountNumber, setPayoutAccountNumber] = useState("");
   const [payoutSaving, setPayoutSaving] = useState(false);
   const [payoutError, setPayoutError] = useState<string | null>(null);
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!order?.tracking_number) {
@@ -119,7 +124,7 @@ export default function OrderDetailPage() {
 
         const { data: refundData } = await supabase
           .from("refund_requests")
-          .select("id, status, reason, rejection_reason, account_name, payout_provider, account_number")
+          .select("id, status, reason, initiated_by, previous_order_status, cancelled_at, rejection_reason, account_name, payout_provider, account_number")
           .eq("order_id", orderId)
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
@@ -148,12 +153,39 @@ export default function OrderDetailPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "Failed to request cancellation.");
       setOrder({ ...order, status: "CANCEL_REQUESTED", cancel_reason: cancelReason.trim() });
+      setRefundRequest(data.refund ?? null);
       setShowCancelInput(false);
       setCancelReason("");
     } catch (error) {
       setCancelError(error instanceof Error ? error.message : "Failed to request cancellation. Please try again.");
     } finally {
       setCancelLoading(false);
+    }
+  };
+
+  const handleWithdrawCancellationRequest = async () => {
+    if (!order) return;
+    setWithdrawLoading(true);
+    setWithdrawError(null);
+    try {
+      const res = await fetch(`/api/orders/${order.id}/cancellation-requests`, {
+        method: "DELETE",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Failed to cancel cancellation request.");
+      setRefundRequest(data.refund ?? null);
+      setOrder({
+        ...order,
+        status: data.orderStatus ?? refundRequest?.previous_order_status ?? "DIPROSES",
+        cancel_reason: null,
+      });
+      setShowCancelInput(false);
+      setCancelReason("");
+      setCancelError(null);
+    } catch (error) {
+      setWithdrawError(error instanceof Error ? error.message : "Failed to cancel cancellation request.");
+    } finally {
+      setWithdrawLoading(false);
     }
   };
 
@@ -366,7 +398,7 @@ export default function OrderDetailPage() {
             </div>
 
             {/* Cancel Section */}
-            {["BARU", "DIPROSES", "DIKIRIM"].includes(order.status) && (
+            {["BARU", "DIPROSES", "DIKIRIM"].includes(order.status) && refundRequest?.initiated_by !== "buyer" && (
               <div className="bg-white border text-center border-[#d5d5d5] rounded-xl p-6 mt-4">
                 {!showCancelInput ? (
                   <button
@@ -416,6 +448,28 @@ export default function OrderDetailPage() {
                 <p className="text-[13px] text-[#6b6b6b] mb-4">Reason: {refundRequest.reason}</p>
                 {refundRequest.rejection_reason && (
                   <p className="text-[13px] text-[#df0000] mb-4">Rejected: {refundRequest.rejection_reason}</p>
+                )}
+                {refundRequest.status === "cancelled_by_buyer" && (
+                  <p className="text-[13px] text-[#6b6b6b] mb-4">
+                    You cancelled this cancellation request. This order cannot be submitted for cancellation again.
+                  </p>
+                )}
+
+                {refundRequest.status === "awaiting_seller_review" && refundRequest.initiated_by === "buyer" && (
+                  <div className="space-y-3">
+                    <p className="text-[13px] text-[#6b6b6b]">
+                      The seller has not reviewed this request yet. You may cancel this request, but you will not be able to request cancellation for this order again.
+                    </p>
+                    {withdrawError && <p className="text-[12px] text-[#df0000]">{withdrawError}</p>}
+                    <button
+                      onClick={handleWithdrawCancellationRequest}
+                      disabled={withdrawLoading}
+                      className="w-full bg-white border border-[#511e0b] text-[#511e0b] rounded-lg py-3 font-bold text-[14px] border-solid cursor-pointer hover:bg-[#f5f0ea] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {withdrawLoading && <Loader2 size={14} className="animate-spin" />}
+                      Cancel Cancellation Request
+                    </button>
+                  </div>
                 )}
 
                 {refundRequest.status === "awaiting_buyer_payout" && (

@@ -39,6 +39,7 @@ export const ORDER_STATUS_COLOR: Record<OrderStatus, string> = {
 export const REFUND_STATUSES = [
   "awaiting_seller_review",
   "rejected",
+  "cancelled_by_buyer",
   "awaiting_buyer_payout",
   "awaiting_manual_transfer",
   "refunded",
@@ -49,6 +50,7 @@ export type RefundStatus = (typeof REFUND_STATUSES)[number];
 export const REFUND_STATUS_LABEL: Record<RefundStatus, string> = {
   awaiting_seller_review: "Awaiting seller review",
   rejected: "Rejected",
+  cancelled_by_buyer: "Cancelled by buyer",
   awaiting_buyer_payout: "Awaiting buyer payout details",
   awaiting_manual_transfer: "Awaiting manual transfer",
   refunded: "Refunded",
@@ -59,4 +61,3 @@ export type RefundInitiator = "buyer" | "seller";
 export function isOrderStatus(value: string | null | undefined): value is OrderStatus {
   return ORDER_STATUSES.includes(value as OrderStatus);
 }
-

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { payoutSchema } from "@/application/refunds/schemas";
 import { submitRefundPayout } from "@/application/refunds/refund-flow";
+import { notifyOrderEvent } from "@/infrastructure/notifications/notify-order-event";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -26,6 +27,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       payoutProvider: body.payoutProvider,
       accountName: body.accountName,
       accountNumber: body.accountNumber,
+      notify: notifyOrderEvent,
     });
 
     return NextResponse.json(result);
@@ -34,4 +36,3 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
-

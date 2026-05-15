@@ -30,7 +30,7 @@ export async function POST(req: Request) {
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({
+  const { error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: { data: { full_name: parsed.data.name } },
@@ -40,15 +40,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
+  await supabase.auth.signOut();
+
   return NextResponse.json({
     success: true,
-    user: data.user
-      ? {
-          id: data.user.id,
-          email: data.user.email || parsed.data.email,
-          full_name: parsed.data.name,
-          role: "user",
-        }
-      : null,
+    requiresVerification: true,
+    email: parsed.data.email,
   });
 }

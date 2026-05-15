@@ -11,7 +11,6 @@ import {
   requiresCancelReason,
 } from "@/lib/order-status-utils";
 import { ORDER_STATUSES, ORDER_STATUS_COLOR, ORDER_STATUS_LABEL } from "@/domain/order-status";
-import type { TablesUpdate } from "@/types/supabase";
 
 interface OrderRow {
   id: string;
@@ -104,25 +103,17 @@ export default function OrdersPage() {
 
     setSaving(true); setSaveError(null);
     try {
-      const supabase = createClient();
-      if (newStatus === "CANCEL_APPROVED") {
-        const res = await fetch(`/api/admin/orders/${selectedOrder.id}/cancellations`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reason: cancelReason.trim() }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error ?? "Failed to create seller cancellation.");
-        await fetchOrders(activeTab, page);
-        setShowModal(false);
-        return;
-      }
-      const updates: TablesUpdate<"orders"> = { status: newStatus, updated_at: new Date().toISOString() };
-      if (showTrackingInput) updates.tracking_number = trackingInput.trim();
-      if (showCancelReason) updates.cancel_reason = cancelReason.trim();
-
-      const { error: updateError } = await supabase.from("orders").update(updates).eq("id", selectedOrder.id);
-      if (updateError) throw updateError;
+      const res = await fetch(`/api/admin/orders/${selectedOrder.id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: newStatus,
+          trackingNumber: showTrackingInput ? trackingInput.trim() : undefined,
+          cancelReason: showCancelReason ? cancelReason.trim() : undefined,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Failed to update order status.");
 
       await fetchOrders(activeTab, page);
       setShowModal(false);
