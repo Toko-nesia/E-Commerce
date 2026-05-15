@@ -4,11 +4,10 @@ import { resolveImagePath } from "@/lib/image-paths";
 export function Footer() {
   return (
     <footer className="relative bg-white border-t border-[#791111] w-full overflow-hidden">
-      <div className="absolute inset-0 opacity-35 md:opacity-80 overflow-hidden pointer-events-none">
-        { }
+      <div className="absolute inset-0 opacity-100 overflow-hidden pointer-events-none">
         <img
           alt=""
-          className="absolute h-full md:h-[250%] left-0 max-w-none top-0 md:top-[-130%] w-full object-cover"
+          className="absolute inset-0 h-full w-full max-w-none object-cover object-center"
           src={resolveImagePath("/images/HomeBeforeLogin/d9118e975ef4e144a8e808ccd3a55684c0248095.png")}
         />
       </div>
@@ -29,4 +28,3 @@ export function Footer() {
     </footer>
   );
 }
-
