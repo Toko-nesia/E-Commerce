@@ -101,6 +101,8 @@ Auth and email:
 - Email/password registration uses Supabase email OTP confirmation. Unverified users are kept in Supabase Auth and can resend OTP; they are not deleted automatically.
 - Supabase Custom SMTP is configured through `supabase/config.toml` for Auth emails.
 - Business emails are sent by the app through Brevo Transactional Email API and audited in `email_events`.
+- After changing Supabase Auth email settings, load the Brevo env vars locally and run `supabase config push --project-ref qvyeihaetcwwsypymjtp --yes`.
+- The live Auth config should keep production redirects intact while enabling email OTP, strong password policy, and Brevo SMTP.
 
 Storage buckets:
 
