@@ -3,15 +3,15 @@ import { resolveImagePath } from "@/lib/image-paths";
 
 export function Footer() {
   return (
-    <footer className="relative bg-white border-t border-[#791111] w-full overflow-hidden">
-      <div className="absolute inset-0 opacity-100 overflow-hidden pointer-events-none">
+    <footer className="relative bg-white border-t border-[#791111] w-full md:h-[228px] overflow-hidden">
+      <div className="absolute inset-0 opacity-100 md:opacity-80 overflow-hidden pointer-events-none">
         <img
           alt=""
-          className="absolute inset-0 h-full w-full max-w-none object-cover object-center"
+          className="absolute h-full md:h-[250%] left-0 max-w-none top-0 md:top-[-130%] w-full object-cover md:object-fill"
           src={resolveImagePath("/images/HomeBeforeLogin/d9118e975ef4e144a8e808ccd3a55684c0248095.png")}
         />
       </div>
-      <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-5 px-4 sm:px-6 md:px-16 py-8 md:py-12 text-center md:text-left">
+      <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-5 px-4 sm:px-6 md:px-16 py-8 md:pt-12 md:pb-0 text-center md:text-left">
         <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 font-['Inter',sans-serif] text-[14px] text-black">
           <Link href="/" className="no-underline text-black">Home</Link>
           <Link href="/about" className="no-underline text-black">About</Link>
