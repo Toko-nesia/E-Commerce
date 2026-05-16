@@ -5,7 +5,7 @@ import { getPasswordIssues } from "@/domain/validation";
 
 const registerSchema = z.object({
   name: z.string().trim().min(1).max(120),
-  email: z.string().email(),
+  email: z.string().trim().toLowerCase().email(),
   password: z.string(),
 }).superRefine((value, ctx) => {
   const issues = getPasswordIssues(value.password, {
@@ -30,14 +30,21 @@ export async function POST(req: Request) {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
-    options: { data: { full_name: parsed.data.name } },
+    options: {
+      data: { full_name: parsed.data.name },
+      emailRedirectTo: `${new URL(req.url).origin}/verify-email?email=${encodeURIComponent(parsed.data.email)}`,
+    },
   });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  if (data.user && (data.user.identities?.length ?? 1) === 0) {
+    await supabase.auth.resend({ type: "signup", email: parsed.data.email });
   }
 
   await supabase.auth.signOut();

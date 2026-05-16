@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
 const verifyEmailOtpSchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().toLowerCase().email(),
   token: z.string().trim().regex(/^\d{6}$/, "Enter the 6-digit verification code."),
 });
 
