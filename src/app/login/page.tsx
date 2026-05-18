@@ -107,7 +107,7 @@ export default function LoginPage() {
               disabled={loginSubmitting}
               className="w-full bg-[#511e0b] text-white rounded-[8px] h-[53px] font-['Manrope',sans-serif] text-[14px] tracking-[1.4px] uppercase shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex items-center justify-center gap-2 cursor-pointer hover:bg-[#3d1608] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {loginSubmitting ? <LoadingSpinner label="Logging in..." /> : "LOGIN ->"}
+              {loginSubmitting ? <LoadingSpinner label="Logging in..." /> : "LOGIN"}
             </button>
           </form>
 
