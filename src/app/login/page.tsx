@@ -11,34 +11,45 @@ import { GoogleIcon } from "@/app/components/ui/GoogleIcon";
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, isLoading, signInWithGoogle } = useAuth();
+  const { login, signInWithGoogle } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loginSubmitting, setLoginSubmitting] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
 
   const handleGoogleLogin = async () => {
+    if (googleSubmitting) return;
+    setGoogleSubmitting(true);
     setError(null);
     const result = await signInWithGoogle(searchParams.get("redirect"));
     if (!result.success) {
       setError(result.error || "Google sign-in failed");
+      setGoogleSubmitting(false);
     }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loginSubmitting) return;
+    setLoginSubmitting(true);
     setError(null);
-    const result = await login(email, password);
-    if (result.success) {
-      if (result.role === 'admin') {
-        router.push('/admin');
+    try {
+      const result = await login(email, password);
+      if (result.success) {
+        if (result.role === 'admin') {
+          router.push('/admin');
+        } else {
+          const redirectTo = searchParams.get("redirect");
+          router.push(redirectTo || "/");
+        }
+      } else if (result.requiresVerification) {
+        router.push(`/verify-email?email=${encodeURIComponent(result.email || email)}`);
       } else {
-        const redirectTo = searchParams.get("redirect");
-        router.push(redirectTo || "/");
+        setError(result.error || "Login failed");
       }
-    } else if (result.requiresVerification) {
-      router.push(`/verify-email?email=${encodeURIComponent(result.email || email)}`);
-    } else {
-      setError(result.error || "Login failed");
+    } finally {
+      setLoginSubmitting(false);
     }
   };
 
@@ -84,10 +95,10 @@ export default function LoginPage() {
             )}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={loginSubmitting}
               className="w-full bg-[#511e0b] text-white rounded-[8px] h-[53px] font-['Manrope',sans-serif] text-[14px] tracking-[1.4px] uppercase shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex items-center justify-center gap-2 cursor-pointer hover:bg-[#3d1608] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {isLoading ? <LoadingSpinner label="Logging in..." /> : "LOGIN ->"}
+              {loginSubmitting ? <LoadingSpinner label="Logging in..." /> : "LOGIN ->"}
             </button>
           </form>
 
@@ -99,10 +110,10 @@ export default function LoginPage() {
 
           <button
             onClick={handleGoogleLogin}
-            disabled={isLoading}
+            disabled={googleSubmitting}
             className="w-full mt-4 bg-white border border-[#d8d0c8] rounded-[8px] h-[53px] font-['Manrope',sans-serif] text-[14px] text-[#2f251d] tracking-[0.8px] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] cursor-pointer hover:bg-[#FDF9F5] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
           >
-            {isLoading ? <LoadingSpinner label="Opening Google..." /> : <><GoogleIcon /> Continue with Google</>}
+            {googleSubmitting ? <LoadingSpinner label="Opening Google..." /> : <><GoogleIcon /> Continue with Google</>}
           </button>
 
           <p className="text-center mt-6 font-['Manrope',sans-serif] text-[14px] text-[#605850]">

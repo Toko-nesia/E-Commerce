@@ -12,38 +12,49 @@ import { GoogleIcon } from "@/app/components/ui/GoogleIcon";
 export default function RegisterPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { register, isLoading, signInWithGoogle } = useAuth();
+  const { register, signInWithGoogle } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState(() => (searchParams.get("email") ?? "").trim().toLowerCase());
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [registerSubmitting, setRegisterSubmitting] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
 
   const handleGoogleRegister = async () => {
+    if (googleSubmitting) return;
+    setGoogleSubmitting(true);
     setError(null);
     const result = await signInWithGoogle(searchParams.get("redirect"));
     if (!result.success) {
       setError(result.error || "Google sign-in failed");
+      setGoogleSubmitting(false);
     }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (registerSubmitting) return;
+    setRegisterSubmitting(true);
     setError(null);
-    const passwordIssues = getPasswordIssues(password, { email, name });
-    if (passwordIssues.length > 0) {
-      setError(passwordIssues[0]);
-      return;
-    }
-    if (password !== confirm) {
-      setError("Passwords do not match");
-      return;
-    }
-    const result = await register(name, email, password);
-    if (result.success) {
-      router.push(`/verify-email?email=${encodeURIComponent(result.email || email)}`);
-    } else {
-      setError(result.error || "Registration failed");
+    try {
+      const passwordIssues = getPasswordIssues(password, { email, name });
+      if (passwordIssues.length > 0) {
+        setError(passwordIssues[0]);
+        return;
+      }
+      if (password !== confirm) {
+        setError("Passwords do not match");
+        return;
+      }
+      const result = await register(name, email, password);
+      if (result.success) {
+        router.push(`/verify-email?email=${encodeURIComponent(result.email || email)}`);
+      } else {
+        setError(result.error || "Registration failed");
+      }
+    } finally {
+      setRegisterSubmitting(false);
     }
   };
 
@@ -96,10 +107,10 @@ export default function RegisterPage() {
             )}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={registerSubmitting}
               className="w-full bg-[#511e0b] text-white rounded-[8px] h-[53px] font-['Manrope',sans-serif] text-[14px] tracking-[1.4px] uppercase shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] cursor-pointer border-none hover:bg-[#3d1608] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {isLoading ? <LoadingSpinner label="Creating account..." /> : "CONTINUE REGISTER"}
+              {registerSubmitting ? <LoadingSpinner label="Creating account..." /> : "CONTINUE REGISTER"}
             </button>
           </form>
 
@@ -111,10 +122,10 @@ export default function RegisterPage() {
 
           <button
             onClick={handleGoogleRegister}
-            disabled={isLoading}
+            disabled={googleSubmitting}
             className="w-full mt-4 bg-white border border-[#d8d0c8] rounded-[8px] h-[53px] font-['Manrope',sans-serif] text-[14px] text-[#2f251d] tracking-[0.8px] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] cursor-pointer hover:bg-[#FDF9F5] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
           >
-            {isLoading ? <LoadingSpinner label="Opening Google..." /> : <><GoogleIcon /> Sign up with Google</>}
+            {googleSubmitting ? <LoadingSpinner label="Opening Google..." /> : <><GoogleIcon /> Sign up with Google</>}
           </button>
 
           <p className="text-center mt-4 font-['Manrope',sans-serif] text-[14px] text-[#605850]">
