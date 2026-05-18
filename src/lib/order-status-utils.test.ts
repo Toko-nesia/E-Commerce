@@ -4,8 +4,10 @@ import { getValidNextStatuses, isValidTransition, requiresCancelReason } from "@
 describe("order status transitions", () => {
   it("does not let pending-payment orders enter seller processing", () => {
     expect(getValidNextStatuses("PAYMENT_PENDING")).toEqual([]);
+    expect(getValidNextStatuses("PAYMENT_EXPIRED")).toEqual([]);
     expect(isValidTransition("PAYMENT_PENDING", "DIPROSES")).toBe(false);
     expect(isValidTransition("PAYMENT_PENDING", "DIKIRIM")).toBe(false);
+    expect(isValidTransition("PAYMENT_EXPIRED", "DIPROSES")).toBe(false);
   });
 
   it("supports buyer and seller cancellation/refund statuses", () => {

@@ -15,8 +15,12 @@ describe("payment domain", () => {
 
   it("maps terminal failed statuses without treating them as paid", () => {
     expect(mapMidtransStatus("expire")).toEqual({
-      orderStatus: "DIBATALKAN",
+      orderStatus: "PAYMENT_EXPIRED",
       paymentStatus: "expire",
+    });
+    expect(mapMidtransStatus("failure")).toEqual({
+      orderStatus: "DIBATALKAN",
+      paymentStatus: "failure",
     });
     expect(isPaidPaymentStatus("expire")).toBe(false);
     expect(isPaidPaymentStatus("settlement")).toBe(true);

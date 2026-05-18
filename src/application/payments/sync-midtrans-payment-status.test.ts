@@ -68,4 +68,46 @@ describe("syncMidtransPaymentStatus", () => {
     ).rejects.toBeInstanceOf(PaymentSyncOrderNotFoundError);
     expect(midtrans.getTransactionStatus).not.toHaveBeenCalled();
   });
+
+  it("returns terminal failed for expired Midtrans payments", async () => {
+    const pending: PaymentSyncOrderSnapshot = {
+      id: "order-1",
+      midtransOrderId: "ZB-ORDER-1",
+      status: "PAYMENT_PENDING",
+      paymentStatus: "pending",
+    };
+    const expired: PaymentSyncOrderSnapshot = {
+      ...pending,
+      status: "PAYMENT_EXPIRED",
+      paymentStatus: "expire",
+    };
+    const snapshots = [pending, expired];
+    const repository: PaymentSyncRepository = {
+      getOrderForUser: vi.fn(async () => snapshots.shift() ?? expired),
+      applyMidtransPaymentEvent: vi.fn(async () => ({
+        status: "processed",
+        order_id: "order-1",
+      })),
+    };
+    const midtrans: MidtransStatusProvider = {
+      getTransactionStatus: vi.fn(async () => ({
+        order_id: "ZB-ORDER-1",
+        transaction_status: "expire",
+      })),
+    };
+
+    const result = await syncMidtransPaymentStatus(
+      { orderId: "order-1", userId: "user-1" },
+      { repository, midtrans },
+    );
+
+    expect(repository.applyMidtransPaymentEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        paymentStatus: "expire",
+        orderStatus: "PAYMENT_EXPIRED",
+      }),
+    );
+    expect(result.order.status).toBe("PAYMENT_EXPIRED");
+    expect(result.isTerminalFailed).toBe(true);
+  });
 });

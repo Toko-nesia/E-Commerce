@@ -198,7 +198,7 @@ export async function createSellerCancellation(input: {
     .maybeSingle();
   if (orderError) throw new Error(orderError.message);
   if (!order) throw new Error("Order not found.");
-  if (["DIBATALKAN", "REFUNDED", "SELESAI"].includes(order.status)) {
+  if (["PAYMENT_EXPIRED", "DIBATALKAN", "REFUNDED", "SELESAI"].includes(order.status)) {
     throw new Error("This order cannot be seller-cancelled.");
   }
 

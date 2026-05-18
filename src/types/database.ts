@@ -129,7 +129,7 @@ export interface RefundRequest {
   refund_method: string;
   account_number: string;
   reason: string;
-  status: 'awaiting_seller_review' | 'rejected' | 'awaiting_buyer_payout' | 'awaiting_manual_transfer' | 'refunded';
+  status: 'awaiting_seller_review' | 'rejected' | 'cancelled_by_buyer' | 'awaiting_buyer_payout' | 'awaiting_manual_transfer' | 'refunded';
   admin_note?: string;
   initiated_by?: "buyer" | "seller";
   initiated_by_user_id?: string;

@@ -30,4 +30,29 @@ describe("order detail lifecycle", () => {
     expect(shouldShowTrackingCard({ status: "DIPROSES", paymentStatus: "settlement" })).toBe(false);
     expect(shouldShowTrackingCard({ status: "DIKIRIM", trackingNumber: "123456789012" })).toBe(true);
   });
+
+  it("shows expired payments as a terminal stock-release state", () => {
+    const events = getOrderDetailLifecycleEvents({ status: "PAYMENT_EXPIRED", paymentStatus: "expire" });
+
+    expect(events[0]).toMatchObject({ key: "payment-expired", label: "Payment Expired", tone: "danger" });
+    expect(events[0].description).toContain("reserved stock was returned");
+    expect(isPendingPaymentOrder({ status: "PAYMENT_EXPIRED", paymentStatus: "expire" })).toBe(false);
+  });
+
+  it("shows the full refund history through completed manual refund", () => {
+    const events = getOrderDetailLifecycleEvents({
+      status: "REFUNDED",
+      paymentStatus: "refund",
+      refund: { status: "refunded", initiatedBy: "buyer" },
+    });
+
+    expect(events.map((event) => event.label)).toEqual([
+      "Refund Completed",
+      "Manual Refund Transfer",
+      "Refund Details Submitted",
+      "Cancellation Approved",
+      "Cancellation Requested",
+      "Order Created",
+    ]);
+  });
 });

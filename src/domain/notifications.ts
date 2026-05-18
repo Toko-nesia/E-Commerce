@@ -79,6 +79,7 @@ function readableLabel(value: string | null | undefined): string | null {
   if (!value) return null;
   const known: Record<string, string> = {
     PAYMENT_PENDING: "Pending payment",
+    PAYMENT_EXPIRED: "Payment expired",
     BARU: "New",
     DIPROSES: "Processing",
     DIKIRIM: "Shipped",

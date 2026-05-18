@@ -10,6 +10,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 const PAID_PAYMENT_STATUSES = new Set(["settlement", "capture"]);
 const EXCLUDED_ORDER_STATUSES = new Set([
+  "PAYMENT_EXPIRED",
   "DIBATALKAN",
   "REFUNDED",
   "CANCEL_REQUESTED",

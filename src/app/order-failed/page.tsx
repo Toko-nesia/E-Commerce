@@ -10,6 +10,7 @@ interface PaymentOrder {
   id: string;
   midtrans_order_id: string | null;
   payment_status: string;
+  status: string;
   total_price: string | null;
   total_price_raw: number | null;
   canContinuePayment: boolean;
@@ -40,6 +41,7 @@ export default function OrderFailedPage() {
   const orderId = searchParams.get("orderId");
   const [order, setOrder] = useState<PaymentOrder | null>(null);
   const [loading, setLoading] = useState(Boolean(orderId));
+  const isExpired = order?.payment_status === "expire" || order?.status === "PAYMENT_EXPIRED";
 
   useEffect(() => {
     if (!orderId) return;
@@ -60,9 +62,11 @@ export default function OrderFailedPage() {
             <AlertTriangle size={52} className="text-[#df0000]" />
           </div>
         </div>
-        <h1 className="font-bold text-[26px] text-[#511e0b] mb-2">Payment Failed</h1>
+        <h1 className="font-bold text-[26px] text-[#511e0b] mb-2">{isExpired ? "Payment Expired" : "Payment Failed"}</h1>
         <p className="text-[14px] text-[#6b6b6b] mb-6">
-          We could not complete the payment. If the order is still pending, you can continue the same Virtual Account payment.
+          {isExpired
+            ? "The payment window has expired. This transaction was cancelled and reserved stock has been returned."
+            : "We could not complete the payment. If the order is still pending, you can continue the same Virtual Account payment."}
         </p>
         {loading && (
           <div className="flex justify-center py-4">

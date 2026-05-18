@@ -37,7 +37,10 @@ export function mapMidtransStatus(
   if (transactionStatus === "capture" && fraudStatus === "accept") {
     return { orderStatus: "BARU", paymentStatus: "capture" };
   }
-  if (["cancel", "deny", "expire"].includes(transactionStatus)) {
+  if (transactionStatus === "expire") {
+    return { orderStatus: "PAYMENT_EXPIRED", paymentStatus: "expire" };
+  }
+  if (["cancel", "deny"].includes(transactionStatus)) {
     return { orderStatus: "DIBATALKAN", paymentStatus: transactionStatus as PaymentStatus };
   }
   if (transactionStatus === "failure") {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { notifyOrderEvent } from "@/infrastructure/notifications/notify-order-event";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -15,7 +16,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   }
 
   const service = createServiceClient();
-  const { data: order, error } = await service
+  const selectOrder = () => service
     .from("orders")
     .select(`
       id,
@@ -44,6 +45,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     .eq("user_id", user.id)
     .maybeSingle();
 
+  const { data: order, error } = await selectOrder();
+
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -51,16 +54,41 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
 
-  const expiresAt = order.snap_token_expires_at ? new Date(order.snap_token_expires_at) : null;
-  const isExpired = order.payment_status === "pending" && !!expiresAt && expiresAt.getTime() <= Date.now();
-  const canContinuePayment = order.payment_status === "pending"
-    && !!order.snap_token
+  let currentOrder = order;
+  const initialExpiresAt = currentOrder.snap_token_expires_at ? new Date(currentOrder.snap_token_expires_at) : null;
+  const shouldExpire = currentOrder.payment_status === "pending"
+    && !!initialExpiresAt
+    && initialExpiresAt.getTime() <= Date.now();
+
+  if (shouldExpire) {
+    const { data: expireResult, error: expireError } = await (service as any).rpc("expire_pending_payment_order", {
+      p_order_id: id,
+      p_user_id: user.id,
+    });
+    if (expireError) {
+      return NextResponse.json({ error: expireError.message }, { status: 500 });
+    }
+    if ((expireResult as { status?: string } | null)?.status === "expired") {
+      await notifyOrderEvent({ eventType: "payment_expired", orderId: id });
+    }
+
+    const { data: refreshedOrder, error: refreshError } = await selectOrder();
+    if (refreshError) {
+      return NextResponse.json({ error: refreshError.message }, { status: 500 });
+    }
+    if (refreshedOrder) currentOrder = refreshedOrder;
+  }
+
+  const expiresAt = currentOrder.snap_token_expires_at ? new Date(currentOrder.snap_token_expires_at) : null;
+  const isExpired = currentOrder.payment_status === "pending" && !!expiresAt && expiresAt.getTime() <= Date.now();
+  const canContinuePayment = currentOrder.payment_status === "pending"
+    && !!currentOrder.snap_token
     && !!expiresAt
     && expiresAt.getTime() > Date.now();
 
   return NextResponse.json({
     order: {
-      ...order,
+      ...currentOrder,
       isExpired,
       canContinuePayment,
     },

@@ -28,6 +28,7 @@ export default function OrderDetailPage() {
   const [address, setAddress] = useState<Address | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expiringPayment, setExpiringPayment] = useState(false);
 
   // Cancellation
   const [showCancelInput, setShowCancelInput] = useState(false);
@@ -49,6 +50,10 @@ export default function OrderDetailPage() {
     account_name?: string | null;
     payout_provider?: string | null;
     account_number?: string | null;
+    created_at?: string | null;
+    reviewed_at?: string | null;
+    payout_submitted_at?: string | null;
+    refunded_at?: string | null;
   } | null>(null);
   const [payoutMethod, setPayoutMethod] = useState<"bank_transfer" | "e_wallet">("bank_transfer");
   const [payoutProvider, setPayoutProvider] = useState("");
@@ -129,7 +134,7 @@ export default function OrderDetailPage() {
 
         const { data: refundData } = await supabase
           .from("refund_requests")
-          .select("id, status, reason, initiated_by, previous_order_status, cancelled_at, rejection_reason, account_name, payout_provider, account_number")
+          .select("id, status, reason, initiated_by, previous_order_status, cancelled_at, rejection_reason, account_name, payout_provider, account_number, created_at, reviewed_at, payout_submitted_at, refunded_at")
           .eq("order_id", orderId)
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
@@ -144,6 +149,27 @@ export default function OrderDetailPage() {
     };
     fetchOrder();
   }, [user?.id, orderId, supabase]);
+
+  useEffect(() => {
+    if (!order || order.payment_status !== "pending" || expiringPayment) return;
+    const expiresAt = order.snap_token_expires_at ? new Date(order.snap_token_expires_at).getTime() : null;
+    if (!expiresAt || expiresAt > Date.now()) return;
+
+    setExpiringPayment(true);
+    fetch(`/api/orders/${order.id}/expire-pending-payment`, { method: "POST" })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error ?? "Failed to expire payment.");
+        const status = data.result?.status as string | undefined;
+        if (status === "expired" || status === "already_expired") {
+          setOrder((current) => current
+            ? { ...current, status: "PAYMENT_EXPIRED", payment_status: "expire" }
+            : current);
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => setExpiringPayment(false));
+  }, [expiringPayment, order]);
 
   const handleCancelOrder = async () => {
     if (!order || !cancelReason.trim() || !["BARU", "DIPROSES", "DIKIRIM"].includes(order.status)) return;
@@ -257,6 +283,12 @@ export default function OrderDetailPage() {
     status: order.status,
     paymentStatus: order.payment_status,
     trackingNumber: order.tracking_number,
+    refund: refundRequest
+      ? {
+          status: refundRequest.status,
+          initiatedBy: refundRequest.initiated_by,
+        }
+      : null,
   });
   const paymentExpiresAt = order.snap_token_expires_at ? new Date(order.snap_token_expires_at) : null;
   const paymentExpiryLabel = paymentExpiresAt && !Number.isNaN(paymentExpiresAt.getTime())
@@ -574,7 +606,7 @@ export default function OrderDetailPage() {
           <div className="w-full lg:w-[420px] 2xl:w-[480px] shrink-0">
             <div className="bg-[#f2ece4] border border-[rgba(216,208,200,0.3)] rounded-[12px] pt-[32px] px-[32px] pb-[40px] h-full flex flex-col max-h-[85vh] sticky top-24">
               <h3 className="font-['EB_Garamond',serif] font-normal text-[#3a302a] text-[24px] mb-8 leading-tight shrink-0">
-                Delivery History
+                Order History
               </h3>
               
               <div className="relative pl-[40px] z-0 overflow-y-auto flex-1 pr-4 custom-scrollbar">
