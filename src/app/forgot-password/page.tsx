@@ -53,7 +53,7 @@ export default function ForgotPasswordPage() {
           />
         </div>
         <div className="bg-white flex-1 p-8 sm:p-12 md:p-16 flex flex-col justify-center min-h-[560px]">
-          <h1 className="font-['Inter:Bold',sans-serif] font-bold text-[26px] text-black">RESET YOUR PASSWORD</h1>
+          <h1 className="font-['Inter:Bold',sans-serif] font-bold text-[26px] text-black">Reset Your Password</h1>
           <p className="font-['Inter',sans-serif] text-[15px] text-[#605850] mt-2">
             Enter your account email and we will send you a secure reset link.
           </p>
