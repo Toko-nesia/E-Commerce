@@ -6,6 +6,14 @@ export const passwordUpdateSchema = z.object({
   confirmPassword: z.string().optional(),
 });
 
+export const recoverPasswordSchema = z.object({
+  tokenHash: z.string().trim().min(1, "Reset token is missing."),
+  type: z.literal("recovery"),
+  email: z.string().trim().toLowerCase().email(),
+  password: z.string(),
+  confirmPassword: z.string().optional(),
+});
+
 export function validatePasswordUpdate(input: {
   password: string;
   confirmPassword?: string;

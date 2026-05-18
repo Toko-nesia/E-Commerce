@@ -11,9 +11,11 @@ describe("middleware routing", () => {
       action: "redirect",
       to: "/login?redirect=/order-pending",
     });
+  });
+
+  it("allows anonymous users to open password recovery links", () => {
     expect(getRoutingDecision("/reset-password", { authenticated: false })).toEqual({
-      action: "redirect",
-      to: "/login?redirect=/reset-password",
+      action: "allow",
     });
   });
 

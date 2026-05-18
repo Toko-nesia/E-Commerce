@@ -13,7 +13,7 @@
           Use the secure button below to create a new Tokonesia password.
         </p>
         <a
-          href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery"
+          href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=recovery&email={{ .Email }}"
           style="display:block;background:#511e0b;color:#ffffff;text-decoration:none;text-align:center;border-radius:8px;padding:14px 18px;font-size:14px;font-weight:700;letter-spacing:.6px;"
         >
           Reset Password

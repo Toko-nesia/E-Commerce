@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { useRouter, useSearchParams } from "next/navigation";
 import { resolveImagePath } from "@/lib/image-paths";
 import { getPasswordIssues } from "@/domain/validation";
 import { LoadingSpinner } from "@/app/components/ui/LoadingSpinner";
@@ -11,30 +10,23 @@ import { PasswordChecklist } from "@/app/components/auth/PasswordChecklist";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
-  const [email, setEmail] = useState<string | null>(null);
-  const [checkingSession, setCheckingSession] = useState(true);
+  const searchParams = useSearchParams();
+  const tokenHash = searchParams.get("token_hash") ?? "";
+  const tokenType = searchParams.get("type") ?? "";
+  const email = useMemo(() => {
+    const value = searchParams.get("email");
+    return value ? value.replace(/\s/g, "+").trim().toLowerCase() : "";
+  }, [searchParams]);
+  const hasValidLink = Boolean(tokenHash) && tokenType === "recovery" && /^\S+@\S+\.\S+$/.test(email);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [issues, setIssues] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let active = true;
-    supabase.auth.getUser().then(({ data }) => {
-      if (!active) return;
-      setEmail(data.user?.email ?? null);
-      setCheckingSession(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, [supabase]);
-
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (submitting || checkingSession || !email) return;
+    if (submitting || !hasValidLink) return;
 
     const clientIssues = getPasswordIssues(newPassword, { email });
     if (newPassword !== confirmPassword) {
@@ -49,10 +41,16 @@ export default function ResetPasswordPage() {
     setSubmitting(true);
     setIssues([]);
     setError(null);
-    const response = await fetch("/api/auth/password", {
-      method: "PATCH",
+    const response = await fetch("/api/auth/recover-password", {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: newPassword, confirmPassword }),
+      body: JSON.stringify({
+        tokenHash,
+        type: "recovery",
+        email,
+        password: newPassword,
+        confirmPassword,
+      }),
     });
     const data = await response.json().catch(() => ({}));
 
@@ -65,7 +63,6 @@ export default function ResetPasswordPage() {
     }
 
     await fetch("/api/auth/logout", { method: "POST" });
-    await supabase.auth.signOut();
     router.replace("/login?reset=success");
     router.refresh();
   };
@@ -86,11 +83,7 @@ export default function ResetPasswordPage() {
             Use a strong password that you have not used on Tokonesia before.
           </p>
 
-          {checkingSession ? (
-            <div className="mt-10 flex justify-center text-[#605850]">
-              <LoadingSpinner label="Checking reset link..." />
-            </div>
-          ) : !email ? (
+          {!hasValidLink ? (
             <div className="mt-10 rounded-lg border border-red-200 bg-red-50 p-4 text-[14px] text-[#a24141] font-['Manrope',sans-serif]">
               This reset link is invalid or expired. Please request a new password reset email.
               <Link href="/forgot-password" className="block mt-3 text-[#511e0b] font-bold no-underline hover:underline">

@@ -106,7 +106,7 @@ Auth and email:
 
 - Email/password registration uses Supabase email OTP confirmation. Unverified users are kept in Supabase Auth and can resend OTP; they are not deleted automatically.
 - The verification page locks the pending email address. Changing an email returns to registration with the previous email prefilled so the user explicitly starts a corrected signup.
-- Forgot password uses Supabase recovery links. The recovery email redirects through `/auth/confirm?next=/reset-password`, the server verifies the recovery token hash, then the user creates a new password on `/reset-password` and is signed out before returning to login.
+- Forgot password uses cross-device Supabase recovery links. The email opens `/reset-password?token_hash=...&type=recovery&email=...`; the token is consumed only after the user submits a valid new password.
 - Password changes for reset, customer profile, and admin profile go through `PATCH /api/auth/password`, which applies the shared 12-character/lowercase/uppercase/number/symbol rule and returns detailed validation issues.
 - Supabase Custom SMTP is configured through `supabase/config.toml` for Auth emails.
 - Business emails are sent by the app through Brevo Transactional Email API and audited in `email_events`.

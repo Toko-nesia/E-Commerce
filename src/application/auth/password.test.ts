@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validatePasswordUpdate } from "@/application/auth/password";
+import { recoverPasswordSchema, validatePasswordUpdate } from "@/application/auth/password";
 
 describe("validatePasswordUpdate", () => {
   it("returns detailed issues for weak passwords", () => {
@@ -41,5 +41,27 @@ describe("validatePasswordUpdate", () => {
         name: "Customer Name",
       }),
     ).toEqual([]);
+  });
+
+  it("accepts recovery password payloads only for recovery tokens", () => {
+    expect(
+      recoverPasswordSchema.safeParse({
+        tokenHash: "token_hash",
+        type: "recovery",
+        email: "customer@example.com",
+        password: "FreshVault2026!",
+        confirmPassword: "FreshVault2026!",
+      }).success,
+    ).toBe(true);
+
+    expect(
+      recoverPasswordSchema.safeParse({
+        tokenHash: "token_hash",
+        type: "email",
+        email: "customer@example.com",
+        password: "FreshVault2026!",
+        confirmPassword: "FreshVault2026!",
+      }).success,
+    ).toBe(false);
   });
 });

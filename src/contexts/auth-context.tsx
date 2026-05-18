@@ -136,8 +136,7 @@ export function AuthProvider({
 
   const resetPassword = useCallback(async (email: string) => {
     try {
-      const callbackUrl = new URL("/auth/confirm", window.location.origin);
-      callbackUrl.searchParams.set("next", "/reset-password");
+      const callbackUrl = new URL("/reset-password", window.location.origin);
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
         redirectTo: callbackUrl.toString(),
       });
