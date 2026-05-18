@@ -1,4 +1,5 @@
 export const ORDER_STATUSES = [
+  "PAYMENT_PENDING",
   "BARU",
   "DIPROSES",
   "DIKIRIM",
@@ -13,6 +14,7 @@ export const ORDER_STATUSES = [
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
+  PAYMENT_PENDING: "Pending payment",
   BARU: "New",
   DIPROSES: "Processing",
   DIKIRIM: "Shipped",
@@ -25,6 +27,7 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
 };
 
 export const ORDER_STATUS_COLOR: Record<OrderStatus, string> = {
+  PAYMENT_PENDING: "bg-amber-50 text-amber-700",
   BARU: "bg-[#FFF3CD] text-[#8a5a00]",
   DIPROSES: "bg-orange-50 text-orange-600",
   DIKIRIM: "bg-blue-50 text-blue-600",

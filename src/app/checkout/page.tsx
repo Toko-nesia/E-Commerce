@@ -359,30 +359,28 @@ export default function CheckoutPage() {
         });
       }
 
+      let snapOutcomeHandled = false;
+      const redirectToResult = (href: string) => {
+        if (snapOutcomeHandled) return;
+        snapOutcomeHandled = true;
+        setRedirectingToResult(true);
+        clearCart();
+        setIdempotencyKey(createIdempotencyKey());
+        router.replace(href);
+      };
+
       window.snap!.pay(data.snapToken, {
         onSuccess: () => {
-          setRedirectingToResult(true);
-          clearCart();
-          setIdempotencyKey(createIdempotencyKey());
-          router.replace(`/order-success?orderId=${resultOrderId}`);
+          redirectToResult(`/order-success?orderId=${resultOrderId}`);
         },
         onPending: () => {
-          setRedirectingToResult(true);
-          clearCart();
-          setIdempotencyKey(createIdempotencyKey());
-          router.replace(`/order-pending?orderId=${resultOrderId}`);
+          redirectToResult(`/order-pending?orderId=${resultOrderId}`);
         },
         onError: () => {
-          setRedirectingToResult(true);
-          clearCart();
-          setIdempotencyKey(createIdempotencyKey());
-          router.replace(`/order-failed?orderId=${resultOrderId}`);
+          redirectToResult(`/order-failed?orderId=${resultOrderId}`);
         },
         onClose: () => {
-          setRedirectingToResult(true);
-          clearCart();
-          setIdempotencyKey(createIdempotencyKey());
-          router.replace(`/order-pending?orderId=${resultOrderId}`);
+          redirectToResult(`/order-pending?orderId=${resultOrderId}`);
         },
       });
     } catch (err) {

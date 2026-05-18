@@ -22,6 +22,13 @@ describe("payment domain", () => {
     expect(isPaidPaymentStatus("settlement")).toBe(true);
   });
 
+  it("keeps pending Midtrans payments out of the seller workflow", () => {
+    expect(mapMidtransStatus("pending")).toEqual({
+      orderStatus: "PAYMENT_PENDING",
+      paymentStatus: "pending",
+    });
+  });
+
   it("formats payment statuses for customer-facing copy", () => {
     expect(formatPaymentStatus("pending")).toBe("Awaiting payment");
     expect(formatPaymentStatus("settlement")).toBe("Paid");

@@ -30,6 +30,9 @@ interface PendingOrder {
   order_items?: PendingOrderItem[];
 }
 
+const PAID_STATUSES = new Set(["settlement", "capture"]);
+const TERMINAL_FAILED_STATUSES = new Set(["cancel", "deny", "expire", "failure"]);
+
 declare global {
   interface Window {
     snap?: {
@@ -102,10 +105,41 @@ export default function OrderPendingPage() {
       const res = await fetch(`/api/orders/${orderId}/payment`, { cache: "no-store" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "Failed to load payment.");
-      setOrder(data.order);
-      if (data.order?.payment_status === "settlement" || data.order?.payment_status === "capture") {
+      const nextOrder = data.order as PendingOrder | null;
+
+      if (nextOrder && PAID_STATUSES.has(nextOrder.payment_status)) {
         router.replace(`/order-success?orderId=${orderId}`);
+        return;
       }
+      if (nextOrder && TERMINAL_FAILED_STATUSES.has(nextOrder.payment_status)) {
+        router.replace(`/order-failed?orderId=${orderId}`);
+        return;
+      }
+
+      if (nextOrder?.payment_status === "pending") {
+        const syncRes = await fetch(`/api/orders/${orderId}/sync-payment`, { method: "POST" }).catch(() => null);
+        if (syncRes?.ok) {
+          const syncData = await syncRes.json().catch(() => ({}));
+          const syncedPaymentStatus = syncData.order?.paymentStatus as string | undefined;
+          if (syncedPaymentStatus && PAID_STATUSES.has(syncedPaymentStatus)) {
+            router.replace(`/order-success?orderId=${orderId}`);
+            return;
+          }
+          if (syncedPaymentStatus && TERMINAL_FAILED_STATUSES.has(syncedPaymentStatus)) {
+            router.replace(`/order-failed?orderId=${orderId}`);
+            return;
+          }
+
+          const latestRes = await fetch(`/api/orders/${orderId}/payment`, { cache: "no-store" });
+          const latestData = await latestRes.json().catch(() => ({}));
+          if (latestRes.ok && latestData.order) {
+            setOrder(latestData.order);
+            return;
+          }
+        }
+      }
+
+      setOrder(nextOrder);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load payment.");
     } finally {

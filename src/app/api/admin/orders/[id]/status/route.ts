@@ -39,7 +39,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const { data: order, error: orderError } = await serviceClient
       .from("orders")
-      .select("id, status")
+      .select("id, status, payment_status")
       .eq("id", id)
       .maybeSingle();
     if (orderError) throw new Error(orderError.message);
@@ -47,6 +47,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     if (!isOrderStatus(order.status) || !isValidTransition(order.status, nextStatus)) {
       return NextResponse.json({ error: "Invalid order status transition" }, { status: 400 });
+    }
+    if (!["settlement", "capture", "refund"].includes(order.payment_status ?? "")) {
+      return NextResponse.json({ error: "Payment must be confirmed before this order can be processed." }, { status: 409 });
     }
 
     if (requiresTrackingNumber(nextStatus)) {

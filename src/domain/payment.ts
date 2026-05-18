@@ -44,7 +44,7 @@ export function mapMidtransStatus(
     return { orderStatus: "DIBATALKAN", paymentStatus: "failure" };
   }
   if (transactionStatus === "pending") {
-    return { orderStatus: "BARU", paymentStatus: "pending" };
+    return { orderStatus: "PAYMENT_PENDING", paymentStatus: "pending" };
   }
   return null;
 }

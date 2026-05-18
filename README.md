@@ -64,6 +64,7 @@ Key backend entry points:
 
 - `POST /api/checkout/intents` creates or reuses an idempotent checkout intent.
 - `GET /api/orders/:id/payment` returns the owner-only pending payment summary and reusable Snap token.
+- `POST /api/orders/:id/sync-payment` asks Midtrans for the current transaction status and applies the same idempotent transition used by webhooks.
 - `POST /api/orders/:id/expire-pending-payment` expires an unpaid order after its Snap token window ends.
 - `POST /api/midtrans/notification` applies verified Midtrans events through the payment use case.
 - `POST /api/auth/verify-email-otp` verifies Supabase email OTP after registration.
@@ -96,6 +97,7 @@ Important database guarantees:
 - `email_events.dedupe_key` prevents duplicate transactional emails for the same event and recipient.
 - Checkout order creation reserves stock immediately through an atomic RPC, so pending Virtual Account orders cannot oversell inventory.
 - Stock release is idempotent and runs once when an unpaid payment expires/fails, an order is cancelled, or a refund flow completes.
+- New checkout orders start as `PAYMENT_PENDING` with `payment_status = "pending"`; they cannot enter seller processing until Midtrans confirms `settlement` or accepted `capture`.
 - RLS policies use explicit roles and `(select auth.uid())` patterns where applicable.
 - Phone, quantity, refund, and checkout boundaries are validated at API/use-case level with Zod.
 
@@ -114,6 +116,7 @@ Payments:
 - Checkout supports Virtual Account only. The checkout selector and Midtrans Snap payload both use Midtrans bank transfer (`enabled_payments: ["bank_transfer"]`).
 - Closing the Snap popup leaves the order in pending payment state and redirects to `/order-pending?orderId=...`.
 - Customers can continue the same pending payment until `snap_token_expires_at`; expired unpaid orders move to failed/expired state and release reserved stock.
+- The success and pending pages call the server-side payment sync endpoint to avoid the Midtrans webhook race where Snap returns success before the database has received the webhook.
 
 Storage buckets:
 

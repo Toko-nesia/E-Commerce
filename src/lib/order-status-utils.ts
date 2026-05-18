@@ -4,6 +4,7 @@ import type { OrderStatus } from "@/domain/order-status";
 export type { OrderStatus } from "@/domain/order-status";
 
 const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  PAYMENT_PENDING: [],
   BARU: ["DIPROSES", "CANCEL_REQUESTED", "CANCEL_APPROVED", "DIBATALKAN"],
   DIPROSES: ["DIKIRIM", "CANCEL_REQUESTED", "CANCEL_APPROVED", "DIBATALKAN"],
   DIKIRIM: ["SELESAI"],
