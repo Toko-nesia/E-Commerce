@@ -63,6 +63,8 @@ App Router conventions:
 Key backend entry points:
 
 - `POST /api/checkout/intents` creates or reuses an idempotent checkout intent.
+- `GET /api/orders/:id/payment` returns the owner-only pending payment summary and reusable Snap token.
+- `POST /api/orders/:id/expire-pending-payment` expires an unpaid order after its Snap token window ends.
 - `POST /api/midtrans/notification` applies verified Midtrans events through the payment use case.
 - `POST /api/auth/verify-email-otp` verifies Supabase email OTP after registration.
 - `POST /api/auth/resend-email-otp` resends a pending signup verification code.
@@ -92,7 +94,8 @@ Important database guarantees:
 - `orders(user_id, idempotency_key)` prevents duplicate checkout intents.
 - `payment_events.event_hash` deduplicates repeated payment webhooks.
 - `email_events.dedupe_key` prevents duplicate transactional emails for the same event and recipient.
-- Stock decrement is guarded by a server-side RPC and only happens once per paid order.
+- Checkout order creation reserves stock immediately through an atomic RPC, so pending Virtual Account orders cannot oversell inventory.
+- Stock release is idempotent and runs once when an unpaid payment expires/fails, an order is cancelled, or a refund flow completes.
 - RLS policies use explicit roles and `(select auth.uid())` patterns where applicable.
 - Phone, quantity, refund, and checkout boundaries are validated at API/use-case level with Zod.
 
@@ -102,8 +105,15 @@ Auth and email:
 - The verification page locks the pending email address. Changing an email returns to registration with the previous email prefilled so the user explicitly starts a corrected signup.
 - Supabase Custom SMTP is configured through `supabase/config.toml` for Auth emails.
 - Business emails are sent by the app through Brevo Transactional Email API and audited in `email_events`.
+- A welcome email is sent once after email OTP verification or first-time Google OAuth signup.
 - After changing Supabase Auth email settings, load the Brevo env vars locally and run `supabase config push --project-ref qvyeihaetcwwsypymjtp --yes`.
 - The live Auth config should keep production redirects intact while enabling email OTP, strong password policy, and Brevo SMTP.
+
+Payments:
+
+- Checkout supports Virtual Account only. The checkout selector and Midtrans Snap payload both use Midtrans bank transfer (`enabled_payments: ["bank_transfer"]`).
+- Closing the Snap popup leaves the order in pending payment state and redirects to `/order-pending?orderId=...`.
+- Customers can continue the same pending payment until `snap_token_expires_at`; expired unpaid orders move to failed/expired state and release reserved stock.
 
 Storage buckets:
 

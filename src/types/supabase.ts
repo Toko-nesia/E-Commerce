@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -330,6 +330,9 @@ export type Database = {
           status: string
           status_color: string | null
           stock_decremented_at: string | null
+          stock_release_reason: string | null
+          stock_released_at: string | null
+          stock_reserved_at: string | null
           total_price: string | null
           total_price_raw: number
           tracking_number: string | null
@@ -363,6 +366,9 @@ export type Database = {
           status?: string
           status_color?: string | null
           stock_decremented_at?: string | null
+          stock_release_reason?: string | null
+          stock_released_at?: string | null
+          stock_reserved_at?: string | null
           total_price?: string | null
           total_price_raw: number
           tracking_number?: string | null
@@ -396,6 +402,9 @@ export type Database = {
           status?: string
           status_color?: string | null
           stock_decremented_at?: string | null
+          stock_release_reason?: string | null
+          stock_released_at?: string | null
+          stock_reserved_at?: string | null
           total_price?: string | null
           total_price_raw?: number
           tracking_number?: string | null
@@ -708,10 +717,35 @@ export type Database = {
         }
         Returns: Json
       }
+      create_checkout_order_with_stock_reservation: {
+        Args: {
+          p_address_id: string
+          p_address_snapshot: Json
+          p_cart_fingerprint: string
+          p_cart_snapshot: Json
+          p_idempotency_key: string
+          p_items: Json
+          p_midtrans_order_id: string
+          p_note: string
+          p_order_id: string
+          p_pricing_snapshot: Json
+          p_service_fee: number
+          p_shipping_cost: number
+          p_shipping_snapshot: Json
+          p_total_price: string
+          p_total_price_raw: number
+          p_user_id: string
+        }
+        Returns: Json
+      }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       decrement_stock: {
         Args: { p_product_id: number; p_quantity: number }
         Returns: undefined
+      }
+      expire_pending_payment_order: {
+        Args: { p_order_id: string; p_user_id: string }
+        Returns: Json
       }
       get_trending_products: {
         Args: { p_limit?: number; p_now?: string }
@@ -741,6 +775,10 @@ export type Database = {
         }
       }
       is_admin: { Args: never; Returns: boolean }
+      release_order_stock_once: {
+        Args: { p_order_id: string; p_reason: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

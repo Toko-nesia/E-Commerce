@@ -34,6 +34,14 @@ async function notifyRefundEvents(
   await Promise.all(events.map((eventType) => notify({ eventType, orderId, refundRequestId })));
 }
 
+async function releaseOrderStockOnce(supabase: ServiceClient, orderId: string, reason: string) {
+  const { error } = await supabase.rpc("release_order_stock_once", {
+    p_order_id: orderId,
+    p_reason: reason,
+  });
+  if (error) throw new Error(error.message);
+}
+
 export async function assertAdmin(supabase: ServiceClient, userId: string) {
   const role = await getUserRole(supabase, userId);
   if (role !== "admin") {
@@ -219,6 +227,7 @@ export async function createSellerCancellation(input: {
     .update({ status: "CANCEL_APPROVED", cancel_reason: input.reason, updated_at: new Date().toISOString() })
     .eq("id", input.orderId);
   if (updateError) throw new Error(updateError.message);
+  await releaseOrderStockOnce(input.supabase, input.orderId, "seller_cancellation_approved");
 
   await notifyRefundEvents(input.notify, ["seller_cancellation_approved"], input.orderId, refund.id);
 
@@ -285,6 +294,7 @@ export async function reviewRefundRequest(input: {
     .update({ status: "CANCEL_APPROVED", updated_at: new Date().toISOString() })
     .eq("id", refund.order_id);
   if (orderError) throw new Error(orderError.message);
+  await releaseOrderStockOnce(input.supabase, refund.order_id, "buyer_cancellation_approved");
   await notifyRefundEvents(input.notify, ["seller_cancellation_approved"], refund.order_id, input.refundId);
   return { status: "approved" };
 }
@@ -374,6 +384,7 @@ export async function markRefunded(input: {
     .update({ status: "REFUNDED", payment_status: "refund", updated_at: new Date().toISOString() })
     .eq("id", refund.order_id);
   if (orderError) throw new Error(orderError.message);
+  await releaseOrderStockOnce(input.supabase, refund.order_id, "refund_completed");
 
   await notifyRefundEvents(input.notify, ["refund_completed"], refund.order_id, input.refundId);
 

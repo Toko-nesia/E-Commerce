@@ -182,6 +182,8 @@ describe("createCheckoutIntent", () => {
       expect.objectContaining({
         midtransOrderId: "ZB-ORDER-1",
         grossAmount: 126_000,
+        createdAt: now,
+        expiresAt: new Date("2026-05-15T00:00:00.000Z"),
       }),
     );
   });

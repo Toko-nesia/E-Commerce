@@ -8,7 +8,7 @@ import type {
   CreatedCheckoutOrder,
   ExistingCheckoutOrder,
 } from "@/application/checkout/create-checkout-intent";
-import type { Json, TablesInsert } from "@/types/supabase";
+import type { Json } from "@/types/supabase";
 
 type SupabaseClient = ReturnType<typeof createServiceClient>;
 
@@ -106,16 +106,21 @@ export class SupabaseCheckoutRepository implements CheckoutRepository {
   async createPendingOrder(input: CreateCheckoutOrderInput): Promise<CreatedCheckoutOrder> {
     const midtransOrderId = `ZB-${input.id.replace(/-/g, "").slice(0, 24).toUpperCase()}`;
 
-    const orderPayload: TablesInsert<"orders"> = {
-      id: input.id,
-      user_id: input.userId,
-      status: "BARU",
-      payment_status: "pending",
-      midtrans_order_id: midtransOrderId,
-      idempotency_key: input.idempotencyKey,
-      cart_fingerprint: input.cartFingerprint,
-      address_id: input.address.id,
-      address_snapshot: toJson({
+    const items = input.items.map((item) => ({
+      product_id: item.productId,
+      quantity: item.quantity,
+      price_raw: item.priceRaw,
+      price: item.price,
+    }));
+
+    const { data, error } = await (this.supabase as any).rpc("create_checkout_order_with_stock_reservation", {
+      p_order_id: input.id,
+      p_user_id: input.userId,
+      p_midtrans_order_id: midtransOrderId,
+      p_idempotency_key: input.idempotencyKey,
+      p_cart_fingerprint: input.cartFingerprint,
+      p_address_id: input.address.id,
+      p_address_snapshot: toJson({
         name: input.address.name,
         phone: input.address.phone,
         address: input.address.address,
@@ -124,45 +129,35 @@ export class SupabaseCheckoutRepository implements CheckoutRepository {
         postal_code: input.address.postalCode,
         country_code: input.address.countryCode,
       }),
-      pricing_snapshot: toJson({
+      p_pricing_snapshot: toJson({
         subtotal: input.pricing.subtotal,
         shipping_cost: input.pricing.shippingCost,
         service_fee: input.pricing.serviceFee,
         grand_total: input.pricing.grandTotal,
         total_weight_kg: input.pricing.totalWeightKg,
       }),
-      shipping_snapshot: toJson(input.shippingSnapshot),
-      cart_snapshot: toJson(input.cartSnapshot),
-      total_price_raw: input.pricing.grandTotal,
-      total_price: formatRp(input.pricing.grandTotal),
-      shipping_cost: input.pricing.shippingCost,
-      service_fee: input.pricing.serviceFee,
-      note: input.note || null,
-    };
+      p_shipping_snapshot: toJson(input.shippingSnapshot),
+      p_cart_snapshot: toJson(input.cartSnapshot),
+      p_items: toJson(items),
+      p_total_price_raw: input.pricing.grandTotal,
+      p_total_price: formatRp(input.pricing.grandTotal),
+      p_shipping_cost: input.pricing.shippingCost,
+      p_service_fee: input.pricing.serviceFee,
+      p_note: input.note || "",
+    });
 
-    const { error: orderError } = await this.supabase.from("orders").insert(orderPayload);
-    if (orderError) {
-      if (orderError.code === "23505") {
+    if (error) {
+      if (error.code === "23505") {
         throw new DuplicateCheckoutRequestError();
       }
-      throw new Error(orderError.message);
+      throw new Error(error.message);
     }
 
-    const orderItems: TablesInsert<"order_items">[] = input.items.map((item) => ({
-      order_id: input.id,
-      product_id: item.productId,
-      quantity: item.quantity,
-      price_raw: item.priceRaw,
-      price: item.price,
-    }));
-
-    const { error: itemsError } = await this.supabase.from("order_items").insert(orderItems);
-    if (itemsError) {
-      await this.supabase.from("orders").delete().eq("id", input.id);
-      throw new Error(itemsError.message);
-    }
-
-    return { id: input.id, midtransOrderId };
+    const created = (data ?? {}) as { id?: string; midtrans_order_id?: string };
+    return {
+      id: created.id ?? input.id,
+      midtransOrderId: created.midtrans_order_id ?? midtransOrderId,
+    };
   }
 
   async attachSnapToken(input: {

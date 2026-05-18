@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createPaymentEventHash, isPaidPaymentStatus, mapMidtransStatus } from "@/domain/payment";
+import { createPaymentEventHash, formatPaymentStatus, isPaidPaymentStatus, mapMidtransStatus } from "@/domain/payment";
 
 describe("payment domain", () => {
   it("maps paid Midtrans statuses to the processing order state", () => {
@@ -20,6 +20,12 @@ describe("payment domain", () => {
     });
     expect(isPaidPaymentStatus("expire")).toBe(false);
     expect(isPaidPaymentStatus("settlement")).toBe(true);
+  });
+
+  it("formats payment statuses for customer-facing copy", () => {
+    expect(formatPaymentStatus("pending")).toBe("Awaiting payment");
+    expect(formatPaymentStatus("settlement")).toBe("Paid");
+    expect(formatPaymentStatus("CANCEL_REQUESTED")).toBe("Cancel Requested");
   });
 
   it("uses stable nested hashes for duplicate webhook detection", () => {

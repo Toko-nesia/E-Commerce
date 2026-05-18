@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { notifyWelcomeEmail } from "@/infrastructure/notifications/notify-welcome-email";
 
 const verifyEmailOtpSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -31,6 +32,14 @@ export async function POST(req: Request) {
     .maybeSingle();
 
   const role = profile?.role || (data.user.app_metadata?.role as string | undefined) || "user";
+  if (role !== "admin") {
+    await notifyWelcomeEmail({
+      userId: data.user.id,
+      email: profile?.email || data.user.email || parsed.data.email,
+      name: profile?.full_name || data.user.user_metadata?.full_name || null,
+    });
+  }
+
   const redirectTo = role === "admin"
     ? "/admin"
     : profile?.phone

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Shield, Check, Edit3 } from "lucide-react";
@@ -13,13 +13,10 @@ import { useAuth } from "@/contexts/auth-context";
 import { createClient } from "@/lib/supabase/client";
 import { normalizePhoneNumber } from "@/domain/validation";
 import type { Address } from "@/types/database";
+import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 
 const paymentMethods = [
-  { id: "bank_transfer", name: "Bank Transfer (BCA/BNI/Mandiri)" },
-  { id: "qris", name: "QRIS" },
-  { id: "credit_card", name: "Credit / Debit Card" },
-  { id: "gopay", name: "GoPay" },
-  { id: "shopeepay", name: "ShopeePay" },
+  { id: "bank_transfer", name: "Virtual Account" },
 ];
 
 declare global {
@@ -77,6 +74,12 @@ export default function CheckoutPage() {
   const [shippingDelivery, setShippingDelivery] = useState<string>("");
   const [shippingLoading, setShippingLoading] = useState(false);
   const [shippingError, setShippingError] = useState<string | null>(null);
+  const shippingCacheRef = useRef(new Map<string, {
+    shippingCost: number;
+    serviceName: string;
+    estimatedDelivery: string;
+  }>());
+  const lastShippingRequestKeyRef = useRef<string | null>(null);
 
   // Exchange rate
   const [exchangeRate, setExchangeRate] = useState<number>(0.0093);
@@ -88,6 +91,12 @@ export default function CheckoutPage() {
       router.replace("/cart");
     }
   }, [canCheckout, items.length, router]);
+
+  useEffect(() => {
+    if (!user) {
+      router.replace("/login?redirect=/checkout");
+    }
+  }, [router, user]);
 
   // Fetch addresses from Supabase
   const fetchAddresses = useCallback(async (autoSelectLatest = false) => {
@@ -197,12 +206,37 @@ export default function CheckoutPage() {
 
   const currentAddress = addresses.find((a) => a.id === selectedAddress) || addresses[0];
 
-  // Fetch FedEx shipping rate whenever address or weight changes
-  const fetchShippingRate = useCallback(async (address: Address) => {
+  const shippingQuoteKey = useMemo(() => {
+    if (!currentAddress || items.length === 0) return "";
+    return JSON.stringify({
+      addressId: currentAddress.id,
+      items: items
+        .map(({ product, qty }) => ({ productId: product.id, quantity: qty }))
+        .sort((a, b) => a.productId - b.productId),
+    });
+  }, [currentAddress, items]);
+
+  // Fetch FedEx shipping rate only when the actual address/cart quote key changes.
+  const fetchShippingRate = useCallback(async (address: Address, quoteKey: string) => {
+    const cached = shippingCacheRef.current.get(quoteKey);
+    if (cached) {
+      setShippingCost(cached.shippingCost);
+      setShippingName(cached.serviceName);
+      setShippingDelivery(cached.estimatedDelivery);
+      setShippingError(null);
+      setShippingLoading(false);
+      return;
+    }
+
+    if (lastShippingRequestKeyRef.current === quoteKey && shippingCost !== null) {
+      return;
+    }
+
+    lastShippingRequestKeyRef.current = quoteKey;
     setShippingLoading(true);
     setShippingError(null);
-    setShippingCost(null);
     if (items.length === 0) {
+      setShippingCost(null);
       setShippingLoading(false);
       return;
     }
@@ -229,19 +263,24 @@ export default function CheckoutPage() {
       setShippingCost(data.shippingCost);
       setShippingName(data.serviceName ?? "Air Shipping");
       setShippingDelivery(data.estimatedDelivery ?? "");
+      shippingCacheRef.current.set(quoteKey, {
+        shippingCost: data.shippingCost,
+        serviceName: data.serviceName ?? "Air Shipping",
+        estimatedDelivery: data.estimatedDelivery ?? "",
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Shipping rate unavailable";
       setShippingError(msg);
     } finally {
       setShippingLoading(false);
     }
-  }, [items]);
+  }, [items, shippingCost]);
 
   useEffect(() => {
-    if (currentAddress) {
-      fetchShippingRate(currentAddress);
+    if (currentAddress && shippingQuoteKey) {
+      fetchShippingRate(currentAddress, shippingQuoteKey);
     }
-  }, [currentAddress, fetchShippingRate]);
+  }, [currentAddress, fetchShippingRate, shippingQuoteKey]);
 
   // Handle address selection from modal — re-fetch shipping for new address
   const handleAddressSelect = useCallback((id: string) => {
@@ -331,14 +370,19 @@ export default function CheckoutPage() {
           setRedirectingToResult(true);
           clearCart();
           setIdempotencyKey(createIdempotencyKey());
-          router.replace(`/order-success?orderId=${resultOrderId}`);
+          router.replace(`/order-pending?orderId=${resultOrderId}`);
         },
         onError: () => {
           setRedirectingToResult(true);
+          clearCart();
+          setIdempotencyKey(createIdempotencyKey());
           router.replace(`/order-failed?orderId=${resultOrderId}`);
         },
         onClose: () => {
-          setIsProcessing(false);
+          setRedirectingToResult(true);
+          clearCart();
+          setIdempotencyKey(createIdempotencyKey());
+          router.replace(`/order-pending?orderId=${resultOrderId}`);
         },
       });
     } catch (err) {
@@ -351,7 +395,7 @@ export default function CheckoutPage() {
   if (redirectingToResult) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-[#f8f8f8]">
-        <p className="text-[#6b6b6b] text-[16px]">Redirecting to your order...</p>
+        <LoadingSpinner label="Redirecting to your order..." className="text-[#6b6b6b] text-[16px]" />
       </div>
     );
   }
@@ -401,7 +445,7 @@ export default function CheckoutPage() {
           <h2 className="font-bold text-[22px] text-[#511e0b]">Shipping Address</h2>
           {addressesLoading ? (
             <div className="border border-[#511e0b] rounded-lg p-5 mt-3 bg-white flex items-center justify-center">
-              <p className="text-[14px] text-[#6b6b6b]">Loading addresses...</p>
+              <LoadingSpinner label="Loading addresses..." className="text-[14px] text-[#6b6b6b]" />
             </div>
           ) : currentAddress ? (
             <div className="border border-[#511e0b] rounded-lg p-5 mt-3 relative bg-white">
@@ -431,7 +475,7 @@ export default function CheckoutPage() {
           <h2 className="font-bold text-[22px] text-[#511e0b] mt-8">Shipping</h2>
           <div className="border border-[#511e0b] rounded-lg p-5 mt-3 bg-white">
             {shippingLoading ? (
-              <p className="text-[14px] text-[#6b6b6b]">Fetching shipping rate...</p>
+              <LoadingSpinner label={shippingCost === null ? "Fetching shipping rate..." : "Updating shipping rate..."} className="text-[14px] text-[#6b6b6b]" />
             ) : shippingError ? (
               <p className="text-[14px] text-[#df0000]">{shippingError}</p>
             ) : shippingCost !== null ? (
@@ -508,7 +552,7 @@ export default function CheckoutPage() {
               <span className="text-[14px] text-black">Air shipping</span>
               <span className="text-[14px] text-[#6b6b6b]">
                 {shippingLoading
-                  ? "Loading..."
+                  ? <LoadingSpinner size={14} />
                   : shippingCost !== null
                   ? formatRp(shippingCost)
                   : shippingError
@@ -558,7 +602,7 @@ export default function CheckoutPage() {
             }
             className="w-full bg-[#511e0b] text-white rounded-lg h-14 mt-6 font-bold text-[16px] border-none cursor-pointer hover:bg-[#3d1608] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            {isProcessing ? "Processing..." : "Pay Now"}
+            {isProcessing ? <LoadingSpinner label="Processing..." /> : "Pay with Virtual Account"}
           </button>
         </div>
       </div>

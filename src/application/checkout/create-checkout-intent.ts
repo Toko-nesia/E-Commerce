@@ -93,6 +93,8 @@ export interface PaymentGateway {
     grossAmount: number;
     customer: { name: string; phone: string };
     itemDetails: Array<{ id: string; price: number; quantity: number; name: string }>;
+    expiresAt: Date;
+    createdAt: Date;
   }): Promise<{ token: string; redirectUrl: string }>;
 }
 
@@ -234,13 +236,15 @@ export async function createCheckoutIntent(
     throw error;
   }
 
+  const expiresAt = new Date(now.getTime() + SNAP_TOKEN_TTL_MS);
   const snap = await deps.paymentGateway.createSnapTransaction({
     midtransOrderId: created.midtransOrderId,
     grossAmount: pricing.grandTotal,
     customer: { name: address.name, phone: address.phone },
     itemDetails: buildMidtransItemDetails(pricedItems, pricing),
+    expiresAt,
+    createdAt: now,
   });
-  const expiresAt = new Date(now.getTime() + SNAP_TOKEN_TTL_MS);
 
   await deps.repository.attachSnapToken({
     orderId: created.id,

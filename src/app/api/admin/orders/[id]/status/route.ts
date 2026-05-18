@@ -91,6 +91,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     } else if (nextStatus === "SELESAI") {
       await notifyOrderEvent({ eventType: "order_completed", orderId: id });
     } else if (nextStatus === "DIBATALKAN") {
+      const { error: releaseError } = await (serviceClient as any).rpc("release_order_stock_once", {
+        p_order_id: id,
+        p_reason: "admin_order_cancelled",
+      });
+      if (releaseError) throw new Error(releaseError.message);
       await notifyOrderEvent({ eventType: "order_cancelled", orderId: id });
     }
 

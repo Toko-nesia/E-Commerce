@@ -1,25 +1,15 @@
 "use client";
 
 import { Modal } from "./Modal";
-import { CreditCard, QrCode, Wallet, Building2 } from "lucide-react";
+import { Building2 } from "lucide-react";
 import type { MidtransPaymentType, PaymentMethod } from "@/types/database";
 
 const paymentMethods: PaymentMethod[] = [
-  { id: "bank_transfer", name: "Bank Transfer (BCA/BNI/Mandiri)", type: "bank_transfer", description: "Virtual account transfer" },
-  { id: "qris", name: "QRIS", type: "qris", description: "Scan QR with any e-wallet" },
-  { id: "credit_card", name: "Credit / Debit Card", type: "credit_card", description: "Visa, Mastercard, JCB" },
-  { id: "gopay", name: "GoPay", type: "gopay", description: "Pay with GoPay balance" },
-  { id: "shopeepay", name: "ShopeePay", type: "shopeepay", description: "Pay with ShopeePay" },
+  { id: "bank_transfer", name: "Virtual Account", type: "bank_transfer", description: "Pay by bank virtual account through Midtrans" },
 ];
 
-const PAYMENT_ICONS: Record<MidtransPaymentType, typeof CreditCard> = {
+const PAYMENT_ICONS: Partial<Record<MidtransPaymentType, typeof Building2>> = {
   bank_transfer: Building2,
-  qris: QrCode,
-  credit_card: CreditCard,
-  gopay: Wallet,
-  shopeepay: Wallet,
-  cstore: Building2,
-  echannel: Building2,
 };
 
 interface PaymentOptionModalProps {
@@ -39,7 +29,7 @@ export function PaymentOptionModal({ isOpen, onClose, selected, onSelect }: Paym
         </p>
         <div className="mt-5 space-y-0">
           {paymentMethods.map((method, i) => {
-            const Icon = PAYMENT_ICONS[method.type] ?? Wallet;
+            const Icon = PAYMENT_ICONS[method.type] ?? Building2;
             return (
               <div key={method.id}>
                 <div
@@ -65,7 +55,7 @@ export function PaymentOptionModal({ isOpen, onClose, selected, onSelect }: Paym
           })}
         </div>
         <p className="text-[11px] text-[#6b6b6b] text-center mt-4">
-          All payment methods are available when you click Pay Now.
+          Only Virtual Account is available for this checkout.
         </p>
       </div>
     </Modal>

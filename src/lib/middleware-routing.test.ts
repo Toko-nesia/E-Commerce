@@ -7,6 +7,10 @@ describe("middleware routing", () => {
       action: "redirect",
       to: "/login?redirect=/checkout",
     });
+    expect(getRoutingDecision("/order-pending", { authenticated: false })).toEqual({
+      action: "redirect",
+      to: "/login?redirect=/order-pending",
+    });
   });
 
   it("allows the auth callback route so Supabase can exchange codes", () => {

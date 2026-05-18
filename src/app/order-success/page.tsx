@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle, Loader2, Package, ShoppingBag } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ORDER_STATUS_COLOR, ORDER_STATUS_LABEL, isOrderStatus } from "@/domain/order-status";
@@ -16,6 +16,7 @@ interface OrderResult {
 }
 
 export default function OrderSuccessPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId") ?? "";
   const [order, setOrder] = useState<OrderResult | null>(null);
@@ -29,15 +30,32 @@ export default function OrderSuccessPage() {
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error ?? "Failed to load order.");
+        if (data.order?.payment_status === "pending") {
+          router.replace(`/order-pending?orderId=${orderId}`);
+          return;
+        }
         setOrder(data.order);
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load order."))
       .finally(() => setLoading(false));
-  }, [orderId]);
+  }, [orderId, router]);
 
   const displayId = order?.midtrans_order_id ? `#${order.midtrans_order_id}` : order ? `#${order.id.slice(0, 8).toUpperCase()}` : "";
   const statusLabel = order && isOrderStatus(order.status) ? ORDER_STATUS_LABEL[order.status] : order?.status ?? "New";
   const statusColor = order && isOrderStatus(order.status) ? ORDER_STATUS_COLOR[order.status] : "bg-gray-100 text-gray-600";
+  const paymentStatusLabel = (() => {
+    const labels: Record<string, string> = {
+      pending: "Awaiting payment",
+      settlement: "Paid",
+      capture: "Paid",
+      cancel: "Cancelled",
+      deny: "Declined",
+      expire: "Expired",
+      failure: "Failed",
+      refund: "Refunded",
+    };
+    return order?.payment_status ? labels[order.payment_status] ?? order.payment_status : "-";
+  })();
 
   return (
     <div className="min-h-screen bg-[#FDF9F5] flex flex-col">
@@ -97,7 +115,7 @@ export default function OrderSuccessPage() {
 
               <div className="bg-[#f8f8f8] rounded-xl p-4 text-left mb-6">
                 <p className="text-[11px] text-[#6b6b6b] uppercase tracking-wider mb-2">Payment</p>
-                <p className="text-[13px] text-[#6b6b6b]">Payment status: <span className="font-semibold">{order.payment_status}</span></p>
+                <p className="text-[13px] text-[#6b6b6b]">Payment status: <span className="font-semibold">{paymentStatusLabel}</span></p>
               </div>
             </>
           )}
@@ -125,4 +143,3 @@ export default function OrderSuccessPage() {
     </div>
   );
 }
-

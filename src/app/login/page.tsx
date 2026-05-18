@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { resolveImagePath } from "@/lib/image-paths";
+import { LoadingSpinner } from "@/app/components/ui/LoadingSpinner";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, isLoading, signInWithGoogle } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,7 +17,7 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     setError(null);
-    const result = await signInWithGoogle();
+    const result = await signInWithGoogle(searchParams.get("redirect"));
     if (!result.success) {
       setError(result.error || "Google sign-in failed");
     }
@@ -29,8 +31,7 @@ export default function LoginPage() {
       if (result.role === 'admin') {
         router.push('/admin');
       } else {
-        const params = new URLSearchParams(window.location.search);
-        const redirectTo = params.get("redirect");
+        const redirectTo = searchParams.get("redirect");
         router.push(redirectTo || "/");
       }
     } else if (result.requiresVerification) {
@@ -85,7 +86,7 @@ export default function LoginPage() {
               disabled={isLoading}
               className="w-full bg-[#511e0b] text-white rounded-[8px] h-[53px] font-['Manrope',sans-serif] text-[14px] tracking-[1.4px] uppercase shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex items-center justify-center gap-2 cursor-pointer hover:bg-[#3d1608] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Loading..." : "LOGIN →"}
+              {isLoading ? <LoadingSpinner label="Logging in..." /> : "LOGIN ->"}
             </button>
           </form>
 
@@ -100,7 +101,7 @@ export default function LoginPage() {
             disabled={isLoading}
             className="w-full mt-4 bg-[#FDF9F5] rounded-[8px] h-[53px] font-['Manrope',sans-serif] text-[14px] text-[#798698] tracking-[1.4px] uppercase shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] cursor-pointer border-none hover:bg-[#f0e8dc] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            GOOGLE
+            {isLoading ? <LoadingSpinner label="Opening Google..." /> : "GOOGLE"}
           </button>
 
           <p className="text-center mt-6 font-['Manrope',sans-serif] text-[14px] text-[#605850]">

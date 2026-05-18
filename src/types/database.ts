@@ -89,6 +89,9 @@ export interface Order {
   snap_redirect_url?: string | null;
   snap_token_expires_at?: string | null;
   stock_decremented_at?: string | null;
+  stock_reserved_at?: string | null;
+  stock_released_at?: string | null;
+  stock_release_reason?: string | null;
   paid_at?: string | null;
   tracking_number?: string | null;
   estimated_delivery?: string | null;
@@ -194,6 +197,11 @@ export interface MidtransSnapRequest {
   item_details?: MidtransItemDetail[];
   credit_card?: { secure: boolean };
   enabled_payments?: MidtransPaymentType[];
+  expiry?: {
+    start_time?: string;
+    unit: "day" | "days" | "hour" | "hours" | "minute" | "minutes";
+    duration: number;
+  };
 }
 
 export interface MidtransSnapResponse {

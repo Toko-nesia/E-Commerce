@@ -2,11 +2,55 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { AlertTriangle, ShoppingBag } from "lucide-react";
+import { AlertTriangle, Package, ShoppingBag } from "lucide-react";
+import { useEffect, useState } from "react";
+import { LoadingSpinner } from "@/app/components/ui/LoadingSpinner";
+
+interface PaymentOrder {
+  id: string;
+  midtrans_order_id: string | null;
+  payment_status: string;
+  total_price: string | null;
+  total_price_raw: number | null;
+  canContinuePayment: boolean;
+}
+
+function formatRp(amount: number | null | undefined, fallback?: string | null): string {
+  if (fallback) return fallback;
+  if (typeof amount !== "number") return "-";
+  return `Rp${amount.toLocaleString("id-ID")}`;
+}
+
+function formatPaymentStatus(status: string): string {
+  const labels: Record<string, string> = {
+    pending: "Awaiting payment",
+    settlement: "Paid",
+    capture: "Paid",
+    cancel: "Cancelled",
+    deny: "Declined",
+    expire: "Expired",
+    failure: "Failed",
+    refund: "Refunded",
+  };
+  return labels[status] ?? status;
+}
 
 export default function OrderFailedPage() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
+  const [order, setOrder] = useState<PaymentOrder | null>(null);
+  const [loading, setLoading] = useState(Boolean(orderId));
+
+  useEffect(() => {
+    if (!orderId) return;
+    setLoading(true);
+    fetch(`/api/orders/${orderId}/payment`, { cache: "no-store" })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) setOrder(data.order);
+      })
+      .finally(() => setLoading(false));
+  }, [orderId]);
 
   return (
     <div className="min-h-screen bg-[#FDF9F5] flex items-center justify-center px-4 py-16">
@@ -18,18 +62,40 @@ export default function OrderFailedPage() {
         </div>
         <h1 className="font-bold text-[26px] text-[#511e0b] mb-2">Payment Failed</h1>
         <p className="text-[14px] text-[#6b6b6b] mb-6">
-          We could not complete the payment. Your cart was kept so you can try again.
+          We could not complete the payment. If the order is still pending, you can continue the same Virtual Account payment.
         </p>
+        {loading && (
+          <div className="flex justify-center py-4">
+            <LoadingSpinner label="Checking payment..." className="text-[#6b6b6b]" />
+          </div>
+        )}
         {orderId && (
           <div className="bg-[#FDF9F5] rounded-xl px-4 py-3 mb-6">
             <p className="text-[11px] text-[#6b6b6b] uppercase tracking-wider mb-1">Order Reference</p>
             <p className="font-bold text-[13px] text-[#511e0b] break-all">#{orderId}</p>
+            {order && (
+              <>
+                <p className="text-[12px] text-[#6b6b6b] mt-2">Payment status: {formatPaymentStatus(order.payment_status)}</p>
+                <p className="text-[13px] font-semibold text-[#511e0b] mt-1">{formatRp(order.total_price_raw, order.total_price)}</p>
+              </>
+            )}
           </div>
         )}
         <div className="flex flex-col gap-3">
-          <Link href="/checkout" className="w-full bg-[#511e0b] text-white rounded-xl py-3.5 font-bold text-[15px] no-underline hover:bg-[#3d1608] transition-colors">
-            Try Payment Again
-          </Link>
+          {order?.canContinuePayment ? (
+            <Link href={`/order-pending?orderId=${order.id}`} className="w-full bg-[#511e0b] text-white rounded-xl py-3.5 font-bold text-[15px] no-underline hover:bg-[#3d1608] transition-colors">
+              Continue Virtual Account Payment
+            </Link>
+          ) : order?.id ? (
+            <Link href={`/profile/orders/${order.id}`} className="w-full bg-[#511e0b] text-white rounded-xl py-3.5 font-bold text-[15px] no-underline hover:bg-[#3d1608] transition-colors flex items-center justify-center gap-2">
+              <Package size={18} />
+              View Your Order
+            </Link>
+          ) : (
+            <Link href="/shop" className="w-full bg-[#511e0b] text-white rounded-xl py-3.5 font-bold text-[15px] no-underline hover:bg-[#3d1608] transition-colors">
+              Start Shopping
+            </Link>
+          )}
           <Link href="/shop" className="w-full border border-[#511e0b] text-[#511e0b] rounded-xl py-3.5 font-bold text-[15px] no-underline hover:bg-[#faf5ee] transition-colors flex items-center justify-center gap-2">
             <ShoppingBag size={18} />
             Continue Shopping
@@ -39,4 +105,3 @@ export default function OrderFailedPage() {
     </div>
   );
 }
-

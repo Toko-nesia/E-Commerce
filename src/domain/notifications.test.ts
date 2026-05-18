@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildEmailDedupeKey, renderOrderEmail } from "@/domain/notifications";
+import { buildEmailDedupeKey, buildWelcomeEmailDedupeKey, renderOrderEmail, renderWelcomeEmail } from "@/domain/notifications";
 
 describe("notification domain", () => {
   it("creates stable dedupe keys per event recipient and order", () => {
@@ -34,6 +34,19 @@ describe("notification domain", () => {
 
     expect(email.subject).toContain("shipped");
     expect(email.textContent).toContain("Tracking number: 123456789012");
+    expect(email.textContent).toContain("Payment: Paid");
+    expect(email.textContent).not.toContain("DIKIRIM");
+    expect(email.textContent).not.toContain("settlement");
     expect(email.htmlContent).toContain("Your order is on its way");
+  });
+
+  it("renders welcome email and dedupes it by user", () => {
+    const email = renderWelcomeEmail({ customerName: "Buyer" });
+
+    expect(email.subject).toBe("Welcome to Tokonesia");
+    expect(email.textContent).toContain("Your account is ready");
+    expect(buildWelcomeEmailDedupeKey({ userId: "user-1" })).toBe(
+      buildWelcomeEmailDedupeKey({ userId: "user-1" }),
+    );
   });
 });

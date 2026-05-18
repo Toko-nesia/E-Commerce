@@ -61,3 +61,25 @@ export type RefundInitiator = "buyer" | "seller";
 export function isOrderStatus(value: string | null | undefined): value is OrderStatus {
   return ORDER_STATUSES.includes(value as OrderStatus);
 }
+
+export function formatOrderStatus(value: string | null | undefined): string | null {
+  if (!value) return null;
+  if (isOrderStatus(value)) return ORDER_STATUS_LABEL[value];
+  return value
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+}
+
+export function formatRefundStatus(value: string | null | undefined): string | null {
+  if (!value) return null;
+  if (REFUND_STATUSES.includes(value as RefundStatus)) {
+    return REFUND_STATUS_LABEL[value as RefundStatus];
+  }
+  return value
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+}

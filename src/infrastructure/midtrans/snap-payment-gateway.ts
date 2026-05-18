@@ -7,12 +7,19 @@ const snap = new MidtransClient.Snap({
   clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY ?? "",
 });
 
+export function formatMidtransExpiryStart(date: Date): string {
+  const westernIndonesiaTime = new Date(date.getTime() + 7 * 60 * 60 * 1000);
+  return `${westernIndonesiaTime.toISOString().slice(0, 19).replace("T", " ")} +0700`;
+}
+
 export class MidtransSnapPaymentGateway implements PaymentGateway {
   async createSnapTransaction(input: {
     midtransOrderId: string;
     grossAmount: number;
     customer: { name: string; phone: string };
     itemDetails: Array<{ id: string; price: number; quantity: number; name: string }>;
+    expiresAt: Date;
+    createdAt: Date;
   }): Promise<{ token: string; redirectUrl: string }> {
     const parameter = {
       transaction_details: {
@@ -24,7 +31,12 @@ export class MidtransSnapPaymentGateway implements PaymentGateway {
         phone: input.customer.phone,
       },
       item_details: input.itemDetails,
-      credit_card: { secure: true },
+      enabled_payments: ["bank_transfer"],
+      expiry: {
+        start_time: formatMidtransExpiryStart(input.createdAt),
+        unit: "hours",
+        duration: Math.max(1, Math.ceil((input.expiresAt.getTime() - input.createdAt.getTime()) / (60 * 60 * 1000))),
+      },
     };
 
     const transaction = await snap.createTransaction(parameter as any);

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/app/components/ui/input-otp";
 import { resolveImagePath } from "@/lib/image-paths";
+import { LoadingSpinner } from "@/app/components/ui/LoadingSpinner";
 
 export default function VerifyEmailPage() {
   const router = useRouter();
@@ -12,12 +13,13 @@ export default function VerifyEmailPage() {
   const email = useMemo(() => (searchParams.get("email") ?? "").trim().toLowerCase(), [searchParams]);
   const [token, setToken] = useState("");
   const [loading, setLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const [resending, setResending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const hasEmail = /^\S+@\S+\.\S+$/.test(email);
-  const canSubmit = hasEmail && /^\d{6}$/.test(token);
+  const canSubmit = hasEmail && /^\d{6}$/.test(token) && !loading && !redirecting;
 
   async function handleVerify(e: React.FormEvent) {
     e.preventDefault();
@@ -29,6 +31,7 @@ export default function VerifyEmailPage() {
     }
 
     setLoading(true);
+    let keepDisabledUntilRedirect = false;
     try {
       const res = await fetch("/api/auth/verify-email-otp", {
         method: "POST",
@@ -38,12 +41,17 @@ export default function VerifyEmailPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "Verification failed.");
 
+      keepDisabledUntilRedirect = true;
+      setRedirecting(true);
       router.push(data.redirectTo || "/complete-data");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Verification failed.");
-    } finally {
       setLoading(false);
+    } finally {
+      if (!keepDisabledUntilRedirect) {
+        setLoading(false);
+      }
     }
   }
 
@@ -108,16 +116,16 @@ export default function VerifyEmailPage() {
 
             <button
               type="submit"
-              disabled={loading || !canSubmit}
+              disabled={!canSubmit}
               className="w-full bg-[#511e0b] text-white rounded-[8px] h-[53px] font-['Manrope',sans-serif] text-[14px] tracking-[1.4px] uppercase shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] cursor-pointer border-none hover:bg-[#3d1608] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {loading ? "Verifying..." : "Verify Account"}
+              {loading || redirecting ? <LoadingSpinner label="Verifying..." /> : "Verify Account"}
             </button>
           </form>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-5 font-['Manrope',sans-serif] text-[13px]">
-            <button type="button" onClick={handleResend} disabled={resending || !hasEmail} className="bg-transparent border-none text-[#a24141] cursor-pointer disabled:opacity-60">
-              {resending ? "Sending..." : "Resend code"}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-5 font-['Manrope',sans-serif] text-[12px]">
+            <button type="button" onClick={handleResend} disabled={resending || !hasEmail || redirecting} className="bg-transparent border-none text-[#a24141] cursor-pointer disabled:opacity-60 text-[12px]">
+              {resending ? <LoadingSpinner label="Sending..." size={13} /> : "Resend code"}
             </button>
             <span className="hidden sm:inline text-[#d8d0c8]">|</span>
             <Link href={hasEmail ? `/register?email=${encodeURIComponent(email)}` : "/register"} className="text-[#a24141] no-underline">Change email</Link>

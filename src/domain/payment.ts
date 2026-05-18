@@ -11,6 +11,17 @@ export type PaymentStatus =
   | "failure"
   | "refund";
 
+export const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
+  pending: "Awaiting payment",
+  settlement: "Paid",
+  capture: "Paid",
+  cancel: "Cancelled",
+  deny: "Declined",
+  expire: "Expired",
+  failure: "Failed",
+  refund: "Refunded",
+};
+
 export interface PaymentStatusMapping {
   orderStatus: OrderStatus;
   paymentStatus: PaymentStatus;
@@ -40,6 +51,15 @@ export function mapMidtransStatus(
 
 export function isPaidPaymentStatus(status: string | null | undefined): boolean {
   return status === "settlement" || status === "capture";
+}
+
+export function formatPaymentStatus(status: string | null | undefined): string | null {
+  if (!status) return null;
+  return PAYMENT_STATUS_LABEL[status as PaymentStatus] ?? status
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
 }
 
 function stableStringify(value: unknown): string {

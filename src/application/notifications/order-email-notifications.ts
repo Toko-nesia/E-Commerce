@@ -5,6 +5,8 @@ import {
   type EmailEventType,
   type EmailRecipient,
 } from "@/domain/notifications";
+import { formatOrderStatus } from "@/domain/order-status";
+import { formatPaymentStatus } from "@/domain/payment";
 import { enqueueAndDispatchEmailEvent, type EmailEventDraft, type EmailEventRepository, type EmailProvider } from "./send-email-event";
 
 export interface OrderNotificationSnapshot {
@@ -67,8 +69,8 @@ function buildDraft(input: {
     customerName: input.order.customerName,
     customerEmail: input.order.customerEmail,
     total: input.order.total,
-    status: input.order.status,
-    paymentStatus: input.order.paymentStatus,
+    status: formatOrderStatus(input.order.status),
+    paymentStatus: formatPaymentStatus(input.order.paymentStatus),
     trackingNumber: input.order.trackingNumber,
     estimatedDelivery: input.order.estimatedDelivery,
     reason,

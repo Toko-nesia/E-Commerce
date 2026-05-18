@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { resolveImagePath } from "@/lib/image-paths";
 import { getPasswordIssues } from "@/domain/validation";
+import { LoadingSpinner } from "@/app/components/ui/LoadingSpinner";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function RegisterPage() {
 
   const handleGoogleRegister = async () => {
     setError(null);
-    const result = await signInWithGoogle();
+    const result = await signInWithGoogle(searchParams.get("redirect"));
     if (!result.success) {
       setError(result.error || "Google sign-in failed");
     }
@@ -97,7 +98,7 @@ export default function RegisterPage() {
               disabled={isLoading}
               className="w-full bg-[#511e0b] text-white rounded-[8px] h-[53px] font-['Manrope',sans-serif] text-[14px] tracking-[1.4px] uppercase shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] cursor-pointer border-none hover:bg-[#3d1608] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Loading..." : "CONTINUE REGISTER"}
+              {isLoading ? <LoadingSpinner label="Creating account..." /> : "CONTINUE REGISTER"}
             </button>
           </form>
 
@@ -112,7 +113,7 @@ export default function RegisterPage() {
             disabled={isLoading}
             className="w-full mt-4 bg-[#FDF9F5] rounded-[8px] h-[53px] font-['Manrope',sans-serif] text-[14px] text-[#798698] tracking-[1.4px] uppercase shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] cursor-pointer border-none hover:bg-[#f0e8dc] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            GOOGLE
+            {isLoading ? <LoadingSpinner label="Opening Google..." /> : "GOOGLE"}
           </button>
 
           <p className="text-center mt-4 font-['Manrope',sans-serif] text-[14px] text-[#605850]">

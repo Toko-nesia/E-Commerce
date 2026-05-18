@@ -7,13 +7,13 @@ export type RoutingDecision =
   | { action: 'redirect'; to: string };
 
 // Routes that require authentication (non-admin)
-const PROTECTED_ROUTES = ['/profile', '/checkout'];
+const PROTECTED_ROUTES = ['/profile', '/checkout', '/order-success', '/order-pending', '/order-failed'];
 
 // Routes that should redirect logged-in users away
 const AUTH_ROUTES = ['/login', '/register', '/complete-data'];
 
 // Routes that are only for regular users (admin should not access)
-const USER_ONLY_ROUTES = ['/', '/shop', '/product', '/cart', '/checkout', '/profile', '/about', '/order-success', '/complete-data'];
+const USER_ONLY_ROUTES = ['/', '/shop', '/product', '/cart', '/checkout', '/profile', '/about', '/order-success', '/order-pending', '/order-failed', '/complete-data'];
 
 export function getRoutingDecision(pathname: string, auth: AuthState): RoutingDecision {
   // Allow OAuth callback route without any redirect

@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 export const EMAIL_EVENT_TYPES = [
+  "customer_welcome",
   "payment_pending",
   "payment_succeeded",
   "payment_failed",
@@ -45,6 +46,10 @@ export interface OrderEmailTemplateData {
   payoutProvider?: string | null;
 }
 
+export interface WelcomeEmailTemplateData {
+  customerName: string;
+}
+
 export interface RenderedEmail {
   subject: string;
   htmlContent: string;
@@ -70,7 +75,36 @@ function line(label: string, value: string | null | undefined): string {
   return `<p style="margin:0 0 8px;"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</p>`;
 }
 
+function readableLabel(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const known: Record<string, string> = {
+    BARU: "New",
+    DIPROSES: "Processing",
+    DIKIRIM: "Shipped",
+    SELESAI: "Completed",
+    DIBATALKAN: "Cancelled",
+    CANCEL_REQUESTED: "Cancellation requested",
+    CANCEL_APPROVED: "Cancellation approved",
+    REFUND_INFO_SUBMITTED: "Refund details submitted",
+    REFUNDED: "Refunded",
+    pending: "Awaiting payment",
+    settlement: "Paid",
+    capture: "Paid",
+    cancel: "Cancelled",
+    deny: "Declined",
+    expire: "Expired",
+    failure: "Failed",
+    refund: "Refunded",
+  };
+  return known[value] ?? value
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+}
+
 const SUBJECTS: Record<EmailEventType, string> = {
+  customer_welcome: "Welcome to Tokonesia",
   payment_pending: "Your Tokonesia payment is waiting",
   payment_succeeded: "Payment received for your Tokonesia order",
   payment_failed: "Your Tokonesia payment could not be completed",
@@ -91,6 +125,7 @@ const SUBJECTS: Record<EmailEventType, string> = {
 };
 
 const HEADLINES: Record<EmailEventType, string> = {
+  customer_welcome: "Welcome to Tokonesia",
   payment_pending: "Please complete your payment",
   payment_succeeded: "Payment confirmed",
   payment_failed: "Payment failed",
@@ -111,6 +146,7 @@ const HEADLINES: Record<EmailEventType, string> = {
 };
 
 const DESCRIPTIONS: Record<EmailEventType, string> = {
+  customer_welcome: "Your account is ready. You can now shop Indonesian goods for delivery to Japan.",
   payment_pending: "We created your order and are waiting for payment confirmation.",
   payment_succeeded: "Your payment has been confirmed. We will start processing your order.",
   payment_failed: "The payment attempt for this order was not completed successfully.",
@@ -135,20 +171,60 @@ export function buildEmailDedupeKey(input: {
   recipientEmail: string;
   orderId?: string | null;
   refundRequestId?: string | null;
+  userId?: string | null;
 }): string {
   const raw = [
     input.eventType,
     input.recipientEmail.trim().toLowerCase(),
     input.orderId ?? "",
     input.refundRequestId ?? "",
+    input.userId ?? "",
   ].join(":");
   return createHash("sha256").update(raw).digest("hex");
+}
+
+export function buildWelcomeEmailDedupeKey(input: { userId: string }): string {
+  return createHash("sha256").update(`welcome:user:${input.userId}`).digest("hex");
+}
+
+export function renderWelcomeEmail(data: WelcomeEmailTemplateData): RenderedEmail {
+  const name = data.customerName.trim() || "there";
+  const subject = SUBJECTS.customer_welcome;
+  const headline = HEADLINES.customer_welcome;
+  const description = DESCRIPTIONS.customer_welcome;
+  const htmlContent = `<!doctype html>
+<html lang="en">
+  <body style="margin:0;background:#fdf9f5;color:#2f251d;font-family:Arial,sans-serif;">
+    <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
+      <div style="background:#ffffff;border:1px solid #eadfd4;border-radius:8px;padding:28px;">
+        <p style="font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:#8a6b5a;margin:0 0 10px;">Tokonesia</p>
+        <h1 style="font-size:22px;line-height:1.3;margin:0 0 12px;color:#2f251d;">${escapeHtml(headline)}</h1>
+        <p style="font-size:14px;line-height:1.6;margin:0 0 12px;color:#605850;">Hi ${escapeHtml(name)},</p>
+        <p style="font-size:14px;line-height:1.6;margin:0;color:#605850;">${escapeHtml(description)}</p>
+      </div>
+    </div>
+  </body>
+</html>`;
+  const textContent = [
+    headline,
+    `Hi ${name},`,
+    description,
+  ].join("\n");
+
+  return {
+    subject,
+    htmlContent,
+    textContent,
+    tags: ["tokonesia", "customer_welcome", "customer"],
+  };
 }
 
 export function renderOrderEmail(data: OrderEmailTemplateData): RenderedEmail {
   const subject = SUBJECTS[data.eventType];
   const headline = HEADLINES[data.eventType];
   const description = DESCRIPTIONS[data.eventType];
+  const status = readableLabel(data.status);
+  const paymentStatus = readableLabel(data.paymentStatus);
   const htmlContent = `<!doctype html>
 <html lang="en">
   <body style="margin:0;background:#fdf9f5;color:#2f251d;font-family:Arial,sans-serif;">
@@ -161,8 +237,8 @@ export function renderOrderEmail(data: OrderEmailTemplateData): RenderedEmail {
           ${line("Order", data.orderNumber)}
           ${line("Customer", data.audience === "admin" ? `${data.customerName} (${data.customerEmail})` : data.customerName)}
           ${line("Total", money(data.total))}
-          ${line("Status", data.status)}
-          ${line("Payment", data.paymentStatus)}
+          ${line("Status", status)}
+          ${line("Payment", paymentStatus)}
           ${line("Tracking number", data.trackingNumber)}
           ${line("Estimated delivery", data.estimatedDelivery)}
           ${line("Reason", data.reason)}
@@ -180,8 +256,8 @@ export function renderOrderEmail(data: OrderEmailTemplateData): RenderedEmail {
     `Order: ${data.orderNumber}`,
     `Customer: ${data.customerName}`,
     `Total: ${money(data.total)}`,
-    data.status ? `Status: ${data.status}` : "",
-    data.paymentStatus ? `Payment: ${data.paymentStatus}` : "",
+    status ? `Status: ${status}` : "",
+    paymentStatus ? `Payment: ${paymentStatus}` : "",
     data.trackingNumber ? `Tracking number: ${data.trackingNumber}` : "",
     data.estimatedDelivery ? `Estimated delivery: ${data.estimatedDelivery}` : "",
     data.reason ? `Reason: ${data.reason}` : "",
