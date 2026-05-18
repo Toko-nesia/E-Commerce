@@ -17,8 +17,11 @@ describe("middleware routing", () => {
     });
   });
 
-  it("allows the auth callback route so Supabase can exchange codes", () => {
+  it("allows auth exchange routes so Supabase can exchange codes and confirm email tokens", () => {
     expect(getRoutingDecision("/auth/callback", { authenticated: false })).toEqual({
+      action: "allow",
+    });
+    expect(getRoutingDecision("/auth/confirm", { authenticated: false })).toEqual({
       action: "allow",
     });
   });

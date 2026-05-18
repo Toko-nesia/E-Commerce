@@ -16,8 +16,8 @@ const AUTH_ROUTES = ['/login', '/register', '/complete-data', '/forgot-password'
 const USER_ONLY_ROUTES = ['/', '/shop', '/product', '/cart', '/checkout', '/profile', '/about', '/order-success', '/order-pending', '/order-failed', '/complete-data'];
 
 export function getRoutingDecision(pathname: string, auth: AuthState): RoutingDecision {
-  // Allow OAuth callback route without any redirect
-  if (pathname.startsWith('/auth/callback')) {
+  // Allow Supabase auth exchange/confirmation routes without any redirect
+  if (pathname.startsWith('/auth/callback') || pathname.startsWith('/auth/confirm')) {
     return { action: 'allow' };
   }
 
