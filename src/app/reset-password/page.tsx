@@ -78,7 +78,7 @@ export default function ResetPasswordPage() {
           />
         </div>
         <div className="bg-white flex-1 p-8 sm:p-12 md:p-16 flex flex-col justify-center min-h-[620px]">
-          <h1 className="font-['Inter:Bold',sans-serif] font-bold text-[26px] text-black">CREATE A NEW PASSWORD</h1>
+          <h1 className="font-['Inter:Bold',sans-serif] font-bold text-[26px] text-black">Create a New Password</h1>
           <p className="font-['Inter',sans-serif] text-[15px] text-[#605850] mt-2">
             Use a strong password that you have not used on Tokonesia before.
           </p>
