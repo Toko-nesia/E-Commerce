@@ -602,7 +602,7 @@ export default function CheckoutPage() {
             }
             className="w-full bg-[#511e0b] text-white rounded-lg h-14 mt-6 font-bold text-[16px] border-none cursor-pointer hover:bg-[#3d1608] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            {isProcessing ? <LoadingSpinner label="Processing..." /> : "Pay with Virtual Account"}
+            {isProcessing ? <LoadingSpinner label="Processing..." /> : "Pay Now"}
           </button>
         </div>
       </div>
