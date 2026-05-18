@@ -37,7 +37,7 @@ Required application variables are listed in `.env.example`.
 - FedEx Tracking API: `FEDEX_API_KEY`, `FEDEX_SECRET_KEY`, `FEDEX_TRACKING_API_URL`
 - Brevo: `BREVO_API_KEY`, `BREVO_SMTP_USER`, `BREVO_SMTP_KEY`, `EMAIL_FROM_ADDRESS`, `EMAIL_FROM_NAME`, `EMAIL_REPLY_TO_ADDRESS`
 
-Do not commit real secrets. `SUPABASE_DB_PASSWORD` is only needed temporarily for linked Supabase CLI maintenance, not for normal app runtime or production deployment.
+Do not commit real secrets.
 
 ## Architecture
 
@@ -81,6 +81,7 @@ Live Supabase remains the source of truth. The root `supabase/` folder mirrors t
 ```bash
 supabase start
 supabase db reset --local
+npm run supabase:bootstrap-assets
 supabase db push --linked --dry-run
 ```
 
@@ -123,6 +124,7 @@ Storage buckets:
 - `product-images`: product catalog images uploaded through admin product workflows.
 - `site-assets`: public page assets grouped by domain, such as `brands/`, `home/`, `about/`, `auth/`, and `profile/`.
 - `avatars`: public profile avatar assets.
+- Bootstrap site assets live in `supabase/storage/site-assets/**`. Run `npm run supabase:bootstrap-assets` after a fresh migration/reset to upload the essential page images into the configured Supabase project.
 
 Do not commit Supabase CLI runtime files such as `.temp`, `.branches`, `snippets`, backups, dumps, or production data exports. Migration files must not contain live operational data such as products, orders, customers, exchange-rate rows, or store settings values.
 

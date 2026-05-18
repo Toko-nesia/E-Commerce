@@ -14,7 +14,8 @@
     "test": "vitest run",
     "audit": "npm audit --audit-level=moderate",
     "check": "npm run lint && npm run typecheck && npm run test && npm run audit && npm run build",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "supabase:bootstrap-assets": "node supabase/scripts/bootstrap-site-assets.mjs"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
