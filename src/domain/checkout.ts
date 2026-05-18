@@ -6,6 +6,8 @@ export const SNAP_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 export interface CheckoutItemInput {
   productId: number;
   quantity: number;
+  variantId?: number | null;
+  customAmountRaw?: number | null;
 }
 
 export interface CheckoutProduct {
@@ -16,11 +18,37 @@ export interface CheckoutProduct {
   price: string;
   weightKg: number;
   stock: number;
+  description?: string | null;
+  purchaseDescription?: string | null;
+  pricingType?: "fixed" | "variant" | "custom_amount";
+  minPriceRaw?: number | null;
+  maxPriceRaw?: number | null;
+  sourceProvider?: string | null;
+  sourceProductId?: string | null;
+  sourceUrl?: string | null;
+  sourceQuery?: string | null;
+  variants?: CheckoutProductVariant[];
+}
+
+export interface CheckoutProductVariant {
+  id: number;
+  productId: number;
+  name: string;
+  priceRaw: number;
+  price: string;
+  stock: number;
+  weightKg?: number | null;
 }
 
 export interface PricedCheckoutItem {
   product: CheckoutProduct;
+  variant?: CheckoutProductVariant | null;
   quantity: number;
+  unitPriceRaw: number;
+  price: string;
+  customAmountRaw?: number | null;
+  purchaseDescription?: string | null;
+  sourceSnapshot: Record<string, unknown>;
   lineTotal: number;
   lineWeightKg: number;
 }
@@ -51,7 +79,7 @@ export interface ShippingDestination {
 }
 
 export function normalizeCheckoutItems(items: CheckoutItemInput[]): CheckoutItemInput[] {
-  const grouped = new Map<number, number>();
+  const grouped = new Map<string, CheckoutItemInput>();
 
   for (const item of items) {
     if (!Number.isInteger(item.productId) || item.productId <= 0) {
@@ -60,12 +88,41 @@ export function normalizeCheckoutItems(items: CheckoutItemInput[]): CheckoutItem
     if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
       throw new Error("Invalid product quantity.");
     }
-    grouped.set(item.productId, (grouped.get(item.productId) ?? 0) + item.quantity);
+    const variantId = item.variantId == null ? null : Number(item.variantId);
+    if (variantId !== null && (!Number.isInteger(variantId) || variantId <= 0)) {
+      throw new Error("Invalid product variant.");
+    }
+    const customAmountRaw = item.customAmountRaw == null ? null : Number(item.customAmountRaw);
+    if (customAmountRaw !== null && (!Number.isInteger(customAmountRaw) || customAmountRaw <= 0)) {
+      throw new Error("Invalid custom amount.");
+    }
+    const key = `${item.productId}:${variantId ?? ""}:${customAmountRaw ?? ""}`;
+    const existing = grouped.get(key);
+    grouped.set(key, {
+      productId: item.productId,
+      variantId,
+      customAmountRaw,
+      quantity: (existing?.quantity ?? 0) + item.quantity,
+    });
   }
 
-  return [...grouped.entries()]
-    .sort(([a], [b]) => a - b)
-    .map(([productId, quantity]) => ({ productId, quantity }));
+  return [...grouped.values()]
+    .sort((a, b) =>
+      a.productId - b.productId
+      || (a.variantId ?? 0) - (b.variantId ?? 0)
+      || (a.customAmountRaw ?? 0) - (b.customAmountRaw ?? 0)
+    );
+}
+
+function sourceSnapshot(product: CheckoutProduct, variant?: CheckoutProductVariant | null): Record<string, unknown> {
+  return {
+    provider: product.sourceProvider ?? null,
+    product_id: product.sourceProductId ?? null,
+    url: product.sourceUrl ?? null,
+    query: product.sourceQuery ?? null,
+    variant_id: variant?.id ?? null,
+    variant_name: variant?.name ?? null,
+  };
 }
 
 export function priceCheckoutItems(
@@ -79,20 +136,65 @@ export function priceCheckoutItems(
     if (!product) {
       throw new Error(`Product ${item.productId} is no longer available.`);
     }
-    if (!Number.isFinite(product.priceRaw) || product.priceRaw <= 0) {
+    const pricingType = product.pricingType ?? "fixed";
+    const variant = item.variantId
+      ? product.variants?.find((candidate) => candidate.id === item.variantId)
+      : null;
+
+    if (pricingType === "variant" && !variant) {
+      throw new Error(`Select a valid variant for ${product.name}.`);
+    }
+    if (pricingType !== "variant" && item.variantId) {
+      throw new Error(`Invalid variant for ${product.name}.`);
+    }
+    if (pricingType !== "custom_amount" && item.customAmountRaw) {
+      throw new Error(`Invalid custom amount for ${product.name}.`);
+    }
+
+    let unitPriceRaw = product.priceRaw;
+    let price = product.price;
+    let stock = product.stock;
+    let unitWeightKg = product.weightKg;
+
+    if (variant) {
+      unitPriceRaw = variant.priceRaw;
+      price = variant.price;
+      stock = variant.stock;
+      unitWeightKg = Number(variant.weightKg ?? product.weightKg);
+    } else if (pricingType === "custom_amount") {
+      const amount = item.customAmountRaw;
+      if (!amount) {
+        throw new Error(`Choose a request budget for ${product.name}.`);
+      }
+      const min = Number(product.minPriceRaw ?? 0);
+      const max = Number(product.maxPriceRaw ?? 0);
+      if (amount < min || amount > max) {
+        throw new Error(`${product.name} budget must be between ${formatRp(min)} and ${formatRp(max)}.`);
+      }
+      unitPriceRaw = amount;
+      price = formatRp(amount);
+    }
+
+    if (!Number.isFinite(unitPriceRaw) || unitPriceRaw <= 0) {
       throw new Error(`Invalid price for ${product.name}.`);
     }
-    if (!Number.isFinite(product.weightKg) || product.weightKg <= 0) {
+    if (!Number.isFinite(unitWeightKg) || unitWeightKg <= 0) {
       throw new Error(`Invalid weight for ${product.name}.`);
     }
-    if (product.stock < item.quantity) {
+    if (stock < item.quantity) {
       throw new Error(`Insufficient stock for ${product.name}.`);
     }
     return {
       product,
+      variant,
       quantity: item.quantity,
-      lineTotal: product.priceRaw * item.quantity,
-      lineWeightKg: product.weightKg * item.quantity,
+      unitPriceRaw,
+      price,
+      customAmountRaw: item.customAmountRaw ?? null,
+      purchaseDescription: product.purchaseDescription ?? product.description ?? null,
+      sourceSnapshot: sourceSnapshot(product, variant),
+      lineTotal: unitPriceRaw * item.quantity,
+      lineWeightKg: unitWeightKg * item.quantity,
     };
   });
 }
@@ -103,9 +205,9 @@ export function buildShippingCommodities(pricedItems: PricedCheckoutItem[]): Shi
     name: item.product.name,
     category: item.product.category,
     quantity: item.quantity,
-    unitPriceIdr: item.product.priceRaw,
+    unitPriceIdr: item.unitPriceRaw,
     lineValueIdr: item.lineTotal,
-    unitWeightKg: item.product.weightKg,
+    unitWeightKg: item.lineWeightKg / item.quantity,
     lineWeightKg: item.lineWeightKg,
     countryOfManufacture: "ID",
   }));
@@ -162,10 +264,14 @@ export function buildMidtransItemDetails(
 ): Array<{ id: string; price: number; quantity: number; name: string }> {
   return [
     ...pricedItems.map((item) => ({
-      id: String(item.product.id),
-      price: item.product.priceRaw,
+      id: item.variant
+        ? `${item.product.id}-${item.variant.id}`
+        : item.customAmountRaw
+          ? `${item.product.id}-custom-${item.customAmountRaw}`
+          : String(item.product.id),
+      price: item.unitPriceRaw,
       quantity: item.quantity,
-      name: item.product.name.slice(0, 50),
+      name: (item.variant ? `${item.product.name} - ${item.variant.name}` : item.product.name).slice(0, 50),
     })),
     { id: "SHIPPING", price: pricing.shippingCost, quantity: 1, name: "Air Shipping" },
     { id: "SERVICE_FEE", price: pricing.serviceFee, quantity: 1, name: "Service Fee" },

@@ -3,6 +3,8 @@ import { z } from "zod";
 export const checkoutIntentItemSchema = z.object({
   productId: z.coerce.number().int().positive(),
   quantity: z.coerce.number().int().positive().max(999),
+  variantId: z.coerce.number().int().positive().nullable().optional(),
+  customAmountRaw: z.coerce.number().int().positive().nullable().optional(),
 });
 
 export const createCheckoutIntentSchema = z.object({

@@ -128,6 +128,15 @@ Storage buckets:
 - `avatars`: public profile avatar assets.
 - Bootstrap site assets live in `supabase/storage/site-assets/**`. Run `npm run supabase:bootstrap-assets` after a fresh migration/reset to upload the essential page images into the configured Supabase project.
 
+Initial product bootstrap:
+
+- Curated starter catalog data lives in `supabase/bootstrap/initial-products/manifest.json`.
+- Starter product images live in `supabase/storage/product-images/initial/**`; they are uploaded to the `product-images` bucket by the bootstrap script.
+- Run `npm run initial-products:collect` only when intentionally refreshing the starter catalog from the source APIs. This fetches Indogrosir and Zalora data, normalizes it, downloads images, and rewrites the manifest.
+- Run `npm run supabase:bootstrap-products` after migrations on a fresh environment to upsert starter categories, products, variants, and product images idempotently.
+- `supabase:bootstrap-products` does not call external marketplace APIs; it uses the committed manifest and image bundle, so new environments can be reproduced without refetching product sources.
+- Product rows may include `purchase_description`, source provider metadata, `bootstrap_key`, and `pricing_type`. Custom amount products such as `Custom Box Jastip 21kg` validate their allowed budget range server-side during checkout.
+
 Do not commit Supabase CLI runtime files such as `.temp`, `.branches`, `snippets`, backups, dumps, or production data exports. Migration files must not contain live operational data such as products, orders, customers, exchange-rate rows, or store settings values.
 
 ## Quality Gates

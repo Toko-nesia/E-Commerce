@@ -5,5 +5,7 @@ export const shippingRateRequestSchema = z.object({
   items: z.array(z.object({
     productId: z.number().int().positive(),
     quantity: z.number().int().positive(),
+    variantId: z.number().int().positive().nullable().optional(),
+    customAmountRaw: z.number().int().positive().nullable().optional(),
   })).min(1).max(100),
 }).strict();

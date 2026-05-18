@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Minus, Plus, X, ShoppingBag } from "lucide-react";
 import { PageWrapper } from "@/app/components/layout/PageWrapper";
-import { useCart } from "@/contexts/cart-context";
+import { getCartItemKey, getCartItemPrice, getCartItemUnitPrice, useCart } from "@/contexts/cart-context";
 import { resolveImagePath } from "@/lib/image-paths";
 
 function formatRp(amount: number): string {
@@ -63,60 +63,66 @@ export default function CartPage() {
                   ))}
                 </div>
               )}
-              {items.map(({ product, qty }) => (
-                <div
-                  key={product.id}
-                  className="bg-white rounded-xl shadow-sm border border-[#e0e0e0] p-4 flex gap-4 items-center"
-                >
-                  <div className="w-[88px] h-[88px] shrink-0 overflow-hidden rounded-lg bg-[#F8F8F8]">
-                    { }
-                    <img
-                      src={resolveImagePath(product.image)}
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-            <p className="font-bold text-[15px] text-black leading-snug line-clamp-2">{product.name}</p>
-                    <p className="text-[13px] text-[#6b6b6b] mt-0.5">{product.category}</p>
-                    <p className="font-bold text-[15px] text-[#511e0b] mt-1">{product.price}</p>
-                  </div>
-
-                  <div className="flex flex-col items-end gap-3">
-                    {/* Qty control */}
-                    <div className="flex items-center border border-[#511e0b] rounded-md px-3 h-9 gap-3">
-                      <button
-                        onClick={() => updateQty(product.id, qty - 1)}
-                        className="bg-transparent border-none cursor-pointer text-[#511e0b] p-0 hover:text-black transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        aria-label="Decrease quantity"
-                      >
-                        <Minus size={13} />
-                      </button>
-                      <span className="text-[14px] text-[#511e0b] font-medium min-w-[20px] text-center">{qty}</span>
-                      <button
-                        onClick={() => {
-                          const result = updateQty(product.id, qty + 1);
-                          setStockMessages(result.message ? [result.message] : []);
-                        }}
-                        disabled={qty >= (product.stock ?? 0)}
-                        className="bg-transparent border-none cursor-pointer text-[#511e0b] p-0 hover:text-black transition-colors"
-                        aria-label="Increase quantity"
-                      >
-                        <Plus size={13} />
-                      </button>
+              {items.map((item) => {
+                const { product, qty, variant } = item;
+                const itemKey = getCartItemKey(item);
+                const purchaseDescription = product.purchase_description || product.description;
+                return (
+                  <div
+                    key={itemKey}
+                    className="bg-white rounded-xl shadow-sm border border-[#e0e0e0] p-4 flex gap-4 items-center"
+                  >
+                    <div className="w-[88px] h-[88px] shrink-0 overflow-hidden rounded-lg bg-[#F8F8F8]">
+                      <img
+                        src={resolveImagePath(product.image)}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
 
-                    <button
-                      onClick={() => removeFromCart(product.id)}
-                      className="text-[#6b6b6b] hover:text-[#DF0000] transition-colors bg-transparent border-none cursor-pointer"
-                      aria-label="Remove item"
-                    >
-                      <X size={18} />
-                    </button>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-[15px] text-black leading-snug line-clamp-2">{product.name}</p>
+                      <p className="text-[13px] text-[#6b6b6b] mt-0.5">{product.category}{variant ? ` / ${variant.name}` : ""}</p>
+                      {purchaseDescription && (
+                        <p className="text-[12px] text-[#6b6b6b] mt-1 line-clamp-2 break-words">{purchaseDescription}</p>
+                      )}
+                      <p className="font-bold text-[15px] text-[#511e0b] mt-1">{getCartItemPrice(item)}</p>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-3">
+                      <div className="flex items-center border border-[#511e0b] rounded-md px-3 h-9 gap-3">
+                        <button
+                          onClick={() => updateQty(itemKey, qty - 1)}
+                          className="bg-transparent border-none cursor-pointer text-[#511e0b] p-0 hover:text-black transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          aria-label="Decrease quantity"
+                        >
+                          <Minus size={13} />
+                        </button>
+                        <span className="text-[14px] text-[#511e0b] font-medium min-w-[20px] text-center">{qty}</span>
+                        <button
+                          onClick={() => {
+                            const result = updateQty(itemKey, qty + 1);
+                            setStockMessages(result.message ? [result.message] : []);
+                          }}
+                          disabled={qty >= (variant?.stock ?? product.stock ?? 0)}
+                          className="bg-transparent border-none cursor-pointer text-[#511e0b] p-0 hover:text-black transition-colors"
+                          aria-label="Increase quantity"
+                        >
+                          <Plus size={13} />
+                        </button>
+                      </div>
+
+                      <button
+                        onClick={() => removeFromCart(itemKey)}
+                        className="text-[#6b6b6b] hover:text-[#DF0000] transition-colors bg-transparent border-none cursor-pointer"
+                        aria-label="Remove item"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Order Summary */}
@@ -124,10 +130,12 @@ export default function CartPage() {
               <h2 className="font-bold text-[19px] text-black mb-4">Order Summary</h2>
 
               <div className="flex flex-col gap-2 mb-4">
-                {items.map(({ product, qty }) => (
-                <div key={product.id} className="flex justify-between text-[13px]">
-                    <span className="text-[#6b6b6b] line-clamp-1 max-w-[160px]">{product.name} ×{qty}</span>
-                    <span className="text-black font-medium shrink-0 ml-2">{formatRp(product.price_raw * qty)}</span>
+                {items.map((item) => (
+                  <div key={getCartItemKey(item)} className="flex justify-between text-[13px]">
+                    <span className="text-[#6b6b6b] line-clamp-1 max-w-[160px]">
+                      {(item.variant ? `${item.product.name} (${item.variant.name})` : item.product.name)} x{item.qty}
+                    </span>
+                    <span className="text-black font-medium shrink-0 ml-2">{formatRp(getCartItemUnitPrice(item) * item.qty)}</span>
                   </div>
                 ))}
               </div>

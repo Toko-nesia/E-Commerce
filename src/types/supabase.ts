@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -260,30 +260,42 @@ export type Database = {
       order_items: {
         Row: {
           created_at: string
+          custom_amount_raw: number | null
           id: number
           order_id: string
           price: string | null
           price_raw: number
           product_id: number
+          product_variant_id: number | null
+          purchase_description_snapshot: string | null
           quantity: number
+          source_snapshot: Json
         }
         Insert: {
           created_at?: string
+          custom_amount_raw?: number | null
           id?: never
           order_id: string
           price?: string | null
           price_raw: number
           product_id: number
+          product_variant_id?: number | null
+          purchase_description_snapshot?: string | null
           quantity: number
+          source_snapshot?: Json
         }
         Update: {
           created_at?: string
+          custom_amount_raw?: number | null
           id?: never
           order_id?: string
           price?: string | null
           price_raw?: number
           product_id?: number
+          product_variant_id?: number | null
+          purchase_description_snapshot?: string | null
           quantity?: number
+          source_snapshot?: Json
         }
         Relationships: [
           {
@@ -298,6 +310,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_variant_id_fkey"
+            columns: ["product_variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
             referencedColumns: ["id"]
           },
         ]
@@ -478,20 +497,86 @@ export type Database = {
           },
         ]
       }
+      product_variants: {
+        Row: {
+          created_at: string
+          id: number
+          metadata: Json
+          name: string
+          price: string
+          price_raw: number
+          product_id: number
+          sku: string | null
+          sort_order: number
+          source_variant_id: string | null
+          stock: number
+          updated_at: string
+          weight_kg: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          metadata?: Json
+          name: string
+          price: string
+          price_raw: number
+          product_id: number
+          sku?: string | null
+          sort_order?: number
+          source_variant_id?: string | null
+          stock?: number
+          updated_at?: string
+          weight_kg?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          metadata?: Json
+          name?: string
+          price?: string
+          price_raw?: number
+          product_id?: number
+          sku?: string | null
+          sort_order?: number
+          source_variant_id?: string | null
+          stock?: number
+          updated_at?: string
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           badge: string | null
           badge_color: string | null
           badge_width: string | null
+          bootstrap_key: string | null
           category: string
           created_at: string
           description: string | null
           id: number
           image: string
           img_style: string | null
+          max_price_raw: number | null
+          min_price_raw: number | null
           name: string
           price: string
           price_raw: number
+          pricing_type: string
+          purchase_description: string | null
+          source_metadata: Json
+          source_product_id: string | null
+          source_provider: string | null
+          source_query: string | null
+          source_url: string | null
           specifications: Json | null
           stock: number
           updated_at: string
@@ -501,15 +586,25 @@ export type Database = {
           badge?: string | null
           badge_color?: string | null
           badge_width?: string | null
+          bootstrap_key?: string | null
           category: string
           created_at?: string
           description?: string | null
           id?: never
           image: string
           img_style?: string | null
+          max_price_raw?: number | null
+          min_price_raw?: number | null
           name: string
           price: string
           price_raw: number
+          pricing_type?: string
+          purchase_description?: string | null
+          source_metadata?: Json
+          source_product_id?: string | null
+          source_provider?: string | null
+          source_query?: string | null
+          source_url?: string | null
           specifications?: Json | null
           stock?: number
           updated_at?: string
@@ -519,15 +614,25 @@ export type Database = {
           badge?: string | null
           badge_color?: string | null
           badge_width?: string | null
+          bootstrap_key?: string | null
           category?: string
           created_at?: string
           description?: string | null
           id?: never
           image?: string
           img_style?: string | null
+          max_price_raw?: number | null
+          min_price_raw?: number | null
           name?: string
           price?: string
           price_raw?: number
+          pricing_type?: string
+          purchase_description?: string | null
+          source_metadata?: Json
+          source_product_id?: string | null
+          source_provider?: string | null
+          source_query?: string | null
+          source_url?: string | null
           specifications?: Json | null
           stock?: number
           updated_at?: string
@@ -753,15 +858,25 @@ export type Database = {
           badge: string | null
           badge_color: string | null
           badge_width: string | null
+          bootstrap_key: string | null
           category: string
           created_at: string
           description: string | null
           id: number
           image: string
           img_style: string | null
+          max_price_raw: number | null
+          min_price_raw: number | null
           name: string
           price: string
           price_raw: number
+          pricing_type: string
+          purchase_description: string | null
+          source_metadata: Json
+          source_product_id: string | null
+          source_provider: string | null
+          source_query: string | null
+          source_url: string | null
           specifications: Json | null
           stock: number
           updated_at: string

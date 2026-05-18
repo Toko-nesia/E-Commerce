@@ -18,9 +18,37 @@ export interface Product {
   image: string;
   img_style?: string | null;
   description?: string | null;
+  purchase_description?: string | null;
   specifications?: Record<string, string> | null;
+  source_provider?: string | null;
+  source_product_id?: string | null;
+  source_url?: string | null;
+  source_query?: string | null;
+  source_metadata?: Record<string, unknown> | null;
+  bootstrap_key?: string | null;
+  pricing_type?: ProductPricingType | null;
+  min_price_raw?: number | null;
+  max_price_raw?: number | null;
   stock: number;
   weight_kg?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type ProductPricingType = 'fixed' | 'variant' | 'custom_amount';
+
+export interface ProductVariant {
+  id: number;
+  product_id: number;
+  name: string;
+  sku?: string | null;
+  price: string;
+  price_raw: number;
+  stock: number;
+  weight_kg?: number | null;
+  source_variant_id?: string | null;
+  metadata?: Record<string, unknown> | null;
+  sort_order?: number;
   created_at?: string;
   updated_at?: string;
 }
@@ -108,9 +136,13 @@ export interface OrderItem {
   id: string | number;
   order_id?: string;
   product_id?: number;
+  product_variant_id?: number | null;
   quantity: number;
   price: string | null;
   price_raw?: number;
+  custom_amount_raw?: number | null;
+  purchase_description_snapshot?: string | null;
+  source_snapshot?: unknown;
   product?: { name?: string | null; image?: string | null } | null;
 }
 

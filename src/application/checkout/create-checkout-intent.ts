@@ -4,7 +4,6 @@ import {
   buildShippingCommodities,
   calculateCheckoutPricing,
   createCartFingerprint,
-  formatRp,
   normalizeCheckoutItems,
   priceCheckoutItems,
   type CheckoutItemInput,
@@ -49,9 +48,13 @@ export interface CreateCheckoutOrderInput {
   address: CheckoutAddress;
   items: Array<{
     productId: number;
+    productVariantId?: number | null;
     quantity: number;
     priceRaw: number;
     price: string;
+    customAmountRaw?: number | null;
+    purchaseDescriptionSnapshot?: string | null;
+    sourceSnapshot?: Record<string, unknown>;
   }>;
   pricing: CheckoutPricing;
   note: string;
@@ -203,18 +206,27 @@ export async function createCheckoutIntent(
       address,
       items: pricedItems.map((item) => ({
         productId: item.product.id,
+        productVariantId: item.variant?.id ?? null,
         quantity: item.quantity,
-        priceRaw: item.product.priceRaw,
-        price: formatRp(item.product.priceRaw),
+        priceRaw: item.unitPriceRaw,
+        price: item.price,
+        customAmountRaw: item.customAmountRaw ?? null,
+        purchaseDescriptionSnapshot: item.purchaseDescription ?? null,
+        sourceSnapshot: item.sourceSnapshot,
       })),
       pricing,
       note: input.note,
       cartSnapshot: pricedItems.map((item) => ({
         product_id: item.product.id,
         name: item.product.name,
+        variant_id: item.variant?.id ?? null,
+        variant_name: item.variant?.name ?? null,
         quantity: item.quantity,
-        price_raw: item.product.priceRaw,
-        weight_kg: item.product.weightKg,
+        price_raw: item.unitPriceRaw,
+        custom_amount_raw: item.customAmountRaw ?? null,
+        weight_kg: item.lineWeightKg / item.quantity,
+        purchase_description: item.purchaseDescription ?? null,
+        source: item.sourceSnapshot,
       })),
       shippingSnapshot: shippingRate,
     });

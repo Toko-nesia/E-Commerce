@@ -8,9 +8,10 @@ import { Footer } from "../components/layout/Footer";
 import { PaymentOptionModal } from "../components/modals/PaymentOptionModal";
 import { AddressModal } from "../components/modals/AddressModal";
 import { EditAddressModal } from "../components/modals/EditAddressModal";
-import { useCart } from "@/contexts/cart-context";
+import { getCartItemKey, getCartItemPrice, getCartItemUnitPrice, useCart } from "@/contexts/cart-context";
 import { useAuth } from "@/contexts/auth-context";
 import { createClient } from "@/lib/supabase/client";
+import { resolveImagePath } from "@/lib/image-paths";
 import { normalizePhoneNumber } from "@/domain/validation";
 import type { Address } from "@/types/database";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
@@ -211,8 +212,13 @@ export default function CheckoutPage() {
     return JSON.stringify({
       addressId: currentAddress.id,
       items: items
-        .map(({ product, qty }) => ({ productId: product.id, quantity: qty }))
-        .sort((a, b) => a.productId - b.productId),
+        .map(({ product, qty, variant, customAmountRaw }) => ({
+          productId: product.id,
+          quantity: qty,
+          variantId: variant?.id ?? null,
+          customAmountRaw: customAmountRaw ?? null,
+        }))
+        .sort((a, b) => a.productId - b.productId || (a.variantId ?? 0) - (b.variantId ?? 0) || (a.customAmountRaw ?? 0) - (b.customAmountRaw ?? 0)),
     });
   }, [currentAddress, items]);
 
@@ -247,9 +253,11 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           addressId: address.id,
-          items: items.map(({ product, qty }) => ({
+          items: items.map(({ product, qty, variant, customAmountRaw }) => ({
             productId: product.id,
             quantity: qty,
+            variantId: variant?.id ?? null,
+            customAmountRaw: customAmountRaw ?? null,
           })),
         }),
       });
@@ -296,8 +304,8 @@ export default function CheckoutPage() {
     return JSON.stringify({
       addressId: selectedAddress,
       items: items
-        .map(({ product, qty }) => ({ id: product.id, qty }))
-        .sort((a, b) => a.id - b.id),
+        .map(({ product, qty, variant, customAmountRaw }) => ({ id: product.id, qty, variantId: variant?.id ?? null, customAmountRaw: customAmountRaw ?? null }))
+        .sort((a, b) => a.id - b.id || (a.variantId ?? 0) - (b.variantId ?? 0) || (a.customAmountRaw ?? 0) - (b.customAmountRaw ?? 0)),
     });
   }, [items, selectedAddress]);
 
@@ -323,13 +331,17 @@ export default function CheckoutPage() {
           idempotencyKey,
           addressId: currentAddress.id,
           note,
-          cartItems: items.map(({ product, qty }) => ({
+          cartItems: items.map(({ product, qty, variant, customAmountRaw }) => ({
             productId: product.id,
             quantity: qty,
+            variantId: variant?.id ?? null,
+            customAmountRaw: customAmountRaw ?? null,
           })),
-          items: items.map(({ product, qty }) => ({
+          items: items.map(({ product, qty, variant, customAmountRaw }) => ({
             productId: product.id,
             quantity: qty,
+            variantId: variant?.id ?? null,
+            customAmountRaw: customAmountRaw ?? null,
           })),
         }),
       });
@@ -525,19 +537,28 @@ export default function CheckoutPage() {
 
           {/* Cart Items */}
           <div className="mt-5 space-y-4">
-            {items.map(({ product, qty }) => (
-              <div key={product.id} className="flex gap-3">
+            {items.map((item) => {
+              const { product, qty, variant } = item;
+              const purchaseDescription = product.purchase_description || product.description;
+              return (
+              <div key={getCartItemKey(item)} className="flex gap-3">
                 <div className="w-[72px] h-[72px] overflow-hidden shrink-0 rounded-md bg-white">
                   { }
-                  <img alt={product.name} className="w-full h-full object-cover" src={product.image} />
+                  <img alt={product.name} className="w-full h-full object-cover" src={resolveImagePath(product.image)} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-[14px] text-black leading-snug line-clamp-2">{product.name}</p>
-                  <p className="text-[13px] text-[#6b6b6b] mt-0.5">{product.price} × {qty}</p>
-                  <p className="text-[13px] font-bold text-[#511e0b] mt-0.5">{formatRp(product.price_raw * qty)}</p>
+                  <p className="text-[13px] text-[#6b6b6b] mt-0.5">
+                    {variant ? `${variant.name} / ` : ""}{getCartItemPrice(item)} x {qty}
+                  </p>
+                  {purchaseDescription && (
+                    <p className="text-[12px] text-[#6b6b6b] mt-0.5 line-clamp-2 break-words">{purchaseDescription}</p>
+                  )}
+                  <p className="text-[13px] font-bold text-[#511e0b] mt-0.5">{formatRp(getCartItemUnitPrice(item) * qty)}</p>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Price Breakdown */}
