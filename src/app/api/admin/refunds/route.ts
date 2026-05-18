@@ -24,7 +24,7 @@ export async function GET() {
         id, order_id, user_id, refund_method, account_number, account_name, payout_provider,
         reason, status, admin_note, refund_amount, initiated_by, rejection_reason, transfer_note, created_at,
         orders ( id, total_price ),
-        profiles ( full_name, email )
+        profiles:profiles!refund_requests_user_id_fkey ( full_name, email )
       `)
       .order("created_at", { ascending: false });
 
