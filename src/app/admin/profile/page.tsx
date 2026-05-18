@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import { Camera, Loader2, CheckCircle, AlertCircle, KeyRound, User, Phone } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { createClient } from "@/lib/supabase/client";
+import { getPasswordIssues } from "@/domain/validation";
+import { PasswordChecklist } from "@/app/components/auth/PasswordChecklist";
 
 export default function AdminProfilePage() {
   const { user } = useAuth();
@@ -100,18 +102,28 @@ export default function AdminProfilePage() {
   // ── Change password ─────────────────────────────────────────────────
   const handleChangePassword = async () => {
     setPasswordMsg(null);
-    if (!newPassword || newPassword.length < 8) {
-      setPasswordMsg({ type: "error", text: "Password must be at least 8 characters." });
-      return;
-    }
+    const issues = getPasswordIssues(newPassword, { email, name: fullName });
     if (newPassword !== confirmPassword) {
-      setPasswordMsg({ type: "error", text: "Password confirmation does not match." });
+      issues.push("Password confirmation does not match.");
+    }
+    if (issues.length > 0) {
+      setPasswordMsg({ type: "error", text: issues.join(" ") });
       return;
     }
+
     setPasswordSaving(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
-      if (error) throw error;
+      const response = await fetch("/api/auth/password", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: newPassword, confirmPassword }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const nextIssues = Array.isArray(data.issues) ? data.issues : [data.error ?? "Failed to update password."];
+        setPasswordMsg({ type: "error", text: nextIssues.join(" ") });
+        return;
+      }
       setNewPassword("");
       setConfirmPassword("");
       setPasswordMsg({ type: "success", text: "Password updated successfully." });
@@ -264,7 +276,7 @@ export default function AdminProfilePage() {
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Minimum 8 characters"
+              placeholder="Minimum 12 characters"
               className="w-full border border-[#d0d0d0] rounded-lg px-4 py-2.5 text-[14px] text-black outline-none focus:border-[#511e0b] transition-colors"
             />
           </div>
@@ -281,6 +293,8 @@ export default function AdminProfilePage() {
               className="w-full border border-[#d0d0d0] rounded-lg px-4 py-2.5 text-[14px] text-black outline-none focus:border-[#511e0b] transition-colors"
             />
           </div>
+
+          <PasswordChecklist password={newPassword} email={email} name={fullName} />
         </div>
 
         {/* Password save status */}

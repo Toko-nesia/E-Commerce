@@ -11,11 +11,26 @@ describe("middleware routing", () => {
       action: "redirect",
       to: "/login?redirect=/order-pending",
     });
+    expect(getRoutingDecision("/reset-password", { authenticated: false })).toEqual({
+      action: "redirect",
+      to: "/login?redirect=/reset-password",
+    });
   });
 
   it("allows the auth callback route so Supabase can exchange codes", () => {
     expect(getRoutingDecision("/auth/callback", { authenticated: false })).toEqual({
       action: "allow",
+    });
+  });
+
+  it("keeps forgot password as an auth route for already signed-in users", () => {
+    expect(getRoutingDecision("/forgot-password", { authenticated: true, role: "user" })).toEqual({
+      action: "redirect",
+      to: "/",
+    });
+    expect(getRoutingDecision("/forgot-password", { authenticated: true, role: "admin" })).toEqual({
+      action: "redirect",
+      to: "/admin",
     });
   });
 

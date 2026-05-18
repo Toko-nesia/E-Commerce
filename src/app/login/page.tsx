@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loginSubmitting, setLoginSubmitting] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
+  const resetSuccess = searchParams.get("reset") === "success";
 
   const handleGoogleLogin = async () => {
     if (googleSubmitting) return;
@@ -79,7 +80,9 @@ export default function LoginPage() {
             <div>
               <div className="flex justify-between">
                 <label className="font-['Manrope',sans-serif] text-[12px] text-[#605850] tracking-[1.1px] uppercase">PASSWORD</label>
-                <span className="font-['Manrope',sans-serif] text-[12px] text-[#a24141] capitalize cursor-pointer">Forgot Password?</span>
+                <Link href="/forgot-password" className="font-['Manrope',sans-serif] text-[12px] text-[#a24141] capitalize no-underline hover:underline">
+                  Forgot Password?
+                </Link>
               </div>
               <input
                 type="password"
@@ -89,6 +92,12 @@ export default function LoginPage() {
                 className="w-full mt-2 bg-[#FDF9F5] border border-[#d8d0c8] rounded-[8px] px-4 py-3 font-['Manrope',sans-serif] text-[14px] text-[#9a9088] placeholder-[rgba(154,144,136,0.5)] outline-none"
               />
             </div>
+
+            {resetSuccess && (
+              <p className="text-[#0f7a43] font-['Manrope',sans-serif] text-[13px] text-center">
+                Your password has been reset. Please log in with your new password.
+              </p>
+            )}
 
             {error && (
               <p className="text-[#a24141] font-['Manrope',sans-serif] text-[13px] text-center">{error}</p>

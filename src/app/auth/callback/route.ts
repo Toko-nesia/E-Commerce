@@ -38,6 +38,10 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL('/login?error=auth', baseUrl))
   }
 
+  if (next === '/reset-password') {
+    return NextResponse.redirect(new URL('/reset-password', baseUrl))
+  }
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('full_name, email, role, created_at')

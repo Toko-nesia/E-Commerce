@@ -7,10 +7,10 @@ export type RoutingDecision =
   | { action: 'redirect'; to: string };
 
 // Routes that require authentication (non-admin)
-const PROTECTED_ROUTES = ['/profile', '/checkout', '/order-success', '/order-pending', '/order-failed'];
+const PROTECTED_ROUTES = ['/profile', '/checkout', '/order-success', '/order-pending', '/order-failed', '/reset-password'];
 
 // Routes that should redirect logged-in users away
-const AUTH_ROUTES = ['/login', '/register', '/complete-data'];
+const AUTH_ROUTES = ['/login', '/register', '/complete-data', '/forgot-password'];
 
 // Routes that are only for regular users (admin should not access)
 const USER_ONLY_ROUTES = ['/', '/shop', '/product', '/cart', '/checkout', '/profile', '/about', '/order-success', '/order-pending', '/order-failed', '/complete-data'];

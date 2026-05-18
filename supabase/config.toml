@@ -240,6 +240,10 @@ sender_name = "env(EMAIL_FROM_NAME)"
 subject = "Your Tokonesia verification code"
 content_path = "./supabase/templates/confirm_signup.html"
 
+[auth.email.template.recovery]
+subject = "Reset your Tokonesia password"
+content_path = "./supabase/templates/recovery.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"

@@ -2,12 +2,13 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { PageWrapper } from "../components/layout/PageWrapper";
-import { User, MapPin, FileText, LogOut, Phone, Plus, MoreVertical, Eye, Edit3, X, Camera, Star, Loader2 } from "lucide-react";
+import { User, MapPin, FileText, LogOut, Phone, Plus, MoreVertical, Eye, Edit3, X, Camera, Star, Loader2, KeyRound, CheckCircle, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { createClient } from "@/lib/supabase/client";
 import { resolveImagePath } from "@/lib/image-paths";
 import { ORDER_STATUS_COLOR, ORDER_STATUS_LABEL } from "@/domain/order-status";
-import { normalizePhoneNumber } from "@/domain/validation";
+import { getPasswordIssues, normalizePhoneNumber } from "@/domain/validation";
+import { PasswordChecklist } from "@/app/components/auth/PasswordChecklist";
 import type { Address, Order } from "@/types/database";
 import Link from "next/link";
 
@@ -27,6 +28,10 @@ export default function ProfilePage() {
   const [profileLoading, setProfileLoading] = useState(isLoading);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMessage, setProfileMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Logout modal
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -116,6 +121,40 @@ export default function ProfilePage() {
       setProfileMessage({ type: "error", text: error instanceof Error ? error.message : "Failed to save profile. Please try again." });
     } finally {
       setProfileSaving(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    setPasswordMessage(null);
+    const issues = getPasswordIssues(newPassword, { email, name: fullName });
+    if (newPassword !== confirmPassword) {
+      issues.push("Password confirmation does not match.");
+    }
+    if (issues.length > 0) {
+      setPasswordMessage({ type: "error", text: issues.join(" ") });
+      return;
+    }
+
+    setPasswordSaving(true);
+    try {
+      const response = await fetch("/api/auth/password", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: newPassword, confirmPassword }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const nextIssues = Array.isArray(data.issues) ? data.issues : [data.error ?? "Failed to update password."];
+        setPasswordMessage({ type: "error", text: nextIssues.join(" ") });
+        return;
+      }
+      setNewPassword("");
+      setConfirmPassword("");
+      setPasswordMessage({ type: "success", text: "Password updated successfully." });
+    } catch {
+      setPasswordMessage({ type: "error", text: "Failed to update password. Please try again." });
+    } finally {
+      setPasswordSaving(false);
     }
   };
 
@@ -406,6 +445,55 @@ export default function ProfilePage() {
                       {profileSaving && <Loader2 size={16} className="animate-spin" />}
                       Save Changes
                     </button>
+                  </div>
+
+                  <div className="mt-10 border-t border-[#e1d7ce] pt-8">
+                    <h3 className="font-bold text-[18px] text-black mb-4 flex items-center gap-2">
+                      <KeyRound size={18} className="text-[#511e0b]" />
+                      Change Password
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div>
+                        <label className="block text-[12px] text-[#6b6b6b] tracking-widest uppercase mb-1.5">New Password</label>
+                        <input
+                          type="password"
+                          value={newPassword}
+                          onChange={(event) => setNewPassword(event.target.value)}
+                          placeholder="Minimum 12 characters"
+                          className="w-full border border-[#b0b0b0] rounded-lg px-4 py-3 text-[14px] text-black outline-none focus:border-[#511e0b] transition-colors"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[12px] text-[#6b6b6b] tracking-widest uppercase mb-1.5">Confirm Password</label>
+                        <input
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(event) => setConfirmPassword(event.target.value)}
+                          placeholder="Repeat the new password"
+                          className="w-full border border-[#b0b0b0] rounded-lg px-4 py-3 text-[14px] text-black outline-none focus:border-[#511e0b] transition-colors"
+                        />
+                      </div>
+                    </div>
+
+                    <PasswordChecklist password={newPassword} email={email} name={fullName} className="mt-3" />
+
+                    {passwordMessage && (
+                      <div className={`mt-4 flex items-start gap-2 p-3 rounded-lg text-[13px] ${passwordMessage.type === "success" ? "bg-green-50 border border-green-200 text-green-700" : "bg-red-50 border border-red-200 text-[#df0000]"}`}>
+                        {passwordMessage.type === "success" ? <CheckCircle size={15} className="mt-0.5 shrink-0" /> : <AlertCircle size={15} className="mt-0.5 shrink-0" />}
+                        <span>{passwordMessage.text}</span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-end mt-5">
+                      <button
+                        onClick={handleChangePassword}
+                        disabled={passwordSaving || !newPassword || !confirmPassword}
+                        className="bg-[#511e0b] text-white rounded-lg px-6 py-2.5 text-[14px] font-bold border-none cursor-pointer hover:bg-[#3d1608] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        {passwordSaving && <Loader2 size={16} className="animate-spin" />}
+                        Change Password
+                      </button>
+                    </div>
                   </div>
                 </>
               )}
