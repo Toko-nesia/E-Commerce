@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { resolveImagePath } from "@/lib/image-paths";
 import { getPasswordIssues } from "@/domain/validation";
@@ -17,12 +16,19 @@ export default function ResetPasswordPage() {
     const value = searchParams.get("email");
     return value ? value.replace(/\s/g, "+").trim().toLowerCase() : "";
   }, [searchParams]);
+  const hasAnyRecoveryParams = Boolean(tokenHash || tokenType || email);
   const hasValidLink = Boolean(tokenHash) && tokenType === "recovery" && /^\S+@\S+\.\S+$/.test(email);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [issues, setIssues] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!hasAnyRecoveryParams) {
+      router.replace("/login");
+    }
+  }, [hasAnyRecoveryParams, router]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -83,12 +89,13 @@ export default function ResetPasswordPage() {
             Use a strong password that you have not used on Tokonesia before.
           </p>
 
-          {!hasValidLink ? (
+          {!hasAnyRecoveryParams ? (
+            <div className="mt-10 flex justify-center text-[#605850]">
+              <LoadingSpinner label="Redirecting..." />
+            </div>
+          ) : !hasValidLink ? (
             <div className="mt-10 rounded-lg border border-red-200 bg-red-50 p-4 text-[14px] text-[#a24141] font-['Manrope',sans-serif]">
-              This reset link is invalid or expired. Please request a new password reset email.
-              <Link href="/forgot-password" className="block mt-3 text-[#511e0b] font-bold no-underline hover:underline">
-                Request a new link
-              </Link>
+              This reset link is invalid or expired. Please return to login and request a new password reset email.
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="mt-10 space-y-5">
