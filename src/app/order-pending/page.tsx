@@ -13,6 +13,7 @@ interface PendingOrderItem {
   quantity: number;
   price: string | null;
   price_raw: number | null;
+  buyer_note?: string | null;
   products?: { name?: string | null; image?: string | null } | Array<{ name?: string | null; image?: string | null }> | null;
 }
 
@@ -252,6 +253,11 @@ export default function OrderPendingPage() {
                         <div className="min-w-0">
                           <p className="text-[13px] font-medium text-black truncate">{product?.name ?? `Product ${item.product_id}`}</p>
                           <p className="text-[12px] text-[#6b6b6b]">Qty {item.quantity}</p>
+                          {item.buyer_note && (
+                            <p className="text-[12px] text-[#6b6b6b] mt-1 break-words">
+                              <span className="font-semibold text-[#511e0b]">Item note:</span> {item.buyer_note}
+                            </p>
+                          )}
                         </div>
                         <p className="text-[13px] font-semibold text-[#511e0b] shrink-0">
                           {formatRp(item.price_raw ? item.price_raw * item.quantity : null)}

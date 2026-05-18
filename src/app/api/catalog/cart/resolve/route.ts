@@ -83,7 +83,13 @@ export async function POST(req: Request) {
       issues.push(`${product.name} quantity was reduced to available stock (${stock}).`);
     }
 
-    return [{ product, variant: variant ?? null, customAmountRaw: item.customAmountRaw ?? null, quantity }];
+    return [{
+      product,
+      variant: variant ?? null,
+      customAmountRaw: item.customAmountRaw ?? null,
+      buyerNote: item.buyerNote ?? "",
+      quantity,
+    }];
   });
 
   return NextResponse.json({ items, issues });

@@ -17,7 +17,8 @@
     "test:watch": "vitest",
     "supabase:bootstrap-assets": "node supabase/scripts/bootstrap-site-assets.mjs",
     "initial-products:collect": "node supabase/scripts/collect-initial-products.mjs",
-    "supabase:bootstrap-products": "node supabase/scripts/bootstrap-initial-products.mjs"
+    "supabase:bootstrap-products": "node supabase/scripts/bootstrap-initial-products.mjs",
+    "supabase:bootstrap-admin": "node supabase/scripts/bootstrap-admin.mjs"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

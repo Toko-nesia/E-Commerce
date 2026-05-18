@@ -12,7 +12,7 @@ function formatRp(amount: number): string {
 }
 
 export default function CartPage() {
-  const { items, updateQty, removeFromCart, totalPrice, totalWeight, canCheckout, resolveCartStock } = useCart();
+  const { items, updateQty, updateItemNote, removeFromCart, totalPrice, totalWeight, canCheckout, resolveCartStock } = useCart();
   const [stockMessages, setStockMessages] = useState<string[]>([]);
 
   const serviceFee = Math.round(totalPrice * 0.01);
@@ -66,11 +66,11 @@ export default function CartPage() {
               {items.map((item) => {
                 const { product, qty, variant } = item;
                 const itemKey = getCartItemKey(item);
-                const purchaseDescription = product.purchase_description || product.description;
+                const isCustomBox = product.pricing_type === "custom_amount" && product.category === "Jastip Box";
                 return (
                   <div
                     key={itemKey}
-                    className="bg-white rounded-xl shadow-sm border border-[#e0e0e0] p-4 flex gap-4 items-center"
+                    className="bg-white rounded-xl shadow-sm border border-[#e0e0e0] p-4 flex flex-col sm:flex-row gap-4 items-start"
                   >
                     <div className="w-[88px] h-[88px] shrink-0 overflow-hidden rounded-lg bg-[#F8F8F8]">
                       <img
@@ -83,13 +83,26 @@ export default function CartPage() {
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-[15px] text-black leading-snug line-clamp-2">{product.name}</p>
                       <p className="text-[13px] text-[#6b6b6b] mt-0.5">{product.category}{variant ? ` / ${variant.name}` : ""}</p>
-                      {purchaseDescription && (
-                        <p className="text-[12px] text-[#6b6b6b] mt-1 line-clamp-2 break-words">{purchaseDescription}</p>
-                      )}
                       <p className="font-bold text-[15px] text-[#511e0b] mt-1">{getCartItemPrice(item)}</p>
+                      <label className="mt-3 block text-[12px] font-semibold text-[#511e0b]" htmlFor={`item-note-${itemKey}`}>
+                        Item note (optional)
+                      </label>
+                      <textarea
+                        id={`item-note-${itemKey}`}
+                        value={item.buyerNote ?? ""}
+                        onChange={(event) => updateItemNote(itemKey, event.target.value)}
+                        maxLength={2000}
+                        rows={3}
+                        placeholder={
+                          isCustomBox
+                            ? "Paste product links, item list, quantities, sizes, colors, flavors, and budget allocation."
+                            : "Add size, color, flavor, or item-specific request details."
+                        }
+                        className="mt-1 w-full resize-y rounded-lg border border-[#d8c8bd] bg-white px-3 py-2 text-[13px] text-black outline-none focus:border-[#511e0b]"
+                      />
                     </div>
 
-                    <div className="flex flex-col items-end gap-3">
+                    <div className="flex flex-row sm:flex-col items-center sm:items-end gap-3 self-end sm:self-start">
                       <div className="flex items-center border border-[#511e0b] rounded-md px-3 h-9 gap-3">
                         <button
                           onClick={() => updateQty(itemKey, qty - 1)}

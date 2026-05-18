@@ -18,7 +18,28 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const service = createServiceClient();
   const selectOrder = () => service
     .from("orders")
-    .select("id, midtrans_order_id, status, total_price, total_price_raw, shipping_cost, service_fee, estimated_delivery, payment_status, snap_token_expires_at, created_at")
+    .select(`
+      id,
+      midtrans_order_id,
+      status,
+      total_price,
+      total_price_raw,
+      shipping_cost,
+      service_fee,
+      estimated_delivery,
+      payment_status,
+      snap_token_expires_at,
+      created_at,
+      order_items(
+        id,
+        product_id,
+        quantity,
+        price,
+        price_raw,
+        buyer_note,
+        products(name, image)
+      )
+    `)
     .eq("id", id)
     .eq("user_id", user.id)
     .maybeSingle();

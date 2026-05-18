@@ -53,8 +53,7 @@ export interface CreateCheckoutOrderInput {
     priceRaw: number;
     price: string;
     customAmountRaw?: number | null;
-    purchaseDescriptionSnapshot?: string | null;
-    sourceSnapshot?: Record<string, unknown>;
+    buyerNote?: string | null;
   }>;
   pricing: CheckoutPricing;
   note: string;
@@ -211,8 +210,7 @@ export async function createCheckoutIntent(
         priceRaw: item.unitPriceRaw,
         price: item.price,
         customAmountRaw: item.customAmountRaw ?? null,
-        purchaseDescriptionSnapshot: item.purchaseDescription ?? null,
-        sourceSnapshot: item.sourceSnapshot,
+        buyerNote: item.buyerNote ?? null,
       })),
       pricing,
       note: input.note,
@@ -225,8 +223,7 @@ export async function createCheckoutIntent(
         price_raw: item.unitPriceRaw,
         custom_amount_raw: item.customAmountRaw ?? null,
         weight_kg: item.lineWeightKg / item.quantity,
-        purchase_description: item.purchaseDescription ?? null,
-        source: item.sourceSnapshot,
+        buyer_note: item.buyerNote ?? null,
       })),
       shippingSnapshot: shippingRate,
     });

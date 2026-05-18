@@ -163,7 +163,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         ["Condition", "New"],
       ];
   const descriptionText = product.description || "A curated product from Indonesia.";
-  const purchaseDescription = product.purchase_description || product.description || "";
+  const purchaseInstructions = product.purchase_instructions
+    ? product.purchase_instructions.split(/\r?\n/).map((step) => step.trim()).filter(Boolean)
+    : [];
   const imageSrc = resolveImagePath(product.image);
   const priceJpy = formatJpyFromIdr(activePriceRaw, exchangeRate);
 
@@ -197,11 +199,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         stock: activeStock,
         weight_kg: product.weight_kg,
         description: product.description,
-        purchase_description: product.purchase_description,
-        source_provider: product.source_provider,
-        source_product_id: product.source_product_id,
-        source_url: product.source_url,
-        source_query: product.source_query,
+        purchase_instructions: product.purchase_instructions,
         pricing_type: pricingType,
         min_price_raw: product.min_price_raw,
         max_price_raw: product.max_price_raw,
@@ -226,7 +224,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
         <div className="flex flex-col md:flex-row gap-8 md:gap-12">
           <div className="w-full md:w-[380px] md:h-[380px] h-[280px] overflow-hidden shrink-0 rounded-lg bg-[#f8f8f8]">
-            { }
             <img alt={product.name} className="w-full h-full object-cover" src={imageSrc} />
           </div>
 
@@ -355,21 +352,19 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           <h2 className="font-bold text-[19px] text-[#511e0b]">Product Description</h2>
           <div className="text-[14px] text-gray-700 mt-4 leading-relaxed">
             <p>{descriptionText}</p>
-            {purchaseDescription && purchaseDescription !== descriptionText && (
-              <p className="mt-3">{purchaseDescription}</p>
-            )}
-            {product.source_url && (
-              <a
-                href={product.source_url}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-block mt-3 text-[#511e0b] font-bold no-underline hover:underline break-all"
-              >
-                Purchase source
-              </a>
-            )}
           </div>
         </div>
+
+        {purchaseInstructions.length > 0 && (
+          <div className="mt-10">
+            <h2 className="font-bold text-[19px] text-[#511e0b]">How to order</h2>
+            <ol className="mt-4 list-decimal pl-5 space-y-2 text-[14px] text-gray-700 leading-relaxed">
+              {purchaseInstructions.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+          </div>
+        )}
 
         <div className="mt-10 border-t border-[#d5d5d5] pt-8">
           <h2 className="font-bold text-[19px] text-[#511e0b]">Shipping Details</h2>

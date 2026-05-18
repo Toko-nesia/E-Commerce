@@ -76,12 +76,21 @@ Key backend entry points:
 
 ## Supabase
 
-Live Supabase remains the source of truth. The root `supabase/` folder mirrors the live project with local config and official migrations only.
+Live Supabase remains the operational source of truth. The root `supabase/` folder contains a squashed fresh-install baseline migration plus local config and bootstrap assets. Historical `ALTER` migrations are intentionally not kept active, so a new environment starts from the final schema directly.
 
 ```bash
 supabase start
 supabase db reset --local
 npm run supabase:bootstrap-assets
+npm run supabase:bootstrap-products
+npm run supabase:bootstrap-admin
+```
+
+For admin bootstrap, put `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and optionally `ADMIN_NAME` in your local `.env`. The script creates a confirmed Supabase Auth user with `profiles.role = "admin"` by using `SUPABASE_SERVICE_ROLE_KEY`; no admin password or auth user is stored in SQL migrations.
+
+Before pushing schema changes to live, verify the migration plan:
+
+```bash
 supabase db push --linked --dry-run
 ```
 
@@ -132,10 +141,10 @@ Initial product bootstrap:
 
 - Curated starter catalog data lives in `supabase/bootstrap/initial-products/manifest.json`.
 - Starter product images live in `supabase/storage/product-images/initial/**`; they are uploaded to the `product-images` bucket by the bootstrap script.
-- Run `npm run initial-products:collect` only when intentionally refreshing the starter catalog from the source APIs. This fetches Indogrosir and Zalora data, normalizes it, downloads images, and rewrites the manifest.
+- Run `npm run initial-products:collect` only when intentionally refreshing the starter catalog. The collector may read external product feeds, but the committed manifest is normalized as Tokonesia catalog data and does not store original links or feed-specific metadata.
 - Run `npm run supabase:bootstrap-products` after migrations on a fresh environment to upsert starter categories, products, variants, and product images idempotently.
-- `supabase:bootstrap-products` does not call external marketplace APIs; it uses the committed manifest and image bundle, so new environments can be reproduced without refetching product sources.
-- Product rows may include `purchase_description`, source provider metadata, `bootstrap_key`, and `pricing_type`. Custom amount products such as `Custom Box Jastip 21kg` validate their allowed budget range server-side during checkout.
+- `supabase:bootstrap-products` does not call external marketplace APIs; it uses the committed manifest and image bundle, so new environments can be reproduced without refetching remote catalog data.
+- Product rows may include `purchase_instructions`, opaque `bootstrap_key`, and `pricing_type`. Custom amount products such as `Custom Box Jastip 21kg` validate their allowed budget range server-side during checkout. Buyer-specific requests are stored as per-item notes in the cart and order items, not as product descriptions.
 
 Do not commit Supabase CLI runtime files such as `.temp`, `.branches`, `snippets`, backups, dumps, or production data exports. Migration files must not contain live operational data such as products, orders, customers, exchange-rate rows, or store settings values.
 

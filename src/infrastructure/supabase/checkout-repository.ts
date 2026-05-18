@@ -36,14 +36,9 @@ function toProduct(row: Record<string, any>): CheckoutProduct {
     weightKg: Number(row.weight_kg ?? 0),
     stock: Number(row.stock ?? 0),
     description: row.description ?? null,
-    purchaseDescription: row.purchase_description ?? null,
     pricingType: row.pricing_type ?? "fixed",
     minPriceRaw: row.min_price_raw == null ? null : Number(row.min_price_raw),
     maxPriceRaw: row.max_price_raw == null ? null : Number(row.max_price_raw),
-    sourceProvider: row.source_provider ?? null,
-    sourceProductId: row.source_product_id ?? null,
-    sourceUrl: row.source_url ?? null,
-    sourceQuery: row.source_query ?? null,
     variants: [],
   };
 }
@@ -103,7 +98,7 @@ export class SupabaseCheckoutRepository implements CheckoutRepository {
   async getProductsByIds(productIds: number[]): Promise<CheckoutProduct[]> {
     const { data, error } = await this.supabase
       .from("products")
-      .select("id, name, category, price, price_raw, weight_kg, stock, description, purchase_description, pricing_type, min_price_raw, max_price_raw, source_provider, source_product_id, source_url, source_query")
+      .select("id, name, category, price, price_raw, weight_kg, stock, description, pricing_type, min_price_raw, max_price_raw")
       .in("id", productIds);
 
     if (error) {
@@ -152,8 +147,7 @@ export class SupabaseCheckoutRepository implements CheckoutRepository {
       price_raw: item.priceRaw,
       price: item.price,
       custom_amount_raw: item.customAmountRaw ?? null,
-      purchase_description_snapshot: item.purchaseDescriptionSnapshot ?? null,
-      source_snapshot: item.sourceSnapshot ?? {},
+      buyer_note: item.buyerNote ?? null,
     }));
 
     const { data, error } = await (this.supabase as any).rpc("create_checkout_order_with_stock_reservation", {

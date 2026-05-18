@@ -13,6 +13,7 @@ export interface CartItem {
   qty: number;
   variant?: ProductVariant | null;
   customAmountRaw?: number | null;
+  buyerNote?: string | null;
 }
 
 interface CartContextType {
@@ -24,6 +25,7 @@ interface CartContextType {
   addToCart: (product: Product, qty?: number, options?: CartAddOptions) => CartActionResult;
   removeFromCart: (itemKey: number | string) => void;
   updateQty: (itemKey: number | string, qty: number) => CartActionResult;
+  updateItemNote: (itemKey: number | string, note: string) => void;
   clearCart: () => void;
   resolveCartStock: () => Promise<string[]>;
 }
@@ -38,6 +40,7 @@ export interface CartActionResult {
 export interface CartAddOptions {
   variant?: ProductVariant | null;
   customAmountRaw?: number | null;
+  buyerNote?: string | null;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -87,6 +90,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       qty: 0,
       variant: options.variant ?? null,
       customAmountRaw: options.customAmountRaw ?? null,
+      buyerNote: options.buyerNote ?? null,
     };
     const itemKey = getCartItemKey(nextItem);
     const existing = itemsRef.current.find((item) => getCartItemKey(item) === itemKey);
@@ -117,12 +121,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 product: { ...item.product, ...product, stock },
                 variant: options.variant ?? item.variant ?? null,
                 customAmountRaw: options.customAmountRaw ?? item.customAmountRaw ?? null,
+                buyerNote: item.buyerNote ?? options.buyerNote ?? null,
                 qty: finalQty,
               }
             : item,
         );
       }
-      return [...prev, { product: { ...product, stock }, variant: options.variant ?? null, customAmountRaw: options.customAmountRaw ?? null, qty: finalQty }];
+      return [...prev, {
+        product: { ...product, stock },
+        variant: options.variant ?? null,
+        customAmountRaw: options.customAmountRaw ?? null,
+        buyerNote: options.buyerNote ?? null,
+        qty: finalQty,
+      }];
     });
     return result;
   }, []);
@@ -162,6 +173,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return result;
   }, []);
 
+  const updateItemNote = useCallback((itemKey: number | string, note: string) => {
+    const nextNote = note.slice(0, 2000);
+    setItems((prev) =>
+      prev.map((item) => {
+        const matches = typeof itemKey === "number" ? item.product.id === itemKey : getCartItemKey(item) === itemKey;
+        return matches ? { ...item, buyerNote: nextNote } : item;
+      }),
+    );
+  }, []);
+
   const clearCart = useCallback(() => {
     setItems([]);
   }, []);
@@ -174,11 +195,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       headers: { "Content-Type": "application/json" },
       cache: "no-store",
       body: JSON.stringify({
-        items: currentItems.map(({ product, qty, variant, customAmountRaw }) => ({
+        items: currentItems.map(({ product, qty, variant, customAmountRaw, buyerNote }) => ({
           productId: product.id,
           quantity: qty,
           variantId: variant?.id ?? null,
           customAmountRaw: customAmountRaw ?? null,
+          buyerNote: buyerNote ?? "",
         })),
       }),
     });
@@ -186,11 +208,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (!res.ok) {
       throw new Error(data.error ?? "Failed to refresh cart stock.");
     }
-    setItems((data.items ?? []).map((item: { product: Product; quantity: number; variant?: ProductVariant | null; customAmountRaw?: number | null }) => ({
+    setItems((data.items ?? []).map((item: { product: Product; quantity: number; variant?: ProductVariant | null; customAmountRaw?: number | null; buyerNote?: string | null }) => ({
       product: item.product,
       qty: item.quantity,
       variant: item.variant ?? null,
       customAmountRaw: item.customAmountRaw ?? null,
+      buyerNote: item.buyerNote ?? "",
     })));
     return Array.isArray(data.issues) ? data.issues : [];
   }, []);
@@ -208,7 +231,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{ items, totalItems, totalPrice, totalWeight, canCheckout, addToCart, removeFromCart, updateQty, clearCart, resolveCartStock }}
+      value={{ items, totalItems, totalPrice, totalWeight, canCheckout, addToCart, removeFromCart, updateQty, updateItemNote, clearCart, resolveCartStock }}
     >
       {children}
     </CartContext.Provider>

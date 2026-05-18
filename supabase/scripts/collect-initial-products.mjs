@@ -4,9 +4,9 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
   customBoxProduct,
+  neutralImageObjectPath,
   normalizeIndogrosirPayload,
   normalizeZaloraPayload,
-  slugify,
 } from "./initial-products-normalize.mjs";
 import { repoRoot } from "./shared-env.mjs";
 
@@ -14,7 +14,7 @@ const BOOTSTRAP_ROOT = path.join(repoRoot, "supabase", "bootstrap", "initial-pro
 const IMAGE_ROOT = path.join(repoRoot, "supabase", "storage", "product-images", "initial");
 const MANIFEST_PATH = path.join(BOOTSTRAP_ROOT, "manifest.json");
 const TEMP_BOX_PATH = path.join(repoRoot, "temp", "box.jpg");
-const BOOTSTRAP_BOX_PATH = path.join(IMAGE_ROOT, "custom-box-jastip-21kg.jpg");
+const LEGACY_BOOTSTRAP_BOX_PATH = path.join(IMAGE_ROOT, "custom-box-jastip-21kg.jpg");
 
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 const execFileAsync = promisify(execFile);
@@ -95,30 +95,41 @@ function imageExtension(contentType, url) {
 }
 
 async function downloadImage(product) {
-  if (!product.image_source_url) return product;
-  const response = await fetch(product.image_source_url, {
+  const sourceUrl = product._image_download_url;
+  if (!sourceUrl) {
+    const { _image_download_url: _unused, ...cleanProduct } = product;
+    return cleanProduct;
+  }
+  const response = await fetch(sourceUrl, {
     headers: { "User-Agent": USER_AGENT, Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8" },
   });
   if (!response.ok) {
     throw new Error(`Image failed for ${product.bootstrap_key}: ${response.status}`);
   }
   const bytes = Buffer.from(await response.arrayBuffer());
-  const objectPath = `initial/${slugify(product.bootstrap_key)}${imageExtension(response.headers.get("content-type"), product.image_source_url)}`;
+  const objectPath = neutralImageObjectPath(product.bootstrap_key, imageExtension(response.headers.get("content-type"), sourceUrl));
   await fs.writeFile(path.join(repoRoot, "supabase", "storage", "product-images", objectPath), bytes);
-  return { ...product, image_object_path: objectPath };
+  const { _image_download_url: _unused, ...cleanProduct } = product;
+  return { ...cleanProduct, image_object_path: objectPath };
 }
 
 async function main() {
   await fs.mkdir(IMAGE_ROOT, { recursive: true });
 
-  const products = [customBoxProduct()];
+  const customBox = customBoxProduct();
+  const products = [customBox];
+  const bootstrapBoxPath = path.join(IMAGE_ROOT, customBox.image_object_path.replace(/^initial\//, ""));
   try {
-    await fs.copyFile(TEMP_BOX_PATH, BOOTSTRAP_BOX_PATH);
+    await fs.copyFile(TEMP_BOX_PATH, bootstrapBoxPath);
   } catch (error) {
     try {
-      await fs.access(BOOTSTRAP_BOX_PATH);
+      await fs.copyFile(LEGACY_BOOTSTRAP_BOX_PATH, bootstrapBoxPath);
     } catch {
-      throw new Error(`Custom Box image is missing. Expected ${TEMP_BOX_PATH} or ${BOOTSTRAP_BOX_PATH}.`);
+      try {
+        await fs.access(bootstrapBoxPath);
+      } catch {
+        throw new Error(`Custom Box image is missing. Expected ${TEMP_BOX_PATH}, ${LEGACY_BOOTSTRAP_BOX_PATH}, or ${bootstrapBoxPath}.`);
+      }
     }
   }
 
@@ -126,8 +137,8 @@ async function main() {
     console.log(`fetching ${source.provider}:${source.query}`);
     const payload = await fetchJson(source.provider, source.query);
     const normalized = source.provider === "indogrosir"
-      ? normalizeIndogrosirPayload(payload, { query: source.query })
-      : normalizeZaloraPayload(payload, { query: source.query });
+      ? normalizeIndogrosirPayload(payload, { query: source.query, includeDownloadUrl: true })
+      : normalizeZaloraPayload(payload, { query: source.query, includeDownloadUrl: true });
     products.push(...normalized);
   }
 

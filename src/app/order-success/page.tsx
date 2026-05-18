@@ -18,6 +18,15 @@ interface OrderResult {
   total_price: string | null;
   estimated_delivery: string | null;
   payment_status: string;
+  order_items?: Array<{
+    id: number;
+    product_id: number | null;
+    quantity: number;
+    price: string | null;
+    price_raw: number | null;
+    buyer_note?: string | null;
+    products?: { name?: string | null; image?: string | null } | Array<{ name?: string | null; image?: string | null }> | null;
+  }>;
 }
 
 export default function OrderSuccessPage() {
@@ -211,6 +220,23 @@ export default function OrderSuccessPage() {
                 <p className="text-[11px] text-[#6b6b6b] uppercase tracking-wider mb-2">Payment</p>
                 <p className="text-[13px] text-[#6b6b6b]">Payment status: <span className="font-semibold">{paymentStatusLabel}</span></p>
               </div>
+
+              {order.order_items?.some((item) => item.buyer_note) && (
+                <div className="bg-[#f8f8f8] rounded-xl p-4 text-left mb-6">
+                  <p className="text-[11px] text-[#6b6b6b] uppercase tracking-wider mb-2">Item notes</p>
+                  <div className="space-y-3">
+                    {order.order_items.filter((item) => item.buyer_note).map((item) => {
+                      const product = Array.isArray(item.products) ? item.products[0] : item.products;
+                      return (
+                        <div key={item.id} className="min-w-0">
+                          <p className="text-[13px] font-semibold text-black truncate">{product?.name ?? `Product ${item.product_id}`}</p>
+                          <p className="text-[12px] text-[#6b6b6b] break-words">{item.buyer_note}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </>
           )}
 

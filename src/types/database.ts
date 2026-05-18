@@ -18,13 +18,8 @@ export interface Product {
   image: string;
   img_style?: string | null;
   description?: string | null;
-  purchase_description?: string | null;
+  purchase_instructions?: string | null;
   specifications?: Record<string, string> | null;
-  source_provider?: string | null;
-  source_product_id?: string | null;
-  source_url?: string | null;
-  source_query?: string | null;
-  source_metadata?: Record<string, unknown> | null;
   bootstrap_key?: string | null;
   pricing_type?: ProductPricingType | null;
   min_price_raw?: number | null;
@@ -46,7 +41,6 @@ export interface ProductVariant {
   price_raw: number;
   stock: number;
   weight_kg?: number | null;
-  source_variant_id?: string | null;
   metadata?: Record<string, unknown> | null;
   sort_order?: number;
   created_at?: string;
@@ -141,8 +135,7 @@ export interface OrderItem {
   price: string | null;
   price_raw?: number;
   custom_amount_raw?: number | null;
-  purchase_description_snapshot?: string | null;
-  source_snapshot?: unknown;
+  buyer_note?: string | null;
   product?: { name?: string | null; image?: string | null } | null;
 }
 

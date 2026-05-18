@@ -117,6 +117,7 @@ export default function OrderDetailPage() {
               id,
               quantity,
               price,
+              buyer_note,
               product:products (
                 name,
                 image
@@ -397,7 +398,7 @@ export default function OrderDetailPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <FileText size={18} className="text-[#511e0b]" />
-                          <h3 className="font-bold text-[16px] text-[#3a302a]">Customer Note</h3>
+                          <h3 className="font-bold text-[16px] text-[#3a302a]">Order Note</h3>
                         </div>
                         <p className="text-[14px] text-[#6b6b6b] italic">&quot;{order.note}&quot;</p>
                       </div>
@@ -430,6 +431,11 @@ export default function OrderDetailPage() {
                     <div className="flex-1">
                       <p className="font-bold text-[14px] text-[#3a302a] line-clamp-2">{item.product?.name}</p>
                       <p className="text-[13px] text-[#6b6b6b] mt-1">{item.quantity} x {item.price}</p>
+                      {item.buyer_note && (
+                        <p className="text-[12px] text-[#6b6b6b] mt-2 break-words">
+                          <span className="font-semibold text-[#511e0b]">Item note:</span> {item.buyer_note}
+                        </p>
+                      )}
                     </div>
                     <div className="font-bold text-[15px] text-[#511e0b]">
                       {item.price}

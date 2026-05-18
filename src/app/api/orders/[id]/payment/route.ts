@@ -38,6 +38,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         quantity,
         price,
         price_raw,
+        buyer_note,
         products(name, image)
       )
     `)

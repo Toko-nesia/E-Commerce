@@ -87,7 +87,7 @@ const input = {
   idempotencyKey: "checkout-key",
   addressId: "addr-1",
   note: "Careful packing",
-  items: [{ productId: 1, quantity: 1 }],
+  items: [{ productId: 1, quantity: 1, buyerNote: "Grind medium, please." }],
 };
 
 describe("createCheckoutIntent", () => {
@@ -176,6 +176,18 @@ describe("createCheckoutIntent", () => {
           serviceFee: 1_000,
           grandTotal: 126_000,
         }),
+        items: [
+          expect.objectContaining({
+            productId: 1,
+            buyerNote: "Grind medium, please.",
+          }),
+        ],
+        cartSnapshot: [
+          expect.objectContaining({
+            product_id: 1,
+            buyer_note: "Grind medium, please.",
+          }),
+        ],
       }),
     );
     expect(deps.paymentGateway.createSnapTransaction).toHaveBeenCalledWith(

@@ -49,7 +49,7 @@ function createIdempotencyKey(): string {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, totalPrice, canCheckout, clearCart, resolveCartStock } = useCart();
+  const { items, totalPrice, canCheckout, clearCart, resolveCartStock, updateItemNote } = useCart();
   const { user } = useAuth();
 
   const [paymentModal, setPaymentModal] = useState(false);
@@ -304,7 +304,13 @@ export default function CheckoutPage() {
     return JSON.stringify({
       addressId: selectedAddress,
       items: items
-        .map(({ product, qty, variant, customAmountRaw }) => ({ id: product.id, qty, variantId: variant?.id ?? null, customAmountRaw: customAmountRaw ?? null }))
+        .map(({ product, qty, variant, customAmountRaw, buyerNote }) => ({
+          id: product.id,
+          qty,
+          variantId: variant?.id ?? null,
+          customAmountRaw: customAmountRaw ?? null,
+          buyerNote: buyerNote ?? "",
+        }))
         .sort((a, b) => a.id - b.id || (a.variantId ?? 0) - (b.variantId ?? 0) || (a.customAmountRaw ?? 0) - (b.customAmountRaw ?? 0)),
     });
   }, [items, selectedAddress]);
@@ -331,17 +337,19 @@ export default function CheckoutPage() {
           idempotencyKey,
           addressId: currentAddress.id,
           note,
-          cartItems: items.map(({ product, qty, variant, customAmountRaw }) => ({
+          cartItems: items.map(({ product, qty, variant, customAmountRaw, buyerNote }) => ({
             productId: product.id,
             quantity: qty,
             variantId: variant?.id ?? null,
             customAmountRaw: customAmountRaw ?? null,
+            buyerNote: buyerNote ?? "",
           })),
-          items: items.map(({ product, qty, variant, customAmountRaw }) => ({
+          items: items.map(({ product, qty, variant, customAmountRaw, buyerNote }) => ({
             productId: product.id,
             quantity: qty,
             variantId: variant?.id ?? null,
             customAmountRaw: customAmountRaw ?? null,
+            buyerNote: buyerNote ?? "",
           })),
         }),
       });
@@ -519,12 +527,12 @@ export default function CheckoutPage() {
           </div>
 
           {/* Note */}
-          <h2 className="font-bold text-[22px] text-[#511e0b] mt-8">Note</h2>
+          <h2 className="font-bold text-[22px] text-[#511e0b] mt-8">Order note (optional)</h2>
           <div className="border border-[#511e0b] rounded-lg p-4 mt-3 flex items-center bg-white">
             <input
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="(Optional) Add a note for your order"
+              placeholder="Add a general note for this order."
               className="text-[14px] text-[#6b6b6b] flex-1 bg-transparent border-none outline-none placeholder:text-[#999999]"
             />
             <Edit3 size={18} className="text-[#6b6b6b] shrink-0 ml-2" />
@@ -539,11 +547,11 @@ export default function CheckoutPage() {
           <div className="mt-5 space-y-4">
             {items.map((item) => {
               const { product, qty, variant } = item;
-              const purchaseDescription = product.purchase_description || product.description;
+              const itemKey = getCartItemKey(item);
+              const isCustomBox = product.pricing_type === "custom_amount" && product.category === "Jastip Box";
               return (
-              <div key={getCartItemKey(item)} className="flex gap-3">
+              <div key={itemKey} className="flex gap-3">
                 <div className="w-[72px] h-[72px] overflow-hidden shrink-0 rounded-md bg-white">
-                  { }
                   <img alt={product.name} className="w-full h-full object-cover" src={resolveImagePath(product.image)} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -551,10 +559,23 @@ export default function CheckoutPage() {
                   <p className="text-[13px] text-[#6b6b6b] mt-0.5">
                     {variant ? `${variant.name} / ` : ""}{getCartItemPrice(item)} x {qty}
                   </p>
-                  {purchaseDescription && (
-                    <p className="text-[12px] text-[#6b6b6b] mt-0.5 line-clamp-2 break-words">{purchaseDescription}</p>
-                  )}
                   <p className="text-[13px] font-bold text-[#511e0b] mt-0.5">{formatRp(getCartItemUnitPrice(item) * qty)}</p>
+                  <label className="mt-2 block text-[12px] font-semibold text-[#511e0b]" htmlFor={`checkout-item-note-${itemKey}`}>
+                    Item note (optional)
+                  </label>
+                  <textarea
+                    id={`checkout-item-note-${itemKey}`}
+                    value={item.buyerNote ?? ""}
+                    onChange={(event) => updateItemNote(itemKey, event.target.value)}
+                    maxLength={2000}
+                    rows={2}
+                    placeholder={
+                      isCustomBox
+                        ? "Paste product links, item list, quantities, sizes, colors, flavors, and budget allocation."
+                        : "Add size, color, flavor, or item-specific request details."
+                    }
+                    className="mt-1 w-full resize-y rounded-lg border border-[#d8c8bd] bg-white px-3 py-2 text-[12px] text-black outline-none focus:border-[#511e0b]"
+                  />
                 </div>
               </div>
               );

@@ -39,7 +39,6 @@ const products: CheckoutProduct[] = [
     pricingType: "custom_amount",
     minPriceRaw: 500_000,
     maxPriceRaw: 10_000_000,
-    purchaseDescription: "Share your shopping request links and budget in the checkout note.",
   },
   {
     id: 4,
@@ -82,9 +81,31 @@ describe("checkout domain", () => {
         { productId: 2, quantity: 3 },
       ]),
     ).toEqual([
-      { productId: 1, variantId: null, customAmountRaw: null, quantity: 2 },
-      { productId: 2, variantId: null, customAmountRaw: null, quantity: 4 },
+      { productId: 1, variantId: null, customAmountRaw: null, buyerNote: null, quantity: 2 },
+      { productId: 2, variantId: null, customAmountRaw: null, buyerNote: null, quantity: 4 },
     ]);
+  });
+
+  it("preserves buyer item notes and rejects conflicting duplicate notes", () => {
+    expect(
+      normalizeCheckoutItems([
+        { productId: 1, quantity: 1, buyerNote: "  Medium roast only  " },
+        { productId: 1, quantity: 1, buyerNote: "Medium roast only" },
+      ]),
+    ).toEqual([
+      { productId: 1, variantId: null, customAmountRaw: null, buyerNote: "Medium roast only", quantity: 2 },
+    ]);
+
+    expect(() =>
+      normalizeCheckoutItems([
+        { productId: 1, quantity: 1, buyerNote: "Size M" },
+        { productId: 1, quantity: 1, buyerNote: "Size L" },
+      ]),
+    ).toThrow("conflicting notes");
+
+    expect(() =>
+      normalizeCheckoutItems([{ productId: 1, quantity: 1, buyerNote: "x".repeat(2001) }]),
+    ).toThrow("Item note must be 2000 characters or less.");
   });
 
   it("keeps variant and custom amount selections as separate cart lines", () => {
@@ -97,10 +118,10 @@ describe("checkout domain", () => {
         { productId: 3, customAmountRaw: 500_000, quantity: 2 },
       ]),
     ).toEqual([
-      { productId: 3, variantId: null, customAmountRaw: 500_000, quantity: 3 },
-      { productId: 3, variantId: null, customAmountRaw: 750_000, quantity: 1 },
-      { productId: 4, variantId: 41, customAmountRaw: null, quantity: 1 },
-      { productId: 4, variantId: 42, customAmountRaw: null, quantity: 1 },
+      { productId: 3, variantId: null, customAmountRaw: 500_000, buyerNote: null, quantity: 3 },
+      { productId: 3, variantId: null, customAmountRaw: 750_000, buyerNote: null, quantity: 1 },
+      { productId: 4, variantId: 41, customAmountRaw: null, buyerNote: null, quantity: 1 },
+      { productId: 4, variantId: 42, customAmountRaw: null, buyerNote: null, quantity: 1 },
     ]);
   });
 
@@ -138,7 +159,6 @@ describe("checkout domain", () => {
       lineTotal: 750_000,
       lineWeightKg: 21,
       customAmountRaw: 750_000,
-      purchaseDescription: "Share your shopping request links and budget in the checkout note.",
     });
     expect(() => priceCheckoutItems([{ productId: 3, customAmountRaw: 499_999, quantity: 1 }], products)).toThrow(
       "budget must be between Rp500.000 and Rp10.000.000",

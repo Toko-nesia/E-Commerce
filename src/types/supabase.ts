@@ -259,6 +259,7 @@ export type Database = {
       }
       order_items: {
         Row: {
+          buyer_note: string | null
           created_at: string
           custom_amount_raw: number | null
           id: number
@@ -267,11 +268,10 @@ export type Database = {
           price_raw: number
           product_id: number
           product_variant_id: number | null
-          purchase_description_snapshot: string | null
           quantity: number
-          source_snapshot: Json
         }
         Insert: {
+          buyer_note?: string | null
           created_at?: string
           custom_amount_raw?: number | null
           id?: never
@@ -280,11 +280,10 @@ export type Database = {
           price_raw: number
           product_id: number
           product_variant_id?: number | null
-          purchase_description_snapshot?: string | null
           quantity: number
-          source_snapshot?: Json
         }
         Update: {
+          buyer_note?: string | null
           created_at?: string
           custom_amount_raw?: number | null
           id?: never
@@ -293,9 +292,7 @@ export type Database = {
           price_raw?: number
           product_id?: number
           product_variant_id?: number | null
-          purchase_description_snapshot?: string | null
           quantity?: number
-          source_snapshot?: Json
         }
         Relationships: [
           {
@@ -508,7 +505,6 @@ export type Database = {
           product_id: number
           sku: string | null
           sort_order: number
-          source_variant_id: string | null
           stock: number
           updated_at: string
           weight_kg: number | null
@@ -523,7 +519,6 @@ export type Database = {
           product_id: number
           sku?: string | null
           sort_order?: number
-          source_variant_id?: string | null
           stock?: number
           updated_at?: string
           weight_kg?: number | null
@@ -538,7 +533,6 @@ export type Database = {
           product_id?: number
           sku?: string | null
           sort_order?: number
-          source_variant_id?: string | null
           stock?: number
           updated_at?: string
           weight_kg?: number | null
@@ -571,12 +565,7 @@ export type Database = {
           price: string
           price_raw: number
           pricing_type: string
-          purchase_description: string | null
-          source_metadata: Json
-          source_product_id: string | null
-          source_provider: string | null
-          source_query: string | null
-          source_url: string | null
+          purchase_instructions: string | null
           specifications: Json | null
           stock: number
           updated_at: string
@@ -599,12 +588,7 @@ export type Database = {
           price: string
           price_raw: number
           pricing_type?: string
-          purchase_description?: string | null
-          source_metadata?: Json
-          source_product_id?: string | null
-          source_provider?: string | null
-          source_query?: string | null
-          source_url?: string | null
+          purchase_instructions?: string | null
           specifications?: Json | null
           stock?: number
           updated_at?: string
@@ -627,12 +611,7 @@ export type Database = {
           price?: string
           price_raw?: number
           pricing_type?: string
-          purchase_description?: string | null
-          source_metadata?: Json
-          source_product_id?: string | null
-          source_provider?: string | null
-          source_query?: string | null
-          source_url?: string | null
+          purchase_instructions?: string | null
           specifications?: Json | null
           stock?: number
           updated_at?: string
@@ -871,12 +850,7 @@ export type Database = {
           price: string
           price_raw: number
           pricing_type: string
-          purchase_description: string | null
-          source_metadata: Json
-          source_product_id: string | null
-          source_provider: string | null
-          source_query: string | null
-          source_url: string | null
+          purchase_instructions: string | null
           specifications: Json | null
           stock: number
           updated_at: string

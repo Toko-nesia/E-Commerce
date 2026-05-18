@@ -7,6 +7,7 @@ export const cartResolveRequestSchema = z.object({
     quantity: positiveQuantitySchema,
     variantId: z.coerce.number().int().positive().nullable().optional(),
     customAmountRaw: z.coerce.number().int().positive().nullable().optional(),
+    buyerNote: z.string().max(2000).nullable().optional(),
   })).max(100),
 });
 

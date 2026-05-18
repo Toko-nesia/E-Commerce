@@ -20,7 +20,7 @@ interface OrderRow {
   tracking_number?: string | null;
   cancel_reason?: string | null;
   profiles: { full_name: string | null; email: string | null } | null;
-  order_items: Array<{ quantity: number; products: { name: string } | null }>;
+  order_items: Array<{ quantity: number; buyer_note?: string | null; products: { name: string } | null }>;
 }
 
 const STATUS_OPTIONS = [
@@ -59,7 +59,7 @@ export default function OrdersPage() {
       const supabase = createClient();
       let query = supabase
         .from("orders")
-        .select("id, created_at, status, total_price, tracking_number, cancel_reason, profiles(full_name, email), order_items(quantity, products(name))")
+        .select("id, created_at, status, total_price, tracking_number, cancel_reason, profiles(full_name, email), order_items(quantity, buyer_note, products(name))")
         .order("created_at", { ascending: false })
         .range(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE);
 
@@ -216,9 +216,26 @@ export default function OrdersPage() {
               <span className="text-[#6b6b6b]">Order No.</span><span className="font-medium">#{selectedOrder.id.slice(0, 8).toUpperCase()}</span>
               <span className="text-[#6b6b6b]">Date</span><span>{formatDate(selectedOrder.created_at)}</span>
               <span className="text-[#6b6b6b]">Customer</span><span>{selectedOrder.profiles?.full_name ?? selectedOrder.profiles?.email ?? "-"}</span>
-              <span className="text-[#6b6b6b]">Product</span><span>{selectedOrder.order_items?.[0]?.products?.name ?? "-"}</span>
-              <span className="text-[#6b6b6b]">Qty</span><span>{selectedOrder.order_items?.[0]?.quantity ?? 0}</span>
               <span className="text-[#6b6b6b]">Total</span><span className="font-medium">{selectedOrder.total_price}</span>
+            </div>
+
+            <div className="mt-4">
+              <p className="font-bold text-[13px] mb-2">Items</p>
+              <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+                {selectedOrder.order_items?.map((item, index) => (
+                  <div key={`${item.products?.name ?? "item"}-${index}`} className="rounded border border-[#e0e0e0] p-3 text-[13px]">
+                    <div className="flex justify-between gap-3">
+                      <span className="font-medium text-black break-words">{item.products?.name ?? "-"}</span>
+                      <span className="text-[#6b6b6b] shrink-0">Qty {item.quantity}</span>
+                    </div>
+                    {item.buyer_note && (
+                      <p className="mt-2 text-[12px] text-[#6b6b6b] break-words">
+                        <span className="font-semibold text-[#511E0B]">Item note:</span> {item.buyer_note}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
 
             {selectedOrder.status === "DIBATALKAN" && selectedOrder.cancel_reason && (

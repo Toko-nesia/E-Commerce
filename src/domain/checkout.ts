@@ -2,12 +2,14 @@ import { createHash } from "node:crypto";
 
 export const MIN_CHECKOUT_WEIGHT_KG = 21;
 export const SNAP_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
+export const MAX_BUYER_ITEM_NOTE_LENGTH = 2000;
 
 export interface CheckoutItemInput {
   productId: number;
   quantity: number;
   variantId?: number | null;
   customAmountRaw?: number | null;
+  buyerNote?: string | null;
 }
 
 export interface CheckoutProduct {
@@ -19,14 +21,9 @@ export interface CheckoutProduct {
   weightKg: number;
   stock: number;
   description?: string | null;
-  purchaseDescription?: string | null;
   pricingType?: "fixed" | "variant" | "custom_amount";
   minPriceRaw?: number | null;
   maxPriceRaw?: number | null;
-  sourceProvider?: string | null;
-  sourceProductId?: string | null;
-  sourceUrl?: string | null;
-  sourceQuery?: string | null;
   variants?: CheckoutProductVariant[];
 }
 
@@ -47,8 +44,7 @@ export interface PricedCheckoutItem {
   unitPriceRaw: number;
   price: string;
   customAmountRaw?: number | null;
-  purchaseDescription?: string | null;
-  sourceSnapshot: Record<string, unknown>;
+  buyerNote?: string | null;
   lineTotal: number;
   lineWeightKg: number;
 }
@@ -78,6 +74,14 @@ export interface ShippingDestination {
   countryCode: string;
 }
 
+function normalizeBuyerNote(note: string | null | undefined): string {
+  const normalized = String(note ?? "").trim();
+  if (normalized.length > MAX_BUYER_ITEM_NOTE_LENGTH) {
+    throw new Error(`Item note must be ${MAX_BUYER_ITEM_NOTE_LENGTH} characters or less.`);
+  }
+  return normalized;
+}
+
 export function normalizeCheckoutItems(items: CheckoutItemInput[]): CheckoutItemInput[] {
   const grouped = new Map<string, CheckoutItemInput>();
 
@@ -96,12 +100,22 @@ export function normalizeCheckoutItems(items: CheckoutItemInput[]): CheckoutItem
     if (customAmountRaw !== null && (!Number.isInteger(customAmountRaw) || customAmountRaw <= 0)) {
       throw new Error("Invalid custom amount.");
     }
+    const buyerNote = normalizeBuyerNote(item.buyerNote);
     const key = `${item.productId}:${variantId ?? ""}:${customAmountRaw ?? ""}`;
     const existing = grouped.get(key);
+    if (
+      existing
+      && buyerNote
+      && existing.buyerNote
+      && existing.buyerNote !== buyerNote
+    ) {
+      throw new Error("Duplicate cart item has conflicting notes.");
+    }
     grouped.set(key, {
       productId: item.productId,
       variantId,
       customAmountRaw,
+      buyerNote: existing?.buyerNote || buyerNote || null,
       quantity: (existing?.quantity ?? 0) + item.quantity,
     });
   }
@@ -112,17 +126,6 @@ export function normalizeCheckoutItems(items: CheckoutItemInput[]): CheckoutItem
       || (a.variantId ?? 0) - (b.variantId ?? 0)
       || (a.customAmountRaw ?? 0) - (b.customAmountRaw ?? 0)
     );
-}
-
-function sourceSnapshot(product: CheckoutProduct, variant?: CheckoutProductVariant | null): Record<string, unknown> {
-  return {
-    provider: product.sourceProvider ?? null,
-    product_id: product.sourceProductId ?? null,
-    url: product.sourceUrl ?? null,
-    query: product.sourceQuery ?? null,
-    variant_id: variant?.id ?? null,
-    variant_name: variant?.name ?? null,
-  };
 }
 
 export function priceCheckoutItems(
@@ -191,8 +194,7 @@ export function priceCheckoutItems(
       unitPriceRaw,
       price,
       customAmountRaw: item.customAmountRaw ?? null,
-      purchaseDescription: product.purchaseDescription ?? product.description ?? null,
-      sourceSnapshot: sourceSnapshot(product, variant),
+      buyerNote: item.buyerNote ?? null,
       lineTotal: unitPriceRaw * item.quantity,
       lineWeightKg: unitWeightKg * item.quantity,
     };
