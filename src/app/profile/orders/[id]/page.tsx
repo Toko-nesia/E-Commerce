@@ -12,6 +12,11 @@ import type { Order, FedExLatestStatus, Address } from "@/types/database";
 import { mapScanEventsToTimeline, TimelineStep } from "@/app/components/modals/trackingUtils";
 import { ORDER_STATUS_COLOR, ORDER_STATUS_LABEL, REFUND_STATUS_LABEL, type RefundStatus } from "@/domain/order-status";
 import { resolveImagePath } from "@/lib/image-paths";
+import {
+  getOrderDetailLifecycleEvents,
+  isPendingPaymentOrder,
+  shouldShowTrackingCard,
+} from "@/domain/order-detail-timeline";
 
 export default function OrderDetailPage() {
   const params = useParams();
@@ -242,6 +247,27 @@ export default function OrderDetailPage() {
   }
 
   const displayId = order.midtrans_order_id ? `#${order.midtrans_order_id}` : `#${order.id.slice(0, 8).toUpperCase()}`;
+  const isPendingPayment = isPendingPaymentOrder({ status: order.status, paymentStatus: order.payment_status });
+  const showTrackingCard = shouldShowTrackingCard({
+    status: order.status,
+    paymentStatus: order.payment_status,
+    trackingNumber: order.tracking_number,
+  });
+  const lifecycleEvents = getOrderDetailLifecycleEvents({
+    status: order.status,
+    paymentStatus: order.payment_status,
+    trackingNumber: order.tracking_number,
+  });
+  const paymentExpiresAt = order.snap_token_expires_at ? new Date(order.snap_token_expires_at) : null;
+  const paymentExpiryLabel = paymentExpiresAt && !Number.isNaN(paymentExpiresAt.getTime())
+    ? paymentExpiresAt.toLocaleString("en-US", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
 
   return (
     <PageWrapper>
@@ -278,9 +304,17 @@ export default function OrderDetailPage() {
               {/* Delivery info */}
               <div className="bg-[#511e0b] text-white rounded-[8px] p-[32px] flex flex-col justify-between shadow-sm min-h-[199px]">
                 <div>
-                  <p className="text-[12px] opacity-80 tracking-[2.4px] uppercase font-['Inter'] mb-2">Tracking No / AWB</p>
+                  <p className="text-[12px] opacity-80 tracking-[2.4px] uppercase font-['Inter'] mb-2">
+                    {showTrackingCard ? "Tracking No / AWB" : isPendingPayment ? "Payment Status" : "Fulfillment Status"}
+                  </p>
                   <p className="text-[18px] md:text-[24px] font-normal italic font-['EB_Garamond'] opacity-100 leading-[1.2] break-all">
-                    {order.tracking_number || "Awaiting Tracking No"}
+                    {showTrackingCard
+                      ? order.tracking_number || "Tracking will be available soon"
+                      : isPendingPayment
+                        ? "Awaiting Payment"
+                        : order.status === "BARU"
+                          ? "Waiting for Seller"
+                          : ORDER_STATUS_LABEL[order.status as keyof typeof ORDER_STATUS_LABEL] ?? "In Progress"}
                   </p>
                 </div>
                 {order.estimated_delivery && (
@@ -397,8 +431,28 @@ export default function OrderDetailPage() {
                </div>
             </div>
 
+            {isPendingPayment && (
+              <div className="bg-amber-50 border text-left border-amber-200 rounded-xl p-6 mt-4">
+                <h2 className="font-bold text-[18px] text-amber-900 mb-2">Payment Pending</h2>
+                <p className="text-[13px] text-amber-800 mb-4">
+                  Your items are reserved, but this order cannot be processed until the Virtual Account payment is completed.
+                </p>
+                {paymentExpiryLabel && (
+                  <p className="text-[13px] text-amber-800 mb-4">
+                    Payment window expires on <span className="font-semibold">{paymentExpiryLabel}</span>.
+                  </p>
+                )}
+                <Link
+                  href={`/order-pending?orderId=${order.id}`}
+                  className="inline-flex w-full sm:w-auto items-center justify-center bg-[#511e0b] text-white rounded-lg px-5 py-3 font-bold text-[14px] no-underline hover:bg-[#3d1608] transition-colors"
+                >
+                  Continue Virtual Account Payment
+                </Link>
+              </div>
+            )}
+
             {/* Cancel Section */}
-            {["BARU", "DIPROSES", "DIKIRIM"].includes(order.status) && refundRequest?.initiated_by !== "buyer" && (
+            {!isPendingPayment && ["BARU", "DIPROSES", "DIKIRIM"].includes(order.status) && refundRequest?.initiated_by !== "buyer" && (
               <div className="bg-white border text-center border-[#d5d5d5] rounded-xl p-6 mt-4">
                 {!showCancelInput ? (
                   <button
@@ -439,7 +493,7 @@ export default function OrderDetailPage() {
               </div>
             )}
 
-            {refundRequest && (
+            {!isPendingPayment && refundRequest && (
               <div className="bg-white border text-left border-[#d5d5d5] rounded-xl p-6 mt-4">
                 <h2 className="font-bold text-[18px] text-[#3a302a] mb-2">Cancellation & Refund</h2>
                 <p className="text-[13px] text-[#6b6b6b] mb-3">
@@ -569,34 +623,28 @@ export default function OrderDetailPage() {
                   </>
                 )}
 
-                {/* E-commerce data - Always appended at the bottom to show order lifecycle events */}
-                <div className={`relative mb-8 ${trackingSteps.length > 0 || trackingState === "loading" ? "opacity-60" : ""}`}>
-                  <div className={`absolute left-[-40px] top-[4px] size-[22px] rounded-full border-4 border-[#faf5ee] z-10 ${(order.status === "DIPROSES" && trackingSteps.length === 0 && trackingState !== "loading") ? "bg-[#c2652a]" : "bg-[#d8d0c8]"}`} />
-                  <div className={`${(order.status === "DIPROSES" && trackingSteps.length === 0 && trackingState !== "loading") ? "bg-[#faf5ee] border border-[rgba(194,101,42,0.2)] rounded-[8px] p-[17px] shadow-sm" : ""}`}>
-                    <p className={`text-[10px] tracking-[1px] uppercase font-['Manrope'] mb-1.5 ${(order.status === "DIPROSES" && trackingSteps.length === 0 && trackingState !== "loading") ? "text-[#c2652a]" : "text-[#605850]"}`}>
-                      {(order.status === "DIKIRIM" || order.status === "SELESAI" || order.status === "DIBATALKAN" || trackingSteps.length > 0 || trackingState === "loading") ? "PREVIOUS" : "LATEST"}
-                    </p>
-                    {order.status === "DIBATALKAN" ? (
-                      <p className="text-[#df0000] text-[18px] font-normal leading-snug mb-1 font-['EB_Garamond']">Order Cancelled</p>
-                    ) : (
-                      <>
-                        <p className="text-[#3a302a] text-[18px] font-normal leading-snug mb-1 font-['EB_Garamond']">Order Processing</p>
-                        <p className="text-[#605850] text-[14px] font-['Manrope']">Quality check & packaging</p>
-                      </>
-                    )}
-                  </div>
-                </div>
+                {lifecycleEvents.map((event, index) => {
+                  const hasTrackingActivity = trackingSteps.length > 0 || trackingState === "loading";
+                  const highlighted = !hasTrackingActivity && index === 0 && event.tone === "active";
+                  const muted = hasTrackingActivity || index > 0 || event.tone === "muted";
+                  const markerColor = event.tone === "danger" && highlighted ? "bg-[#df0000]" : highlighted ? "bg-[#c2652a]" : "bg-[#d8d0c8]";
+                  const labelColor = event.tone === "danger" && highlighted ? "text-[#df0000]" : highlighted ? "text-[#c2652a]" : "text-[#605850]";
 
-                <div className="relative opacity-40">
-                  <div className="absolute left-[-40px] top-[4px] size-[22px] bg-[#d8d0c8] rounded-full border-4 border-[#faf5ee] z-10" />
-                  <div>
-                    <p className="text-[#605850] text-[10px] tracking-[1px] uppercase font-['Manrope'] mb-1.5">
-                      {new Date(order.created_at || new Date().toISOString()).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })}
-                    </p>
-                    <p className="text-[#3a302a] text-[18px] leading-snug mb-1 font-['EB_Garamond']">Order Created</p>
-                    <p className="text-[#605850] text-[14px] font-['Manrope']">Payment verified</p>
-                  </div>
-                </div>
+                  return (
+                    <div key={event.key} className={`relative mb-8 ${muted ? "opacity-60" : ""}`}>
+                      <div className={`absolute left-[-40px] top-[4px] size-[22px] rounded-full border-4 border-[#faf5ee] z-10 ${markerColor}`} />
+                      <div className={highlighted ? "bg-[#faf5ee] border border-[rgba(194,101,42,0.2)] rounded-[8px] p-[17px] shadow-sm" : ""}>
+                        <p className={`text-[10px] tracking-[1px] uppercase font-['Manrope'] mb-1.5 ${labelColor}`}>
+                          {highlighted ? "LATEST" : index === lifecycleEvents.length - 1 ? new Date(order.created_at || new Date().toISOString()).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" }) : "PREVIOUS"}
+                        </p>
+                        <p className={`text-[18px] font-normal leading-snug mb-1 font-['EB_Garamond'] ${event.tone === "danger" ? "text-[#df0000]" : "text-[#3a302a]"}`}>
+                          {event.label}
+                        </p>
+                        <p className="text-[#605850] text-[14px] font-['Manrope']">{event.description}</p>
+                      </div>
+                    </div>
+                  );
+                })}
 
               </div>
             </div>

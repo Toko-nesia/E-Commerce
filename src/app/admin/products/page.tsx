@@ -127,7 +127,8 @@ export default function ProductsPage() {
                   colSpan={4}
                   className="text-center text-[13px] text-[#6b6b6b] py-12"
                 >
-                  Tidak ada produk yang ditemukan.                </td>
+                  No products found.
+                </td>
               </tr>
             ) : (
               filtered.map((p) => (
@@ -135,7 +136,7 @@ export default function ProductsPage() {
                   key={p.id}
                   className="border-b border-[#d0d0d0] last:border-0 hover:bg-gray-50 transition-colors"
                 >
-                  {/* Produk */}
+                  {/* Product */}
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-3">
                       <div className="relative w-[82px] h-[82px] flex-shrink-0 rounded overflow-hidden border border-[#d0d0d0] bg-gray-50">
@@ -152,18 +153,18 @@ export default function ProductsPage() {
                           {p.name}
                         </span>
                         <span className="text-[13px] text-[#6b6b6b]">
-                          ID Produk: {3172860 + p.id}
+                          Product ID: {3172860 + p.id}
                         </span>
                       </div>
                     </div>
                   </td>
 
-                  {/* Harga */}
+                  {/* Price */}
                   <td className="px-4 py-4 text-[13px] text-black whitespace-nowrap">
                     {p.price}
                   </td>
 
-                  {/* Stok */}
+                  {/* Stock */}
                   <td className="px-4 py-4 text-[13px]">
                     {p.stock === undefined ? (
                       <span className="text-[#6b6b6b]">-</span>
@@ -188,7 +189,7 @@ export default function ProductsPage() {
                         onClick={() => setConfirmDeleteId(p.id)}
                         className="text-[13px] text-[#DF0000] font-semibold hover:underline bg-transparent border-none cursor-pointer"
                       >
-                        Hapus
+                        Delete
                       </button>
                     </div>
                   </td>

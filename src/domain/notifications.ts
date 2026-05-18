@@ -149,7 +149,7 @@ const HEADLINES: Record<EmailEventType, string> = {
 const DESCRIPTIONS: Record<EmailEventType, string> = {
   customer_welcome: "Your account is ready. You can now shop Indonesian goods for delivery to Japan.",
   payment_pending: "We created your order and are waiting for payment confirmation.",
-  payment_succeeded: "Your payment has been confirmed. We will start processing your order.",
+  payment_succeeded: "Your payment has been confirmed. The seller will start processing your order shortly.",
   payment_failed: "The payment attempt for this order was not completed successfully.",
   payment_expired: "The payment window for this order has expired.",
   order_shipped: "Your package has been handed over for delivery.",

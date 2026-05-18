@@ -32,10 +32,10 @@ export function mapMidtransStatus(
   fraudStatus?: string,
 ): PaymentStatusMapping | null {
   if (transactionStatus === "settlement") {
-    return { orderStatus: "DIPROSES", paymentStatus: "settlement" };
+    return { orderStatus: "BARU", paymentStatus: "settlement" };
   }
   if (transactionStatus === "capture" && fraudStatus === "accept") {
-    return { orderStatus: "DIPROSES", paymentStatus: "capture" };
+    return { orderStatus: "BARU", paymentStatus: "capture" };
   }
   if (["cancel", "deny", "expire"].includes(transactionStatus)) {
     return { orderStatus: "DIBATALKAN", paymentStatus: transactionStatus as PaymentStatus };

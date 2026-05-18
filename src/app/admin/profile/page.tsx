@@ -89,9 +89,9 @@ export default function AdminProfilePage() {
       if (error) throw error;
 
       setAvatarFile(null);
-      setProfileMsg({ type: "success", text: "Profil berhasil diperbarui." });
+      setProfileMsg({ type: "success", text: "Profile updated successfully." });
     } catch {
-      setProfileMsg({ type: "error", text: "Gagal menyimpan profil. Coba lagi." });
+      setProfileMsg({ type: "error", text: "Failed to save profile. Please try again." });
     } finally {
       setProfileSaving(false);
     }
@@ -101,11 +101,11 @@ export default function AdminProfilePage() {
   const handleChangePassword = async () => {
     setPasswordMsg(null);
     if (!newPassword || newPassword.length < 8) {
-      setPasswordMsg({ type: "error", text: "Password minimal 8 karakter." });
+      setPasswordMsg({ type: "error", text: "Password must be at least 8 characters." });
       return;
     }
     if (newPassword !== confirmPassword) {
-      setPasswordMsg({ type: "error", text: "Konfirmasi password tidak cocok." });
+      setPasswordMsg({ type: "error", text: "Password confirmation does not match." });
       return;
     }
     setPasswordSaving(true);
@@ -114,9 +114,9 @@ export default function AdminProfilePage() {
       if (error) throw error;
       setNewPassword("");
       setConfirmPassword("");
-      setPasswordMsg({ type: "success", text: "Password berhasil diubah." });
+      setPasswordMsg({ type: "success", text: "Password updated successfully." });
     } catch {
-      setPasswordMsg({ type: "error", text: "Gagal mengubah password. Coba lagi." });
+      setPasswordMsg({ type: "error", text: "Failed to update password. Please try again." });
     } finally {
       setPasswordSaving(false);
     }
@@ -131,19 +131,19 @@ export default function AdminProfilePage() {
 
   return (
     <div className="max-w-[640px]">
-      <h1 className="font-bold text-[20px] text-black mb-6">Profil Admin</h1>
+      <h1 className="font-bold text-[20px] text-black mb-6">Admin Profile</h1>
 
       {/* ── Profile Card ─────────────────────────────────────────── */}
       <div className="bg-white rounded-xl shadow-sm border border-[#d0d0d0] p-6 mb-5">
         <h2 className="font-bold text-[15px] text-[#511e0b] mb-5 flex items-center gap-2">
           <User size={16} />
-          Informasi Akun
+          Account Information
         </h2>
 
         {profileLoading ? (
           <div className="flex items-center justify-center py-10 gap-2 text-[#6b6b6b]">
             <Loader2 size={18} className="animate-spin text-[#511e0b]" />
-            <span className="text-[14px]">Memuat profil...</span>
+            <span className="text-[14px]">Loading profile...</span>
           </div>
         ) : (
           <>
@@ -161,7 +161,7 @@ export default function AdminProfilePage() {
                 <button
                   onClick={() => fileRef.current?.click()}
                   className="absolute bottom-0 right-0 bg-[#511e0b] rounded-full w-6 h-6 flex items-center justify-center cursor-pointer border-2 border-white hover:bg-[#3d1608] transition-colors"
-                  aria-label="Ganti foto"
+                  aria-label="Change photo"
                 >
                   <Camera size={11} className="text-white" />
                 </button>
@@ -184,12 +184,12 @@ export default function AdminProfilePage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-[12px] text-[#6b6b6b] font-medium mb-1.5 uppercase tracking-wider">
-                  Nama Lengkap
+                  Full Name
                 </label>
                 <input
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Nama lengkap admin"
+                  placeholder="Admin full name"
                   className="w-full border border-[#d0d0d0] rounded-lg px-4 py-2.5 text-[14px] text-black outline-none focus:border-[#511e0b] transition-colors"
                 />
               </div>
@@ -203,13 +203,13 @@ export default function AdminProfilePage() {
                   disabled
                   className="w-full border border-[#d0d0d0] rounded-lg px-4 py-2.5 text-[14px] text-black outline-none bg-gray-50 cursor-not-allowed"
                 />
-                <p className="text-[11px] text-[#9b9b9b] mt-1">Email tidak dapat diubah.</p>
+                <p className="text-[11px] text-[#9b9b9b] mt-1">Email cannot be changed.</p>
               </div>
 
               <div>
                 <label className="block text-[12px] text-[#6b6b6b] font-medium mb-1.5 uppercase tracking-wider flex items-center gap-1">
                   <Phone size={11} />
-                  Nomor Telepon
+                  Phone Number
                 </label>
                 <input
                   value={phone}
@@ -241,7 +241,7 @@ export default function AdminProfilePage() {
                 className="flex items-center gap-2 bg-[#511e0b] text-white rounded-lg px-5 py-2.5 text-[14px] font-bold border-none cursor-pointer hover:bg-[#3d1608] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {profileSaving && <Loader2 size={15} className="animate-spin" />}
-                Simpan Perubahan
+                Save Changes
               </button>
             </div>
           </>
@@ -252,32 +252,32 @@ export default function AdminProfilePage() {
       <div className="bg-white rounded-xl shadow-sm border border-[#d0d0d0] p-6">
         <h2 className="font-bold text-[15px] text-[#511e0b] mb-5 flex items-center gap-2">
           <KeyRound size={16} />
-          Ubah Password
+          Change Password
         </h2>
 
         <div className="space-y-4">
           <div>
             <label className="block text-[12px] text-[#6b6b6b] font-medium mb-1.5 uppercase tracking-wider">
-              Password Baru
+              New Password
             </label>
             <input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Minimal 8 karakter"
+              placeholder="Minimum 8 characters"
               className="w-full border border-[#d0d0d0] rounded-lg px-4 py-2.5 text-[14px] text-black outline-none focus:border-[#511e0b] transition-colors"
             />
           </div>
 
           <div>
             <label className="block text-[12px] text-[#6b6b6b] font-medium mb-1.5 uppercase tracking-wider">
-              Konfirmasi Password Baru
+              Confirm New Password
             </label>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Ulangi password baru"
+              placeholder="Repeat the new password"
               className="w-full border border-[#d0d0d0] rounded-lg px-4 py-2.5 text-[14px] text-black outline-none focus:border-[#511e0b] transition-colors"
             />
           </div>
@@ -304,7 +304,7 @@ export default function AdminProfilePage() {
             className="flex items-center gap-2 bg-[#511e0b] text-white rounded-lg px-5 py-2.5 text-[14px] font-bold border-none cursor-pointer hover:bg-[#3d1608] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {passwordSaving && <Loader2 size={15} className="animate-spin" />}
-            Ubah Password
+            Change Password
           </button>
         </div>
       </div>

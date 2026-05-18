@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { CheckCircle, Loader2, XCircle } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { REFUND_STATUS_LABEL, type RefundStatus } from "@/domain/order-status";
 
 interface RefundRow {
@@ -35,7 +34,6 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 export default function AdminRefundsPage() {
-  const supabase = createClient();
   const [refunds, setRefunds] = useState<RefundRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,32 +43,27 @@ export default function AdminRefundsPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const fetchRefunds = async () => {
+  const fetchRefunds = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: fetchError } = await supabase
-        .from("refund_requests")
-        .select(`
-          id, order_id, user_id, refund_method, account_number, account_name, payout_provider,
-          reason, status, admin_note, refund_amount, initiated_by, rejection_reason, transfer_note, created_at,
-          orders ( id, total_price ),
-          profiles ( full_name, email )
-        `)
-        .order("created_at", { ascending: false });
-      if (fetchError) throw fetchError;
-      setRefunds((data as unknown as RefundRow[]) ?? []);
+      const res = await fetch("/api/admin/refunds", { cache: "no-store" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Failed to load refund requests.");
+      setRefunds((data.refunds as RefundRow[]) ?? []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load refund requests. Please run the refund schema migration if this is the first deploy.");
+      const detail = err instanceof Error ? err.message : null;
+      setError(detail && detail !== "Failed to load refund requests."
+        ? `Failed to load refund requests. ${detail}`
+        : "Failed to load refund requests.");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchRefunds();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchRefunds]);
 
   const openAction = (row: RefundRow, type: "approve" | "reject" | "refunded") => {
     setActionRow(row);
@@ -163,7 +156,7 @@ export default function AdminRefundsPage() {
                   <td className="px-4 py-3 capitalize whitespace-nowrap">{row.refund_method ? row.refund_method.replace("_", " ") : "Awaiting buyer"}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <p>{row.account_name || "-"}</p>
-                    <p className="text-[11px] text-gray-500">{[row.payout_provider, row.account_number].filter(Boolean).join(" · ") || "Awaiting buyer"}</p>
+                    <p className="text-[11px] text-gray-500">{[row.payout_provider, row.account_number].filter(Boolean).join(" / ") || "Awaiting buyer"}</p>
                   </td>
                   <td className="px-4 py-3 max-w-[220px]">
                     <p className="truncate" title={row.reason}>{row.reason}</p>

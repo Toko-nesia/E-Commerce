@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { resolveImagePath } from "@/lib/image-paths";
 import { LoadingSpinner } from "@/app/components/ui/LoadingSpinner";
+import { GoogleIcon } from "@/app/components/ui/GoogleIcon";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -99,9 +100,9 @@ export default function LoginPage() {
           <button
             onClick={handleGoogleLogin}
             disabled={isLoading}
-            className="w-full mt-4 bg-[#FDF9F5] rounded-[8px] h-[53px] font-['Manrope',sans-serif] text-[14px] text-[#798698] tracking-[1.4px] uppercase shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] cursor-pointer border-none hover:bg-[#f0e8dc] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full mt-4 bg-white border border-[#d8d0c8] rounded-[8px] h-[53px] font-['Manrope',sans-serif] text-[14px] text-[#2f251d] tracking-[0.8px] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] cursor-pointer hover:bg-[#FDF9F5] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
           >
-            {isLoading ? <LoadingSpinner label="Opening Google..." /> : "GOOGLE"}
+            {isLoading ? <LoadingSpinner label="Opening Google..." /> : <><GoogleIcon /> Continue with Google</>}
           </button>
 
           <p className="text-center mt-6 font-['Manrope',sans-serif] text-[14px] text-[#605850]">

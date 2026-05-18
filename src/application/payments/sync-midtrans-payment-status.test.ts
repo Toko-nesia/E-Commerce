@@ -17,7 +17,7 @@ describe("syncMidtransPaymentStatus", () => {
     };
     const paid: PaymentSyncOrderSnapshot = {
       ...pending,
-      status: "DIPROSES",
+      status: "BARU",
       paymentStatus: "settlement",
     };
     const snapshots = [pending, paid];
@@ -46,7 +46,7 @@ describe("syncMidtransPaymentStatus", () => {
       expect.objectContaining({
         midtransOrderId: "ZB-ORDER-1",
         paymentStatus: "settlement",
-        orderStatus: "DIPROSES",
+        orderStatus: "BARU",
       }),
     );
     expect(result.order.paymentStatus).toBe("settlement");

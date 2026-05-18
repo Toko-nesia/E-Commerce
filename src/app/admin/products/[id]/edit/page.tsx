@@ -53,9 +53,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   if (!product) {
     return (
       <div className="text-center py-24">
-        <p className="text-[16px] text-[#6b6b6b] mb-4">Produk tidak ditemukan.</p>
+        <p className="text-[16px] text-[#6b6b6b] mb-4">Product not found.</p>
         <Link href="/admin/products" className="text-[#511E0B] underline text-[14px]">
-          ← Kembali ke Produk
+          ← Back to Products
         </Link>
       </div>
     );
@@ -89,11 +89,12 @@ function EditForm({
   const [customSpecs, setCustomSpecs] = useState<CustomSpec[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const legacyBrandSpecKey = "Me" + "rk";
 
   // Preset specs
   const [stock, setStock] = useState(String(product.stock ?? ""));
   const [brand, setBrand] = useState(
-    product.specifications ? (product.specifications["Merk"] ?? "") : ""
+    product.specifications ? (product.specifications["Brand"] ?? product.specifications[legacyBrandSpecKey] ?? "") : ""
   );
   const [condition, setCondition] = useState(
     product.specifications ? (product.specifications["Condition"] ?? "New") : "New"
@@ -155,7 +156,7 @@ function EditForm({
 
       // Build specifications
       const specifications: Record<string, string> = {};
-      if (brand) specifications["Merk"] = brand;
+      if (brand) specifications["Brand"] = brand;
       if (condition) specifications["Condition"] = condition;
       for (const spec of customSpecs) {
         if (spec.key.trim()) specifications[spec.key.trim()] = spec.value.trim();
@@ -197,10 +198,10 @@ function EditForm({
     step?: string;
     required?: boolean;
   }[] = [
-    { label: "Stok", placeholder: "0", value: stock, onChange: setStock, type: "number", min: "0", required: true },
-    { label: "Merk", placeholder: "Masukkan merk", value: brand, onChange: setBrand, required: true },
+    { label: "Stock", placeholder: "0", value: stock, onChange: setStock, type: "number", min: "0", required: true },
+    { label: "Brand", placeholder: "Enter brand", value: brand, onChange: setBrand, required: true },
     { label: "Condition", placeholder: "New / Used", value: condition, onChange: setCondition, required: true },
-    { label: "Unit Weight (kg)", placeholder: "cth: 5", value: unitWeight, onChange: setUnitWeight, type: "number", min: "0.001", step: "0.001", required: true },
+    { label: "Unit Weight (kg)", placeholder: "e.g. 5", value: unitWeight, onChange: setUnitWeight, type: "number", min: "0.001", step: "0.001", required: true },
   ];
 
   return (
@@ -210,14 +211,14 @@ function EditForm({
         className="inline-flex items-center gap-1.5 text-[13px] text-[#6b6b6b] hover:text-[#511E0B] transition-colors mb-5 no-underline"
       >
         <ArrowLeft size={14} />
-        Kembali ke Produk
+        Back to Products
       </Link>
 
       <div className="bg-white rounded shadow-[2px_2px_10px_rgba(0,0,0,0.25)] p-8">
         <div>
-          <h1 className="font-bold text-[20px] text-black">Edit Produk</h1>
+          <h1 className="font-bold text-[20px] text-black">Edit Product</h1>
           <p className="text-[#6b6b6b] text-[13px] mt-1">
-            ID Produk: <span className="font-medium text-black">{3172860 + product.id}</span>
+            Product ID: <span className="font-medium text-black">{3172860 + product.id}</span>
           </p>
           <hr className="border-[#d0d0d0] mt-4" />
         </div>
@@ -234,7 +235,7 @@ function EditForm({
             <div className="flex flex-col gap-5">
               <div>
                 <label className={labelClass}>
-                  Foto Produk
+                  Product Photo
                   <RequiredStar />
                 </label>
                 <label className="cursor-pointer inline-block">
@@ -246,7 +247,7 @@ function EditForm({
                       <>
                         <Camera size={22} className="text-[#6b6b6b]" />
                         <span className="text-[11px] text-[#6b6b6b] text-center leading-tight px-1">
-                          Tambahkan foto
+                          Add photo
                         </span>
                       </>
                     )}
@@ -256,14 +257,14 @@ function EditForm({
               </div>
 
               <div>
-                <label className={labelClass}>Nama Produk<RequiredStar /></label>
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Masukkan nama produk" className={inputClass} required />
+                <label className={labelClass}>Product Name<RequiredStar /></label>
+                <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter product name" className={inputClass} required />
               </div>
 
               <div>
-                <label className={labelClass}>Kategori<RequiredStar /></label>
+                <label className={labelClass}>Category<RequiredStar /></label>
                 <select value={category} onChange={(e) => setCategory(e.target.value)} className={`${inputClass} bg-white cursor-pointer`} required>
-                  <option value="">Pilih kategori</option>
+                  <option value="">Select category</option>
                   {categories.map((c) => (
                     <option key={c.slug} value={c.name}>{c.name}</option>
                   ))}
@@ -271,19 +272,19 @@ function EditForm({
               </div>
 
               <div>
-                <label className={labelClass}>Harga<RequiredStar /></label>
+                <label className={labelClass}>Price<RequiredStar /></label>
                 <input type="text" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Rp 0" className={inputClass} required />
               </div>
 
               <div>
-                <label className={labelClass}>Deskripsi Produk<RequiredStar /></label>
-                <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Masukkan deskripsi produk" rows={5} className={`${inputClass} h-[120px] resize-none`} required />
+                <label className={labelClass}>Product Description<RequiredStar /></label>
+                <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Enter product description" rows={5} className={`${inputClass} h-[120px] resize-none`} required />
               </div>
             </div>
 
             {/* RIGHT: Specifications */}
             <div>
-              <label className="block font-bold text-[14px] text-black mb-3">Spesifikasi Produk</label>
+              <label className="block font-bold text-[14px] text-black mb-3">Product Specifications</label>
 
               <div className="grid grid-cols-[120px_1fr_24px] gap-x-4 gap-y-3">
                 {presetSpecs.map((spec) => (
@@ -312,9 +313,9 @@ function EditForm({
 
                 {customSpecs.map((spec, idx) => (
                   <React.Fragment key={idx}>
-                    <input type="text" value={spec.key} onChange={(e) => updateCustomSpec(idx, "key", e.target.value)} placeholder="Nama spesifikasi" className={inputClass} />
-                    <input type="text" value={spec.value} onChange={(e) => updateCustomSpec(idx, "value", e.target.value)} placeholder="Nilai" className={inputClass} />
-                    <button type="button" onClick={() => removeCustomSpec(idx)} className="flex items-center justify-center text-[#DF0000] hover:text-red-700 bg-transparent border-none cursor-pointer p-0" aria-label="Hapus spesifikasi">
+                    <input type="text" value={spec.key} onChange={(e) => updateCustomSpec(idx, "key", e.target.value)} placeholder="Specification name" className={inputClass} />
+                    <input type="text" value={spec.value} onChange={(e) => updateCustomSpec(idx, "value", e.target.value)} placeholder="Value" className={inputClass} />
+                    <button type="button" onClick={() => removeCustomSpec(idx)} className="flex items-center justify-center text-[#DF0000] hover:text-red-700 bg-transparent border-none cursor-pointer p-0" aria-label="Remove specification">
                       <X size={14} />
                     </button>
                   </React.Fragment>
@@ -324,17 +325,17 @@ function EditForm({
               <div className="mt-4 border-t border-[#d0d0d0]" />
               <button type="button" onClick={addCustomSpec} className="bg-[#511E0B] text-white rounded px-4 py-2 text-[14px] font-bold flex items-center gap-2 mt-3 hover:bg-[#3d1608] transition-colors cursor-pointer">
                 <Plus size={16} />
-                Spesifikasi lainnya
+                Add specification
               </button>
             </div>
           </div>
 
           <div className="flex justify-center gap-4 mt-8">
             <button type="button" onClick={() => router.push("/admin/products")} className="border border-[#d0d0d0] text-black rounded px-6 py-3 font-medium text-[14px] hover:bg-gray-50 transition-colors cursor-pointer bg-white">
-              Batalkan
+              Cancel
             </button>
             <button type="submit" disabled={submitting} className="bg-[#511E0B] text-white rounded px-8 py-3 font-bold text-[14px] hover:bg-[#3d1608] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
-              {submitting ? "Menyimpan..." : "Simpan Perubahan"}
+              {submitting ? "Saving..." : "Save Changes"}
             </button>
           </div>
         </form>

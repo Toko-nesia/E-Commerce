@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import { createPaymentEventHash, formatPaymentStatus, isPaidPaymentStatus, mapMidtransStatus } from "@/domain/payment";
 
 describe("payment domain", () => {
-  it("maps paid Midtrans statuses to the processing order state", () => {
+  it("maps paid Midtrans statuses to the new paid order state", () => {
     expect(mapMidtransStatus("settlement")).toEqual({
-      orderStatus: "DIPROSES",
+      orderStatus: "BARU",
       paymentStatus: "settlement",
     });
     expect(mapMidtransStatus("capture", "accept")).toEqual({
-      orderStatus: "DIPROSES",
+      orderStatus: "BARU",
       paymentStatus: "capture",
     });
   });

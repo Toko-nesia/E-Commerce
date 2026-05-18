@@ -102,7 +102,7 @@ export default function AddProductPage() {
 
       // Build specifications from custom specs
       const specifications: Record<string, string> = {};
-      if (brand) specifications["Merk"] = brand;
+      if (brand) specifications["Brand"] = brand;
       if (condition) specifications["Condition"] = condition;
       for (const spec of customSpecs) {
         if (spec.key.trim()) specifications[spec.key.trim()] = spec.value.trim();
@@ -144,7 +144,7 @@ export default function AddProductPage() {
     required?: boolean;
   }[] = [
     {
-      label: "Stok",
+      label: "Stock",
       placeholder: "0",
       value: stock,
       onChange: setStock,
@@ -153,8 +153,8 @@ export default function AddProductPage() {
       required: true,
     },
     {
-      label: "Merk",
-      placeholder: "Masukkan merk",
+      label: "Brand",
+      placeholder: "Enter brand",
       value: brand,
       onChange: setBrand,
       required: true,
@@ -168,7 +168,7 @@ export default function AddProductPage() {
     },
     {
       label: "Unit Weight (kg)",
-      placeholder: "cth: 5",
+      placeholder: "e.g. 5",
       value: unitWeight,
       onChange: setUnitWeight,
       type: "number",
@@ -182,9 +182,9 @@ export default function AddProductPage() {
     <div>
       <div className="bg-white rounded shadow-[2px_2px_10px_rgba(0,0,0,0.25)] p-8">
         <div>
-          <h1 className="font-bold text-[20px] text-black">Tambah Produk Baru</h1>
+          <h1 className="font-bold text-[20px] text-black">Add Product</h1>
           <p className="text-[#6b6b6b] text-[13px] mt-1">
-            Masukkan foto, nama, harga, stok, deskripsi produk.
+            Add the product photo, name, price, stock, and description.
           </p>
           <hr className="border-[#d0d0d0] mt-4" />
         </div>
@@ -201,7 +201,7 @@ export default function AddProductPage() {
             <div className="flex flex-col gap-5">
               <div>
                 <label className={labelClass}>
-                  Foto Produk
+                  Product Photo
                   <RequiredStar />
                 </label>
                 <label className="cursor-pointer inline-block">
@@ -213,7 +213,7 @@ export default function AddProductPage() {
                       <>
                         <Camera size={22} className="text-[#6b6b6b]" />
                         <span className="text-[11px] text-[#6b6b6b] text-center leading-tight px-1">
-                          Tambahkan foto
+                          Add photo
                         </span>
                       </>
                     )}
@@ -224,14 +224,14 @@ export default function AddProductPage() {
 
               <div>
                 <label className={labelClass}>
-                  Nama Produk
+                  Product Name
                   <RequiredStar />
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Masukkan nama produk"
+                  placeholder="Enter product name"
                   className={inputClass}
                   required
                 />
@@ -239,7 +239,7 @@ export default function AddProductPage() {
 
               <div>
                 <label className={labelClass}>
-                  Kategori
+                  Category
                   <RequiredStar />
                 </label>
                 <select
@@ -248,7 +248,7 @@ export default function AddProductPage() {
                   className={`${inputClass} bg-white cursor-pointer`}
                   required
                 >
-                  <option value="">Pilih kategori</option>
+                  <option value="">Select category</option>
                   {categories.map((c) => (
                     <option key={c.slug} value={c.name}>
                       {c.name}
@@ -259,7 +259,7 @@ export default function AddProductPage() {
 
               <div>
                 <label className={labelClass}>
-                  Harga
+                  Price
                   <RequiredStar />
                 </label>
                 <input
@@ -274,13 +274,13 @@ export default function AddProductPage() {
 
               <div>
                 <label className={labelClass}>
-                  Deskripsi Produk
+                  Product Description
                   <RequiredStar />
                 </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Masukkan deskripsi produk"
+                  placeholder="Enter product description"
                   rows={5}
                   className={`${inputClass} h-[120px] resize-none`}
                   required
@@ -291,7 +291,7 @@ export default function AddProductPage() {
             {/* RIGHT: Specifications */}
             <div>
               <label className="block font-bold text-[14px] text-black mb-3">
-                Spesifikasi Produk
+                Product Specifications
               </label>
 
               <div className="grid grid-cols-[120px_1fr_24px] gap-x-4 gap-y-3">
@@ -325,21 +325,21 @@ export default function AddProductPage() {
                       type="text"
                       value={spec.key}
                       onChange={(e) => updateCustomSpec(idx, "key", e.target.value)}
-                      placeholder="Nama spesifikasi"
+                      placeholder="Specification name"
                       className={inputClass}
                     />
                     <input
                       type="text"
                       value={spec.value}
                       onChange={(e) => updateCustomSpec(idx, "value", e.target.value)}
-                      placeholder="Nilai"
+                      placeholder="Value"
                       className={inputClass}
                     />
                     <button
                       type="button"
                       onClick={() => removeCustomSpec(idx)}
                       className="flex items-center justify-center text-[#DF0000] hover:text-red-700 bg-transparent border-none cursor-pointer p-0"
-                      aria-label="Hapus spesifikasi"
+                      aria-label="Remove specification"
                     >
                       <X size={14} />
                     </button>
@@ -355,7 +355,7 @@ export default function AddProductPage() {
                 className="bg-[#511E0B] text-white rounded px-4 py-2 text-[14px] font-bold flex items-center gap-2 mt-3 hover:bg-[#3d1608] transition-colors cursor-pointer"
               >
                 <Plus size={16} />
-                Spesifikasi lainnya
+                Add specification
               </button>
             </div>
           </div>
@@ -365,7 +365,7 @@ export default function AddProductPage() {
             disabled={submitting}
             className="mx-auto block mt-8 bg-[#511E0B] text-white rounded px-8 py-3 font-bold text-[14px] hover:bg-[#3d1608] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {submitting ? "Menyimpan..." : "Simpan Produk"}
+            {submitting ? "Saving..." : "Save Product"}
           </button>
         </form>
       </div>

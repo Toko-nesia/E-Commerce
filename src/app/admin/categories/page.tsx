@@ -176,7 +176,7 @@ export default function CategoriesPage() {
                         onClick={() => setDeleteSlug(category.slug)}
                         className="text-[13px] text-[#DF0000] font-semibold hover:underline bg-transparent border-none cursor-pointer p-0"
                       >
-                        Hapus
+                        Delete
                       </button>
                     </div>
                   </td>
@@ -216,7 +216,7 @@ export default function CategoriesPage() {
               {saveError && (
                 <p className="text-[13px] text-[#DF0000]">{saveError}</p>
               )}
-              {/* Nama */}
+              {/* Name */}
               <div>
                 <label className="block font-bold text-[13px] text-black mb-1.5">
                   Category Name <span className="text-[#DF0000]">*</span>
@@ -236,7 +236,7 @@ export default function CategoriesPage() {
                 )}
               </div>
 
-              {/* Jumlah Produk */}
+              {/* Product Count */}
               <div>
                 <label className="block font-bold text-[13px] text-black mb-1.5">
                   Product Count

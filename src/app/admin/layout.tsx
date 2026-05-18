@@ -20,21 +20,21 @@ import {
 import { useAuth } from "@/contexts/auth-context";
 
 const breadcrumbMap: Record<string, string> = {
-  "/admin": "Beranda",
-  "/admin/products": "Beranda > Produk > Produk Saya",
-  "/admin/products/add": "Beranda > Produk > Tambah Produk Baru",
-  "/admin/orders": "Beranda > Pesanan Masuk",
-  "/admin/categories": "Beranda > Kategori",
-  "/admin/refunds": "Beranda > Refund Requests",
-  "/admin/settings": "Beranda > Pengaturan",
-  "/admin/profile": "Beranda > Profil Admin",
+  "/admin": "Dashboard",
+  "/admin/products": "Dashboard > Products > My Products",
+  "/admin/products/add": "Dashboard > Products > Add Product",
+  "/admin/orders": "Dashboard > Incoming Orders",
+  "/admin/categories": "Dashboard > Categories",
+  "/admin/refunds": "Dashboard > Refund Requests",
+  "/admin/settings": "Dashboard > Settings",
+  "/admin/profile": "Dashboard > Admin Profile",
 };
 
 function getAdminBreadcrumb(pathname: string): string {
   if (breadcrumbMap[pathname]) return breadcrumbMap[pathname];
   const editMatch = pathname.match(/^\/admin\/products\/(\d+)\/edit$/);
-  if (editMatch) return "Beranda > Produk > Edit Produk";
-  return "Beranda";
+  if (editMatch) return "Dashboard > Products > Edit Product";
+  return "Dashboard";
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -83,16 +83,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             }`}
           >
             <Package size={18} className={isProductActive ? "text-[#511E0B]" : "text-gray-500"} />
-            <span className="flex-1 text-left">Produk</span>
+            <span className="flex-1 text-left">Products</span>
             {productOpen ? <ChevronDown size={15} className="text-gray-400" /> : <ChevronRight size={15} className="text-gray-400" />}
           </button>
           {productOpen && (
             <div className="pl-11 pr-3 flex flex-col gap-0.5 pb-1">
               <Link href="/admin/products" className={`block py-2 px-3 text-[13px] rounded transition-colors hover:bg-gray-50 no-underline ${isActive("/admin/products") ? "font-bold text-[#511E0B]" : "text-gray-600"}`}>
-                Produk Saya
+                My Products
               </Link>
               <Link href="/admin/products/add" className={`block py-2 px-3 text-[13px] rounded transition-colors hover:bg-gray-50 no-underline ${isActive("/admin/products/add") ? "font-bold text-[#511E0B]" : "text-gray-600"}`}>
-                Tambah Produk Baru
+                Add Product
               </Link>
             </div>
           )}
@@ -100,12 +100,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         <Link href="/admin/orders" className={`flex items-center gap-3 px-5 py-3 text-[14px] transition-colors hover:bg-gray-50 no-underline ${isActive("/admin/orders") ? "font-bold text-[#511E0B]" : "text-gray-700"}`}>
           <ShoppingBag size={18} className={isActive("/admin/orders") ? "text-[#511E0B]" : "text-gray-500"} />
-          <span>Pesanan Masuk</span>
+          <span>Incoming Orders</span>
         </Link>
 
         <Link href="/admin/categories" className={`flex items-center gap-3 px-5 py-3 text-[14px] transition-colors hover:bg-gray-50 no-underline ${isActive("/admin/categories") ? "font-bold text-[#511E0B]" : "text-gray-700"}`}>
           <Tag size={18} className={isActive("/admin/categories") ? "text-[#511E0B]" : "text-gray-500"} />
-          <span>Kategori</span>
+          <span>Categories</span>
         </Link>
 
         <Link href="/admin/refunds" className={`flex items-center gap-3 px-5 py-3 text-[14px] transition-colors hover:bg-gray-50 no-underline ${isActive("/admin/refunds") ? "font-bold text-[#511E0B]" : "text-gray-700"}`}>
@@ -115,7 +115,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         <Link href="/admin/settings" className={`flex items-center gap-3 px-5 py-3 text-[14px] transition-colors hover:bg-gray-50 no-underline ${isActive("/admin/settings") ? "font-bold text-[#511E0B]" : "text-gray-700"}`}>
           <Settings size={18} className={isActive("/admin/settings") ? "text-[#511E0B]" : "text-gray-500"} />
-          <span>Pengaturan</span>
+          <span>Settings</span>
         </Link>
       </nav>
 
@@ -152,7 +152,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-[13px] text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors bg-transparent border-none cursor-pointer"
         >
           <LogOut size={15} className="shrink-0" />
-          <span>Keluar</span>
+          <span>Logout</span>
         </button>
       </div>
     </div>
@@ -208,7 +208,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <button
           onClick={() => setSidebarOpen(false)}
           className="lg:hidden absolute top-3 right-3 bg-transparent border-none cursor-pointer text-gray-500 hover:text-black p-0 z-10"
-          aria-label="Tutup menu"
+          aria-label="Close menu"
         >
           <X size={18} />
         </button>

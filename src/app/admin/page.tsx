@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Package, ShoppingBag, Tag, TrendingUp, Clock, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { ORDER_STATUS_COLOR, ORDER_STATUS_LABEL } from "@/domain/order-status";
 
 interface RecentOrder {
   id: string;
@@ -12,14 +13,6 @@ interface RecentOrder {
   status: string;
   date: string;
 }
-
-const STATUS_STYLES: Record<string, string> = {
-  BARU: "bg-[#FFF3CD] text-[#FBBE48]",
-  DIPROSES: "bg-orange-50 text-orange-500",
-  DIKIRIM: "bg-blue-50 text-blue-500",
-  SELESAI: "bg-green-50 text-[#15A15B]",
-  DIBATALKAN: "bg-red-50 text-[#DF0000]",
-};
 
 export default function AdminDashboardPage() {
   const [totalProducts, setTotalProducts] = useState(0);
@@ -61,10 +54,10 @@ export default function AdminDashboardPage() {
           return {
             id: o.midtrans_order_id ?? `#${o.id.slice(0, 8).toUpperCase()}`,
             customer: (profile as { full_name?: string } | null)?.full_name ?? "Unknown",
-            product: (product as { name?: string } | null)?.name ?? "—",
-            total: o.total_price ?? "—",
+            product: (product as { name?: string } | null)?.name ?? "-",
+            total: o.total_price ?? "-",
             status: o.status,
-            date: new Date(o.created_at).toLocaleDateString("id-ID", {
+            date: new Date(o.created_at).toLocaleDateString("en-US", {
               day: "2-digit",
               month: "short",
               year: "numeric",
@@ -113,7 +106,7 @@ export default function AdminDashboardPage() {
             <h2 className="font-bold text-[15px] text-black">Recent Orders</h2>
           </div>
           <a href="/admin/orders" className="text-[13px] text-[#511E0B] hover:underline">
-            Lihat semua →
+            View all →
           </a>
         </div>
 
@@ -151,8 +144,8 @@ export default function AdminDashboardPage() {
                       </td>
                       <td className="px-4 py-3 text-[13px] text-black whitespace-nowrap">{order.total}</td>
                       <td className="px-4 py-3">
-                        <span className={`inline-block px-2 py-0.5 rounded text-[12px] font-bold ${STATUS_STYLES[order.status] ?? "bg-gray-100 text-gray-500"}`}>
-                          {order.status}
+                        <span className={`inline-block px-2 py-0.5 rounded text-[12px] font-bold ${ORDER_STATUS_COLOR[order.status as keyof typeof ORDER_STATUS_COLOR] ?? "bg-gray-100 text-gray-500"}`}>
+                          {ORDER_STATUS_LABEL[order.status as keyof typeof ORDER_STATUS_LABEL] ?? order.status}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-[13px] text-[#6b6b6b] whitespace-nowrap">{order.date}</td>

@@ -23,7 +23,7 @@ describe("applyMidtransNotification", () => {
         eventType: "midtrans.notification",
         transactionStatus: "settlement",
         paymentStatus: "settlement",
-        orderStatus: "DIPROSES",
+        orderStatus: "BARU",
         transactionId: "trx-1",
       }),
     );
@@ -31,7 +31,7 @@ describe("applyMidtransNotification", () => {
       status: "processed",
       orderId: "order-1",
       paymentStatus: "settlement",
-      orderStatus: "DIPROSES",
+      orderStatus: "BARU",
       transactionStatus: "settlement",
     });
   });
