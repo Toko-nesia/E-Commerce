@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Shield, Check, Edit3 } from "lucide-react";
+import { Shield, Check, Edit3, Phone } from "lucide-react";
 import { Footer } from "../components/layout/Footer";
 import { PaymentOptionModal } from "../components/modals/PaymentOptionModal";
 import { AddressModal } from "../components/modals/AddressModal";
@@ -148,7 +148,7 @@ export default function CheckoutPage() {
     name: string;
     phone: string;
     address: string;
-    details: string;
+    label: string;
     postalCode: string;
     countryCode: string;
   }) => {
@@ -169,11 +169,11 @@ export default function CheckoutPage() {
         .from("addresses")
         .insert({
           user_id: user.id,
+          label: data.label.trim() || null,
           name: data.name.trim(),
           phone: normalizedPhone,
           address: data.address.trim(),
           full_address: data.address.trim(),
-          details: data.details.trim(),
           postal_code: data.postalCode.trim(),
           country_code: data.countryCode.trim().toUpperCase() || "JP",
           is_default: isFirst,
@@ -488,13 +488,27 @@ export default function CheckoutPage() {
               <LoadingSpinner label="Loading addresses..." className="text-[14px] text-[#6b6b6b]" />
             </div>
           ) : currentAddress ? (
-            <div className="border border-[#511e0b] rounded-lg p-5 mt-3 relative bg-white">
-              <p className="font-bold text-[16px] text-black">{currentAddress.name}</p>
-              <p className="text-[14px] text-[#6b6b6b] mt-1">{currentAddress.phone}</p>
-              <p className="text-[14px] text-[#6b6b6b]">{currentAddress.address}</p>
+            <div className={`border rounded-xl p-5 mt-3 relative bg-white ${currentAddress.is_default ? "border-[#511e0b]" : "border-[#b0b0b0]"}`}>
+              <div className="flex items-center gap-2 mb-3 pr-8">
+                {currentAddress.label && (
+                  <span className="bg-[#511e0b] text-white px-2 py-0.5 rounded text-[10px] font-bold tracking-wider">{currentAddress.label}</span>
+                )}
+                {currentAddress.is_default && (
+                  <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold">DEFAULT</span>
+                )}
+              </div>
+              <p className="font-medium text-[15px] text-black">{currentAddress.name}</p>
+              <p className="text-[13px] text-[#6b6b6b] mt-0.5 leading-relaxed">{currentAddress.address}</p>
+              {currentAddress.postal_code && (
+                <p className="text-[12px] text-[#6b6b6b] mt-0.5">{currentAddress.postal_code}, {currentAddress.country_code || "JP"}</p>
+              )}
+              <div className="flex items-center gap-1 mt-2">
+                <Phone size={11} className="text-[#6b6b6b]" />
+                <span className="text-[13px] text-[#6b6b6b]">{currentAddress.phone}</span>
+              </div>
               <button
                 onClick={() => setAddressModal(true)}
-                className="absolute top-4 right-4 bg-transparent border-none cursor-pointer p-0 text-[#511e0b] hover:text-black transition-colors"
+                className="absolute top-4 right-4 bg-transparent border-none cursor-pointer p-0 text-[#6b6b6b] hover:text-black transition-colors"
               >
                 <Edit3 size={18} />
               </button>
@@ -727,11 +741,11 @@ export default function CheckoutPage() {
                 name: currentAddress.name,
                 phone: currentAddress.phone,
                 fullAddress: currentAddress.address,
-                details: currentAddress.details || "",
+                label: currentAddress.label || "",
                 postalCode: currentAddress.postal_code || "",
                 countryCode: currentAddress.country_code || "JP",
               }
-            : { name: "", phone: "", fullAddress: "", details: "", postalCode: "", countryCode: "JP" }
+            : { name: "", phone: "", fullAddress: "", label: "", postalCode: "", countryCode: "JP" }
         }
       />
 
