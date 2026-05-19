@@ -735,18 +735,7 @@ export default function CheckoutPage() {
         onSave={handleSaveAddress}
         isSaving={isSavingAddress}
         saveError={saveAddressError}
-        initialData={
-          currentAddress
-            ? {
-                name: currentAddress.name,
-                phone: currentAddress.phone,
-                fullAddress: currentAddress.address,
-                label: currentAddress.label || "",
-                postalCode: currentAddress.postal_code || "",
-                countryCode: currentAddress.country_code || "JP",
-              }
-            : { name: "", phone: "", fullAddress: "", label: "", postalCode: "", countryCode: "JP" }
-        }
+        initialData={{ name: "", phone: "", fullAddress: "", label: "", postalCode: "", countryCode: "JP" }}
       />
 
       {/* Footer — desktop only */}
