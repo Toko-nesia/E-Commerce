@@ -102,7 +102,6 @@ export function normalizeIndogrosirPayload(payload, { query, includeDownloadUrl 
         pricing_type: "fixed",
         min_price_raw: null,
         max_price_raw: null,
-        variants: [],
       };
       return includeDownloadUrl ? { ...product, _image_download_url: item.url_pic_prod } : product;
     })
@@ -137,7 +136,6 @@ export function normalizeZaloraPayload(payload, { query, includeDownloadUrl = fa
         pricing_type: "fixed",
         min_price_raw: null,
         max_price_raw: null,
-        variants: [],
       };
       return includeDownloadUrl ? { ...product, _image_download_url: item.MainImageUrl || item.ImageList?.[0] } : product;
     })
@@ -163,6 +161,5 @@ export function customBoxProduct() {
     pricing_type: "custom_amount",
     min_price_raw: 500000,
     max_price_raw: 10000000,
-    variants: [],
   };
 }

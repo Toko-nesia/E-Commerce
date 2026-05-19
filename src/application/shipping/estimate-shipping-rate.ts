@@ -9,6 +9,7 @@ import type {
   CheckoutRepository,
   ShippingRateProvider,
 } from "@/application/checkout/create-checkout-intent";
+import { buildShippingRateOptions } from "@/domain/shipping";
 
 export interface EstimateShippingRateInput {
   userId: string;
@@ -32,12 +33,21 @@ export async function estimateShippingRate(
   const products = await deps.repository.getProductsByIds(normalizedItems.map((item) => item.productId));
   const pricedItems = priceCheckoutItems(normalizedItems, products);
   calculateCheckoutPricing(pricedItems, 0);
+  const methods = await deps.repository.getShippingMethods();
 
-  return deps.shipping.getShippingRate({
+  const { rates, warnings } = await buildShippingRateOptions({
+    methods,
     destination: {
       postalCode: address.postalCode,
       countryCode: address.countryCode,
     },
     commodities: buildShippingCommodities(pricedItems),
+    fedex: deps.shipping,
   });
+
+  if (rates.length === 0) {
+    throw new Error(warnings[0] ?? "No shipping method is available.");
+  }
+
+  return { rates, warnings };
 }

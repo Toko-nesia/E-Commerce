@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
-import type { Product, ProductVariant } from "@/types/database";
+import type { Product } from "@/types/database";
 
 // =============================================================================
 // Cart Context - global shopping cart state
@@ -11,7 +11,6 @@ import type { Product, ProductVariant } from "@/types/database";
 export interface CartItem {
   product: Product;
   qty: number;
-  variant?: ProductVariant | null;
   customAmountRaw?: number | null;
   buyerNote?: string | null;
 }
@@ -38,7 +37,6 @@ export interface CartActionResult {
 }
 
 export interface CartAddOptions {
-  variant?: ProductVariant | null;
   customAmountRaw?: number | null;
   buyerNote?: string | null;
 }
@@ -48,17 +46,17 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 const STORAGE_KEY = "tokonesia_cart";
 
 export function getCartItemKey(item: CartItem): string {
-  return `${item.product.id}:${item.variant?.id ?? ""}:${item.customAmountRaw ?? ""}`;
+  return `${item.product.id}:${item.customAmountRaw ?? ""}`;
 }
 
 export function getCartItemUnitPrice(item: CartItem): number {
-  return Number(item.customAmountRaw ?? item.variant?.price_raw ?? item.product.price_raw ?? 0);
+  return Number(item.customAmountRaw ?? item.product.price_raw ?? 0);
 }
 
 export function getCartItemPrice(item: CartItem): string {
   return item.customAmountRaw
     ? `Rp${item.customAmountRaw.toLocaleString("id-ID")}`
-    : item.variant?.price ?? item.product.price;
+    : item.product.price;
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -84,11 +82,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items]);
 
   const addToCart = useCallback((product: Product, qty = 1, options: CartAddOptions = {}): CartActionResult => {
-    const stock = Math.max(0, Number(options.variant?.stock ?? product.stock ?? 0));
+    const stock = Math.max(0, Number(product.stock ?? 0));
     const nextItem: CartItem = {
       product,
       qty: 0,
-      variant: options.variant ?? null,
       customAmountRaw: options.customAmountRaw ?? null,
       buyerNote: options.buyerNote ?? null,
     };
@@ -119,7 +116,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
           getCartItemKey(item) === itemKey
             ? {
                 product: { ...item.product, ...product, stock },
-                variant: options.variant ?? item.variant ?? null,
                 customAmountRaw: options.customAmountRaw ?? item.customAmountRaw ?? null,
                 buyerNote: item.buyerNote ?? options.buyerNote ?? null,
                 qty: finalQty,
@@ -129,7 +125,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
       return [...prev, {
         product: { ...product, stock },
-        variant: options.variant ?? null,
         customAmountRaw: options.customAmountRaw ?? null,
         buyerNote: options.buyerNote ?? null,
         qty: finalQty,
@@ -149,7 +144,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const existing = itemsRef.current.find((item) =>
       typeof itemKey === "number" ? item.product.id === itemKey : getCartItemKey(item) === itemKey
     );
-    const stock = Math.max(0, Number(existing?.variant?.stock ?? existing?.product.stock ?? 0));
+    const stock = Math.max(0, Number(existing?.product.stock ?? 0));
     const finalQty = qty <= 0 ? 0 : Math.min(qty, stock);
     const result: CartActionResult = {
       acceptedQty: Math.max(0, finalQty - (existing?.qty ?? 0)),
@@ -195,10 +190,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       headers: { "Content-Type": "application/json" },
       cache: "no-store",
       body: JSON.stringify({
-        items: currentItems.map(({ product, qty, variant, customAmountRaw, buyerNote }) => ({
+        items: currentItems.map(({ product, qty, customAmountRaw, buyerNote }) => ({
           productId: product.id,
           quantity: qty,
-          variantId: variant?.id ?? null,
           customAmountRaw: customAmountRaw ?? null,
           buyerNote: buyerNote ?? "",
         })),
@@ -208,10 +202,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (!res.ok) {
       throw new Error(data.error ?? "Failed to refresh cart stock.");
     }
-    setItems((data.items ?? []).map((item: { product: Product; quantity: number; variant?: ProductVariant | null; customAmountRaw?: number | null; buyerNote?: string | null }) => ({
+    setItems((data.items ?? []).map((item: { product: Product; quantity: number; customAmountRaw?: number | null; buyerNote?: string | null }) => ({
       product: item.product,
       qty: item.quantity,
-      variant: item.variant ?? null,
       customAmountRaw: item.customAmountRaw ?? null,
       buyerNote: item.buyerNote ?? "",
     })));

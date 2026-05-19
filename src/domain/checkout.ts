@@ -7,7 +7,6 @@ export const MAX_BUYER_ITEM_NOTE_LENGTH = 2000;
 export interface CheckoutItemInput {
   productId: number;
   quantity: number;
-  variantId?: number | null;
   customAmountRaw?: number | null;
   buyerNote?: string | null;
 }
@@ -21,25 +20,13 @@ export interface CheckoutProduct {
   weightKg: number;
   stock: number;
   description?: string | null;
-  pricingType?: "fixed" | "variant" | "custom_amount";
+  pricingType?: "fixed" | "custom_amount";
   minPriceRaw?: number | null;
   maxPriceRaw?: number | null;
-  variants?: CheckoutProductVariant[];
-}
-
-export interface CheckoutProductVariant {
-  id: number;
-  productId: number;
-  name: string;
-  priceRaw: number;
-  price: string;
-  stock: number;
-  weightKg?: number | null;
 }
 
 export interface PricedCheckoutItem {
   product: CheckoutProduct;
-  variant?: CheckoutProductVariant | null;
   quantity: number;
   unitPriceRaw: number;
   price: string;
@@ -92,16 +79,12 @@ export function normalizeCheckoutItems(items: CheckoutItemInput[]): CheckoutItem
     if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
       throw new Error("Invalid product quantity.");
     }
-    const variantId = item.variantId == null ? null : Number(item.variantId);
-    if (variantId !== null && (!Number.isInteger(variantId) || variantId <= 0)) {
-      throw new Error("Invalid product variant.");
-    }
     const customAmountRaw = item.customAmountRaw == null ? null : Number(item.customAmountRaw);
     if (customAmountRaw !== null && (!Number.isInteger(customAmountRaw) || customAmountRaw <= 0)) {
       throw new Error("Invalid custom amount.");
     }
     const buyerNote = normalizeBuyerNote(item.buyerNote);
-    const key = `${item.productId}:${variantId ?? ""}:${customAmountRaw ?? ""}`;
+    const key = `${item.productId}:${customAmountRaw ?? ""}`;
     const existing = grouped.get(key);
     if (
       existing
@@ -113,7 +96,6 @@ export function normalizeCheckoutItems(items: CheckoutItemInput[]): CheckoutItem
     }
     grouped.set(key, {
       productId: item.productId,
-      variantId,
       customAmountRaw,
       buyerNote: existing?.buyerNote || buyerNote || null,
       quantity: (existing?.quantity ?? 0) + item.quantity,
@@ -123,7 +105,6 @@ export function normalizeCheckoutItems(items: CheckoutItemInput[]): CheckoutItem
   return [...grouped.values()]
     .sort((a, b) =>
       a.productId - b.productId
-      || (a.variantId ?? 0) - (b.variantId ?? 0)
       || (a.customAmountRaw ?? 0) - (b.customAmountRaw ?? 0)
     );
 }
@@ -140,14 +121,8 @@ export function priceCheckoutItems(
       throw new Error(`Product ${item.productId} is no longer available.`);
     }
     const pricingType = product.pricingType ?? "fixed";
-    const variant = item.variantId
-      ? product.variants?.find((candidate) => candidate.id === item.variantId)
-      : null;
 
-    if (pricingType === "variant" && !variant) {
-      throw new Error(`Select a valid variant for ${product.name}.`);
-    }
-    if (pricingType !== "variant" && item.variantId) {
+    if ((item as { variantId?: unknown }).variantId) {
       throw new Error(`Invalid variant for ${product.name}.`);
     }
     if (pricingType !== "custom_amount" && item.customAmountRaw) {
@@ -156,15 +131,10 @@ export function priceCheckoutItems(
 
     let unitPriceRaw = product.priceRaw;
     let price = product.price;
-    let stock = product.stock;
-    let unitWeightKg = product.weightKg;
+    const stock = product.stock;
+    const unitWeightKg = product.weightKg;
 
-    if (variant) {
-      unitPriceRaw = variant.priceRaw;
-      price = variant.price;
-      stock = variant.stock;
-      unitWeightKg = Number(variant.weightKg ?? product.weightKg);
-    } else if (pricingType === "custom_amount") {
+    if (pricingType === "custom_amount") {
       const amount = item.customAmountRaw;
       if (!amount) {
         throw new Error(`Choose a request budget for ${product.name}.`);
@@ -189,7 +159,6 @@ export function priceCheckoutItems(
     }
     return {
       product,
-      variant,
       quantity: item.quantity,
       unitPriceRaw,
       price,
@@ -241,11 +210,13 @@ export function calculateCheckoutPricing(
 
 export function createCartFingerprint(input: {
   addressId: string;
+  shippingMethod?: string;
   items: CheckoutItemInput[];
   pricing: CheckoutPricing;
 }): string {
   const canonical = JSON.stringify({
     addressId: input.addressId,
+    shippingMethod: input.shippingMethod ?? "",
     items: normalizeCheckoutItems(input.items),
     subtotal: input.pricing.subtotal,
     shippingCost: input.pricing.shippingCost,
@@ -266,16 +237,14 @@ export function buildMidtransItemDetails(
 ): Array<{ id: string; price: number; quantity: number; name: string }> {
   return [
     ...pricedItems.map((item) => ({
-      id: item.variant
-        ? `${item.product.id}-${item.variant.id}`
-        : item.customAmountRaw
+      id: item.customAmountRaw
           ? `${item.product.id}-custom-${item.customAmountRaw}`
           : String(item.product.id),
       price: item.unitPriceRaw,
       quantity: item.quantity,
-      name: (item.variant ? `${item.product.name} - ${item.variant.name}` : item.product.name).slice(0, 50),
+      name: item.product.name.slice(0, 50),
     })),
-    { id: "SHIPPING", price: pricing.shippingCost, quantity: 1, name: "Air Shipping" },
+    { id: "SHIPPING", price: pricing.shippingCost, quantity: 1, name: "Shipping" },
     { id: "SERVICE_FEE", price: pricing.serviceFee, quantity: 1, name: "Service Fee" },
   ];
 }

@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { formatRp, type CheckoutProduct } from "@/domain/checkout";
 import { DuplicateCheckoutRequestError } from "@/application/checkout/create-checkout-intent";
+import { isShippingMethodCode, type ShippingMethodConfig } from "@/domain/shipping";
 import type {
   CheckoutAddress,
   CheckoutRepository,
@@ -39,7 +40,6 @@ function toProduct(row: Record<string, any>): CheckoutProduct {
     pricingType: row.pricing_type ?? "fixed",
     minPriceRaw: row.min_price_raw == null ? null : Number(row.min_price_raw),
     maxPriceRaw: row.max_price_raw == null ? null : Number(row.max_price_raw),
-    variants: [],
   };
 }
 
@@ -105,36 +105,30 @@ export class SupabaseCheckoutRepository implements CheckoutRepository {
       throw new Error(error.message);
     }
 
-    const products = (data ?? []).map(toProduct);
-    if (products.length === 0) return products;
+    return (data ?? []).map(toProduct);
+  }
 
-    const { data: variants, error: variantsError } = await (this.supabase as any)
-      .from("product_variants")
-      .select("id, product_id, name, price, price_raw, stock, weight_kg")
-      .in("product_id", productIds)
-      .order("sort_order", { ascending: true })
-      .order("id", { ascending: true });
+  async getShippingMethods(): Promise<ShippingMethodConfig[]> {
+    const { data, error } = await (this.supabase as any)
+      .from("shipping_methods")
+      .select("code, label, enabled, price_raw, requires_tracking, settings")
+      .in("code", ["fedex", "internal_courier"])
+      .order("sort_order", { ascending: true });
 
-    if (variantsError) {
-      throw new Error(variantsError.message);
+    if (error) {
+      throw new Error(error.message);
     }
 
-    const productById = new Map(products.map((product) => [product.id, product]));
-    for (const variant of variants ?? []) {
-      const product = productById.get(Number(variant.product_id));
-      if (!product) continue;
-      product.variants?.push({
-        id: Number(variant.id),
-        productId: Number(variant.product_id),
-        name: variant.name,
-        priceRaw: Number(variant.price_raw),
-        price: variant.price,
-        stock: Number(variant.stock ?? 0),
-        weightKg: variant.weight_kg == null ? null : Number(variant.weight_kg),
-      });
-    }
-
-    return products;
+    return (data ?? [])
+      .filter((row: Record<string, any>) => isShippingMethodCode(row.code))
+      .map((row: Record<string, any>) => ({
+        code: row.code,
+        label: row.label,
+        enabled: Boolean(row.enabled),
+        priceRaw: row.price_raw == null ? null : Number(row.price_raw),
+        requiresTracking: Boolean(row.requires_tracking),
+        settings: row.settings ?? {},
+      }));
   }
 
   async createPendingOrder(input: CreateCheckoutOrderInput): Promise<CreatedCheckoutOrder> {
@@ -142,7 +136,6 @@ export class SupabaseCheckoutRepository implements CheckoutRepository {
 
     const items = input.items.map((item) => ({
       product_id: item.productId,
-      product_variant_id: item.productVariantId ?? null,
       quantity: item.quantity,
       price_raw: item.priceRaw,
       price: item.price,
@@ -182,6 +175,7 @@ export class SupabaseCheckoutRepository implements CheckoutRepository {
       p_service_fee: input.pricing.serviceFee,
       p_note: input.note || "",
       p_payment_method: input.paymentMethod,
+      p_shipping_method: input.shippingMethod,
     });
 
     if (error) {

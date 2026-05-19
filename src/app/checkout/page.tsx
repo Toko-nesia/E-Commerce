@@ -17,9 +17,21 @@ import type { Address } from "@/types/database";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 
 const paymentMethods = [
-  { id: "bank_transfer", name: "Virtual Account" },
+  { id: "bank_transfer", name: "Bank Payment" },
   { id: "credit_card", name: "Debit/Credit Card" },
 ];
+
+type ShippingMethodCode = "fedex" | "internal_courier";
+
+interface ShippingRateOption {
+  method: ShippingMethodCode;
+  label: string;
+  shippingCost: number;
+  serviceName: string;
+  estimatedDelivery?: string;
+  estimatedDeliveryDate?: string;
+  requiresTracking: boolean;
+}
 
 declare global {
   interface Window {
@@ -70,16 +82,14 @@ export default function CheckoutPage() {
   const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [saveAddressError, setSaveAddressError] = useState<string | null>(null);
 
-  // FedEx shipping
-  const [shippingCost, setShippingCost] = useState<number | null>(null);
-  const [shippingName, setShippingName] = useState<string>("Air Shipping");
-  const [shippingDelivery, setShippingDelivery] = useState<string>("");
+  // Shipping methods
+  const [shippingOptions, setShippingOptions] = useState<ShippingRateOption[]>([]);
+  const [selectedShippingMethod, setSelectedShippingMethod] = useState<ShippingMethodCode | "">("");
   const [shippingLoading, setShippingLoading] = useState(false);
   const [shippingError, setShippingError] = useState<string | null>(null);
   const shippingCacheRef = useRef(new Map<string, {
-    shippingCost: number;
-    serviceName: string;
-    estimatedDelivery: string;
+    rates: ShippingRateOption[];
+    warnings?: string[];
   }>());
   const lastShippingRequestKeyRef = useRef<string | null>(null);
 
@@ -207,19 +217,21 @@ export default function CheckoutPage() {
   }, []);
 
   const currentAddress = addresses.find((a) => a.id === selectedAddress) || addresses[0];
+  const selectedShippingOption = useMemo(() => {
+    return shippingOptions.find((option) => option.method === selectedShippingMethod) ?? shippingOptions[0] ?? null;
+  }, [selectedShippingMethod, shippingOptions]);
 
   const shippingQuoteKey = useMemo(() => {
     if (!currentAddress || items.length === 0) return "";
     return JSON.stringify({
       addressId: currentAddress.id,
       items: items
-        .map(({ product, qty, variant, customAmountRaw }) => ({
+        .map(({ product, qty, customAmountRaw }) => ({
           productId: product.id,
           quantity: qty,
-          variantId: variant?.id ?? null,
           customAmountRaw: customAmountRaw ?? null,
         }))
-        .sort((a, b) => a.productId - b.productId || (a.variantId ?? 0) - (b.variantId ?? 0) || (a.customAmountRaw ?? 0) - (b.customAmountRaw ?? 0)),
+        .sort((a, b) => a.productId - b.productId || (a.customAmountRaw ?? 0) - (b.customAmountRaw ?? 0)),
     });
   }, [currentAddress, items]);
 
@@ -227,15 +239,18 @@ export default function CheckoutPage() {
   const fetchShippingRate = useCallback(async (address: Address, quoteKey: string) => {
     const cached = shippingCacheRef.current.get(quoteKey);
     if (cached) {
-      setShippingCost(cached.shippingCost);
-      setShippingName(cached.serviceName);
-      setShippingDelivery(cached.estimatedDelivery);
+      setShippingOptions(cached.rates);
+      setSelectedShippingMethod((current) =>
+        current && cached.rates.some((rate) => rate.method === current)
+          ? current
+          : cached.rates[0]?.method ?? ""
+      );
       setShippingError(null);
       setShippingLoading(false);
       return;
     }
 
-    if (lastShippingRequestKeyRef.current === quoteKey && shippingCost !== null) {
+    if (lastShippingRequestKeyRef.current === quoteKey && shippingOptions.length > 0) {
       return;
     }
 
@@ -243,7 +258,8 @@ export default function CheckoutPage() {
     setShippingLoading(true);
     setShippingError(null);
     if (items.length === 0) {
-      setShippingCost(null);
+      setShippingOptions([]);
+      setSelectedShippingMethod("");
       setShippingLoading(false);
       return;
     }
@@ -254,10 +270,9 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           addressId: address.id,
-          items: items.map(({ product, qty, variant, customAmountRaw }) => ({
+          items: items.map(({ product, qty, customAmountRaw }) => ({
             productId: product.id,
             quantity: qty,
-            variantId: variant?.id ?? null,
             customAmountRaw: customAmountRaw ?? null,
           })),
         }),
@@ -269,21 +284,26 @@ export default function CheckoutPage() {
       }
 
       const data = await res.json();
-      setShippingCost(data.shippingCost);
-      setShippingName(data.serviceName ?? "Air Shipping");
-      setShippingDelivery(data.estimatedDelivery ?? "");
-      shippingCacheRef.current.set(quoteKey, {
-        shippingCost: data.shippingCost,
-        serviceName: data.serviceName ?? "Air Shipping",
-        estimatedDelivery: data.estimatedDelivery ?? "",
-      });
+      const rates = Array.isArray(data.rates) ? data.rates as ShippingRateOption[] : [];
+      if (rates.length === 0) {
+        throw new Error("No shipping method is available");
+      }
+      setShippingOptions(rates);
+      setSelectedShippingMethod((current) =>
+        current && rates.some((rate) => rate.method === current)
+          ? current
+          : rates[0].method
+      );
+      shippingCacheRef.current.set(quoteKey, { rates, warnings: data.warnings });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Shipping rate unavailable";
       setShippingError(msg);
+      setShippingOptions([]);
+      setSelectedShippingMethod("");
     } finally {
       setShippingLoading(false);
     }
-  }, [items, shippingCost]);
+  }, [items, shippingOptions.length]);
 
   useEffect(() => {
     if (currentAddress && shippingQuoteKey) {
@@ -298,30 +318,31 @@ export default function CheckoutPage() {
   }, []);
 
   const serviceFee = Math.round(totalPrice * 0.01);
+  const shippingCost = selectedShippingOption?.shippingCost ?? null;
   const grandTotal = totalPrice + (shippingCost ?? 0) + serviceFee;
   const grandTotalJpy = Math.round(grandTotal * exchangeRate);
 
   const checkoutSessionFingerprint = useMemo(() => {
     return JSON.stringify({
       addressId: selectedAddress,
+      shippingMethod: selectedShippingMethod,
       items: items
-        .map(({ product, qty, variant, customAmountRaw, buyerNote }) => ({
+        .map(({ product, qty, customAmountRaw, buyerNote }) => ({
           id: product.id,
           qty,
-          variantId: variant?.id ?? null,
           customAmountRaw: customAmountRaw ?? null,
           buyerNote: buyerNote ?? "",
         }))
-        .sort((a, b) => a.id - b.id || (a.variantId ?? 0) - (b.variantId ?? 0) || (a.customAmountRaw ?? 0) - (b.customAmountRaw ?? 0)),
+        .sort((a, b) => a.id - b.id || (a.customAmountRaw ?? 0) - (b.customAmountRaw ?? 0)),
     });
-  }, [items, selectedAddress]);
+  }, [items, selectedAddress, selectedShippingMethod]);
 
   useEffect(() => {
     setIdempotencyKey(createIdempotencyKey());
   }, [checkoutSessionFingerprint]);
 
   const handlePay = async () => {
-    if (isProcessing || !currentAddress || shippingCost === null) return;
+    if (isProcessing || !currentAddress || !selectedShippingOption) return;
     setIsProcessing(true);
     setPayError(null);
 
@@ -337,19 +358,18 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           idempotencyKey,
           addressId: currentAddress.id,
+          shippingMethod: selectedShippingOption.method,
           paymentMethod: selectedPayment,
           note,
-          cartItems: items.map(({ product, qty, variant, customAmountRaw, buyerNote }) => ({
+          cartItems: items.map(({ product, qty, customAmountRaw, buyerNote }) => ({
             productId: product.id,
             quantity: qty,
-            variantId: variant?.id ?? null,
             customAmountRaw: customAmountRaw ?? null,
             buyerNote: buyerNote ?? "",
           })),
-          items: items.map(({ product, qty, variant, customAmountRaw, buyerNote }) => ({
+          items: items.map(({ product, qty, customAmountRaw, buyerNote }) => ({
             productId: product.id,
             quantity: qty,
-            variantId: variant?.id ?? null,
             customAmountRaw: customAmountRaw ?? null,
             buyerNote: buyerNote ?? "",
           })),
@@ -495,19 +515,49 @@ export default function CheckoutPage() {
           <h2 className="font-bold text-[22px] text-[#511e0b] mt-8">Shipping</h2>
           <div className="border border-[#511e0b] rounded-lg p-5 mt-3 bg-white">
             {shippingLoading ? (
-              <LoadingSpinner label={shippingCost === null ? "Fetching shipping rate..." : "Updating shipping rate..."} className="text-[14px] text-[#6b6b6b]" />
+              <LoadingSpinner label={selectedShippingOption ? "Updating shipping options..." : "Fetching shipping options..."} className="text-[14px] text-[#6b6b6b]" />
             ) : shippingError ? (
               <p className="text-[14px] text-[#df0000]">{shippingError}</p>
-            ) : shippingCost !== null ? (
-              <>
-                <p className="font-bold text-[15px] text-black">{shippingName}</p>
-                <p className="text-[14px] text-[#6b6b6b] mt-1">{formatRp(shippingCost)}</p>
-                {shippingDelivery && (
-                  <p className="text-[14px] text-[#6b6b6b]">Estimated delivery: {shippingDelivery}</p>
-                )}
-              </>
+            ) : shippingOptions.length > 0 ? (
+              <div className="space-y-3">
+                {shippingOptions.map((option) => (
+                  <label
+                    key={option.method}
+                    className={`flex items-start justify-between gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                      selectedShippingMethod === option.method
+                        ? "border-[#511e0b] bg-[#FDF9F5]"
+                        : "border-[#d8c8bd] bg-white hover:bg-[#f8f8f8]"
+                    }`}
+                  >
+                    <span className="flex items-start gap-3 min-w-0">
+                      <input
+                        type="radio"
+                        name="shipping-method"
+                        value={option.method}
+                        checked={selectedShippingMethod === option.method}
+                        onChange={() => setSelectedShippingMethod(option.method)}
+                        className="mt-1 accent-[#511e0b] shrink-0"
+                      />
+                      <span className="min-w-0">
+                        <span className="block font-bold text-[15px] text-black">{option.label}</span>
+                        {option.estimatedDelivery && (
+                          <span className="block text-[13px] text-[#6b6b6b] mt-0.5">
+                            Estimated delivery: {option.estimatedDelivery}
+                          </span>
+                        )}
+                        {!option.requiresTracking && (
+                          <span className="block text-[12px] text-[#6b6b6b] mt-0.5">
+                            Tracking number is not required for this method.
+                          </span>
+                        )}
+                      </span>
+                    </span>
+                    <span className="text-[14px] font-bold text-[#511e0b] shrink-0">{formatRp(option.shippingCost)}</span>
+                  </label>
+                ))}
+              </div>
             ) : (
-              <p className="text-[14px] text-[#6b6b6b]">Select an address to see shipping rate.</p>
+              <p className="text-[14px] text-[#6b6b6b]">Select an address to see available shipping methods.</p>
             )}
           </div>
 
@@ -548,7 +598,7 @@ export default function CheckoutPage() {
           {/* Cart Items */}
           <div className="mt-5 space-y-4">
             {items.map((item) => {
-              const { product, qty, variant } = item;
+              const { product, qty } = item;
               const itemKey = getCartItemKey(item);
               const isCustomBox = product.pricing_type === "custom_amount" && product.category === "Jastip Box";
               return (
@@ -559,7 +609,7 @@ export default function CheckoutPage() {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-[14px] text-black leading-snug line-clamp-2">{product.name}</p>
                   <p className="text-[13px] text-[#6b6b6b] mt-0.5">
-                    {variant ? `${variant.name} / ` : ""}{getCartItemPrice(item)} x {qty}
+                    {getCartItemPrice(item)} x {qty}
                   </p>
                   <p className="text-[13px] font-bold text-[#511e0b] mt-0.5">{formatRp(getCartItemUnitPrice(item) * qty)}</p>
                   <label className="mt-2 block text-[12px] font-semibold text-[#511e0b]" htmlFor={`checkout-item-note-${itemKey}`}>
@@ -591,7 +641,7 @@ export default function CheckoutPage() {
               <span className="text-[14px] text-[#6b6b6b]">{formatRp(totalPrice)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[14px] text-black">Air shipping</span>
+              <span className="text-[14px] text-black">{selectedShippingOption?.label ?? "Shipping"}</span>
               <span className="text-[14px] text-[#6b6b6b]">
                 {shippingLoading
                   ? <LoadingSpinner size={14} />
@@ -639,7 +689,7 @@ export default function CheckoutPage() {
               addressesLoading ||
               shippingLoading ||
               !currentAddress ||
-              !shippingCost ||
+              !selectedShippingOption ||
               isProcessing
             }
             className="w-full bg-[#511e0b] text-white rounded-lg h-14 mt-6 font-bold text-[16px] border-none cursor-pointer hover:bg-[#3d1608] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"

@@ -18,6 +18,7 @@ interface OrderRow {
   status: OrderStatus;
   total_price: string;
   tracking_number?: string | null;
+  shipping_method?: string | null;
   cancel_reason?: string | null;
   profiles: { full_name: string | null; email: string | null } | null;
   order_items: Array<{ quantity: number; buyer_note?: string | null; products: { name: string } | null }>;
@@ -67,7 +68,7 @@ export default function OrdersPage() {
       const supabase = createClient();
       let query = supabase
         .from("orders")
-        .select("id, created_at, status, total_price, tracking_number, cancel_reason, profiles(full_name, email), order_items(quantity, buyer_note, products(name)), order_status_events(id, title, description, actor_type, created_at)")
+        .select("id, created_at, status, total_price, tracking_number, shipping_method, cancel_reason, profiles(full_name, email), order_items(quantity, buyer_note, products(name)), order_status_events(id, title, description, actor_type, created_at)")
         .order("created_at", { ascending: false })
         .range(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE);
 
@@ -98,7 +99,7 @@ export default function OrdersPage() {
   }, [selectedOrder]);
 
   const validNextStatuses = useMemo(() => selectedOrder ? getValidAdminNextStatuses(selectedOrder.status) : [], [selectedOrder]);
-  const showTrackingInput = requiresTrackingNumber(newStatus);
+  const showTrackingInput = requiresTrackingNumber(newStatus, selectedOrder?.shipping_method);
   const showCancelReason = requiresCancelReason(newStatus);
 
   async function handleSave() {
@@ -224,6 +225,7 @@ export default function OrdersPage() {
               <span className="text-[#6b6b6b]">Order No.</span><span className="font-medium">#{selectedOrder.id.slice(0, 8).toUpperCase()}</span>
               <span className="text-[#6b6b6b]">Date</span><span>{formatDate(selectedOrder.created_at)}</span>
               <span className="text-[#6b6b6b]">Customer</span><span>{selectedOrder.profiles?.full_name ?? selectedOrder.profiles?.email ?? "-"}</span>
+              <span className="text-[#6b6b6b]">Shipping</span><span>{selectedOrder.shipping_method === "internal_courier" ? "Internal Courier" : "FedEx"}</span>
               <span className="text-[#6b6b6b]">Total</span><span className="font-medium">{selectedOrder.total_price}</span>
             </div>
 
@@ -292,7 +294,7 @@ export default function OrdersPage() {
 
                 {showTrackingInput && (
                   <div className="mt-3">
-                    <p className="font-bold text-[13px] mb-2">FedEx Tracking No. <span className="text-red-500">*</span></p>
+                    <p className="font-bold text-[13px] mb-2">Tracking No. <span className="text-red-500">*</span></p>
                     <input type="text" value={trackingInput} onChange={(e) => { setTrackingInput(e.target.value); setTrackingError(""); }}
                       placeholder="Enter FedEx tracking number"
                       className="border border-[#d0d0d0] rounded px-3 py-2 text-[13px] w-full outline-none focus:border-[#511E0B]" />

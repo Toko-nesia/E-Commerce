@@ -30,22 +30,7 @@ export interface Product {
   updated_at?: string;
 }
 
-export type ProductPricingType = 'fixed' | 'variant' | 'custom_amount';
-
-export interface ProductVariant {
-  id: number;
-  product_id: number;
-  name: string;
-  sku?: string | null;
-  price: string;
-  price_raw: number;
-  stock: number;
-  weight_kg?: number | null;
-  metadata?: Record<string, unknown> | null;
-  sort_order?: number;
-  created_at?: string;
-  updated_at?: string;
-}
+export type ProductPricingType = 'fixed' | 'custom_amount';
 
 export interface Category {
   name: string;
@@ -114,6 +99,7 @@ export interface Order {
   stock_reserved_at?: string | null;
   stock_released_at?: string | null;
   stock_release_reason?: string | null;
+  shipping_method?: string | null;
   paid_at?: string | null;
   shipped_at?: string | null;
   tracking_number?: string | null;
@@ -133,7 +119,6 @@ export interface OrderItem {
   id: string | number;
   order_id?: string;
   product_id?: number;
-  product_variant_id?: number | null;
   quantity: number;
   price: string | null;
   price_raw?: number;

@@ -1,6 +1,6 @@
 # Tokonesia
 
-Tokonesia is a cross-border e-commerce app for Indonesian products sold to customers in Japan. The app uses Next.js App Router for the web and API boundary, Supabase for auth/database/storage, Midtrans Snap for payment, FedEx APIs for shipping rates and tracking, and Brevo for transactional email.
+Tokonesia is a cross-border e-commerce app for Indonesian products sold to customers in Japan. The app uses Next.js App Router for the web and API boundary, Supabase for auth/database/storage, Midtrans Snap for payment, FedEx/internal courier shipping, and Brevo for transactional email.
 
 ## Tech Stack
 
@@ -70,7 +70,7 @@ Key backend entry points:
 - `POST /api/auth/verify-email-otp` verifies Supabase email OTP after registration.
 - `POST /api/auth/resend-email-otp` resends a pending signup verification code.
 - `PATCH /api/admin/orders/:id/status` updates order status server-side and dispatches order emails.
-- `POST /api/shipping/rates` calculates server-side FedEx rate estimates from validated cart and address data.
+- `POST /api/shipping/rates` returns enabled shipping methods from validated cart and address data. FedEx rates are calculated through FedEx; internal courier rates come from admin settings without calling FedEx.
 - `POST /api/catalog/cart/resolve` revalidates cart stock against live product data.
 - Refund and cancellation transitions are handled through API routes, not direct client table updates.
 
@@ -125,10 +125,16 @@ Auth and email:
 
 Payments:
 
-- Checkout supports Virtual Account and Debit/Credit Card through Midtrans Snap. The checkout selector passes the selected payment method to the Snap payload.
+- Checkout supports bank payment and debit/credit card through Midtrans Snap. The checkout selector passes the selected payment method to the Snap payload.
 - Closing the Snap popup leaves the order in pending payment state and redirects to `/order-pending?orderId=...`.
 - Customers can continue the same pending payment until `snap_token_expires_at`; expired unpaid orders move to failed/expired state and release reserved stock.
 - The success and pending pages call the server-side payment sync endpoint to avoid the Midtrans webhook race where Snap returns success before the database has received the webhook.
+
+Shipping:
+
+- Admin Settings controls enabled shipping methods. FedEx requires a valid origin and uses live FedEx rates; Internal Courier uses a fixed IDR price configured by admin.
+- Checkout only shows enabled shipping methods and sends the selected method to the server. The server recomputes the final shipping cost and rejects disabled or stale methods.
+- FedEx shipments require tracking numbers and use the tracking API. Internal Courier shipments do not require tracking numbers and do not call FedEx tracking; order history still records the handoff and subsequent lifecycle events.
 
 Storage buckets:
 
@@ -142,7 +148,7 @@ Initial product bootstrap:
 - Curated starter catalog data lives in `supabase/bootstrap/initial-products/manifest.json`.
 - Starter product images live in `supabase/storage/product-images/initial/**`; they are uploaded to the `product-images` bucket by the bootstrap script.
 - Run `npm run initial-products:collect` only when intentionally refreshing the starter catalog. The collector may read external product feeds, but the committed manifest is normalized as Tokonesia catalog data and does not store original links or feed-specific metadata.
-- Run `npm run supabase:bootstrap-products` after migrations on a fresh environment to upsert starter categories, products, variants, and product images idempotently.
+- Run `npm run supabase:bootstrap-products` after migrations on a fresh environment to upsert starter categories, products, and product images idempotently.
 - `supabase:bootstrap-products` does not call external marketplace APIs; it uses the committed manifest and image bundle, so new environments can be reproduced without refetching remote catalog data.
 - Product rows may include `purchase_instructions`, opaque `bootstrap_key`, and `pricing_type`. Custom amount products such as `Custom Box Jastip 21kg` validate their allowed budget range server-side during checkout. Buyer-specific requests are stored as per-item notes in the cart and order items, not as product descriptions.
 

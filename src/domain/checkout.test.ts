@@ -40,36 +40,6 @@ const products: CheckoutProduct[] = [
     minPriceRaw: 500_000,
     maxPriceRaw: 10_000_000,
   },
-  {
-    id: 4,
-    name: "Sepatu Casual",
-    category: "Shoes",
-    price: "Rp300.000",
-    priceRaw: 300_000,
-    stock: 0,
-    weightKg: 1.5,
-    pricingType: "variant",
-    variants: [
-      {
-        id: 41,
-        productId: 4,
-        name: "EU 40",
-        price: "Rp350.000",
-        priceRaw: 350_000,
-        stock: 3,
-        weightKg: 2,
-      },
-      {
-        id: 42,
-        productId: 4,
-        name: "EU 41",
-        price: "Rp375.000",
-        priceRaw: 375_000,
-        stock: 1,
-        weightKg: 2,
-      },
-    ],
-  },
 ];
 
 describe("checkout domain", () => {
@@ -81,8 +51,8 @@ describe("checkout domain", () => {
         { productId: 2, quantity: 3 },
       ]),
     ).toEqual([
-      { productId: 1, variantId: null, customAmountRaw: null, buyerNote: null, quantity: 2 },
-      { productId: 2, variantId: null, customAmountRaw: null, buyerNote: null, quantity: 4 },
+      { productId: 1, customAmountRaw: null, buyerNote: null, quantity: 2 },
+      { productId: 2, customAmountRaw: null, buyerNote: null, quantity: 4 },
     ]);
   });
 
@@ -93,7 +63,7 @@ describe("checkout domain", () => {
         { productId: 1, quantity: 1, buyerNote: "Medium roast only" },
       ]),
     ).toEqual([
-      { productId: 1, variantId: null, customAmountRaw: null, buyerNote: "Medium roast only", quantity: 2 },
+      { productId: 1, customAmountRaw: null, buyerNote: "Medium roast only", quantity: 2 },
     ]);
 
     expect(() =>
@@ -108,20 +78,16 @@ describe("checkout domain", () => {
     ).toThrow("Item note must be 2000 characters or less.");
   });
 
-  it("keeps variant and custom amount selections as separate cart lines", () => {
+  it("keeps custom amount selections as separate cart lines", () => {
     expect(
       normalizeCheckoutItems([
-        { productId: 4, variantId: 42, quantity: 1 },
-        { productId: 4, variantId: 41, quantity: 1 },
         { productId: 3, customAmountRaw: 500_000, quantity: 1 },
         { productId: 3, customAmountRaw: 750_000, quantity: 1 },
         { productId: 3, customAmountRaw: 500_000, quantity: 2 },
       ]),
     ).toEqual([
-      { productId: 3, variantId: null, customAmountRaw: 500_000, buyerNote: null, quantity: 3 },
-      { productId: 3, variantId: null, customAmountRaw: 750_000, buyerNote: null, quantity: 1 },
-      { productId: 4, variantId: 41, customAmountRaw: null, buyerNote: null, quantity: 1 },
-      { productId: 4, variantId: 42, customAmountRaw: null, buyerNote: null, quantity: 1 },
+      { productId: 3, customAmountRaw: 500_000, buyerNote: null, quantity: 3 },
+      { productId: 3, customAmountRaw: 750_000, buyerNote: null, quantity: 1 },
     ]);
   });
 
@@ -135,18 +101,9 @@ describe("checkout domain", () => {
     );
   });
 
-  it("prices variants from the selected variant, not the parent product", () => {
-    const priced = priceCheckoutItems([{ productId: 4, variantId: 42, quantity: 1 }], products);
-
-    expect(priced[0]).toMatchObject({
-      unitPriceRaw: 375_000,
-      price: "Rp375.000",
-      lineTotal: 375_000,
-      lineWeightKg: 2,
-      variant: expect.objectContaining({ id: 42, name: "EU 41" }),
-    });
-    expect(() => priceCheckoutItems([{ productId: 4, variantId: 42, quantity: 2 }], products)).toThrow(
-      "Insufficient stock",
+  it("rejects variant payloads", () => {
+    expect(() => priceCheckoutItems([{ productId: 1, variantId: 42, quantity: 1 } as any], products)).toThrow(
+      "Invalid variant",
     );
   });
 

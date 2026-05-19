@@ -70,39 +70,6 @@ export type Database = {
           },
         ]
       }
-      brands: {
-        Row: {
-          created_at: string
-          height: number | null
-          id: number
-          img: string
-          name: string
-          overflow: boolean | null
-          style: string | null
-          width: number | null
-        }
-        Insert: {
-          created_at?: string
-          height?: number | null
-          id?: never
-          img: string
-          name: string
-          overflow?: boolean | null
-          style?: string | null
-          width?: number | null
-        }
-        Update: {
-          created_at?: string
-          height?: number | null
-          id?: never
-          img?: string
-          name?: string
-          overflow?: boolean | null
-          style?: string | null
-          width?: number | null
-        }
-        Relationships: []
-      }
       categories: {
         Row: {
           count: number
@@ -267,7 +234,6 @@ export type Database = {
           price: string | null
           price_raw: number
           product_id: number
-          product_variant_id: number | null
           quantity: number
         }
         Insert: {
@@ -279,7 +245,6 @@ export type Database = {
           price?: string | null
           price_raw: number
           product_id: number
-          product_variant_id?: number | null
           quantity: number
         }
         Update: {
@@ -291,7 +256,6 @@ export type Database = {
           price?: string | null
           price_raw?: number
           product_id?: number
-          product_variant_id?: number | null
           quantity?: number
         }
         Relationships: [
@@ -307,13 +271,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "order_items_product_variant_id_fkey"
-            columns: ["product_variant_id"]
-            isOneToOne: false
-            referencedRelation: "product_variants"
             referencedColumns: ["id"]
           },
         ]
@@ -411,6 +368,7 @@ export type Database = {
           service_fee: number | null
           shipped_at: string | null
           shipping_cost: number | null
+          shipping_method: string
           shipping_snapshot: Json
           snap_redirect_url: string | null
           snap_token: string | null
@@ -450,6 +408,7 @@ export type Database = {
           service_fee?: number | null
           shipped_at?: string | null
           shipping_cost?: number | null
+          shipping_method?: string
           shipping_snapshot?: Json
           snap_redirect_url?: string | null
           snap_token?: string | null
@@ -489,6 +448,7 @@ export type Database = {
           service_fee?: number | null
           shipped_at?: string | null
           shipping_cost?: number | null
+          shipping_method?: string
           shipping_snapshot?: Json
           snap_redirect_url?: string | null
           snap_token?: string | null
@@ -568,59 +528,6 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      product_variants: {
-        Row: {
-          created_at: string
-          id: number
-          metadata: Json
-          name: string
-          price: string
-          price_raw: number
-          product_id: number
-          sku: string | null
-          sort_order: number
-          stock: number
-          updated_at: string
-          weight_kg: number | null
-        }
-        Insert: {
-          created_at?: string
-          id?: never
-          metadata?: Json
-          name: string
-          price: string
-          price_raw: number
-          product_id: number
-          sku?: string | null
-          sort_order?: number
-          stock?: number
-          updated_at?: string
-          weight_kg?: number | null
-        }
-        Update: {
-          created_at?: string
-          id?: never
-          metadata?: Json
-          name?: string
-          price?: string
-          price_raw?: number
-          product_id?: number
-          sku?: string | null
-          sort_order?: number
-          stock?: number
-          updated_at?: string
-          weight_kg?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "product_variants_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
@@ -836,6 +743,42 @@ export type Database = {
           },
         ]
       }
+      shipping_methods: {
+        Row: {
+          code: string
+          created_at: string
+          enabled: boolean
+          label: string
+          price_raw: number | null
+          requires_tracking: boolean
+          settings: Json
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          enabled?: boolean
+          label: string
+          price_raw?: number | null
+          requires_tracking?: boolean
+          settings?: Json
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          enabled?: boolean
+          label?: string
+          price_raw?: number | null
+          requires_tracking?: boolean
+          settings?: Json
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       store_settings: {
         Row: {
           description: string | null
@@ -894,6 +837,7 @@ export type Database = {
           p_pricing_snapshot: Json
           p_service_fee: number
           p_shipping_cost: number
+          p_shipping_method?: string
           p_shipping_snapshot: Json
           p_total_price: string
           p_total_price_raw: number
@@ -944,7 +888,7 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       release_order_stock_once: {
-        Args: { p_order_id: string; p_reason: string }
+        Args: { p_order_id: string; p_reason?: string }
         Returns: Json
       }
     }

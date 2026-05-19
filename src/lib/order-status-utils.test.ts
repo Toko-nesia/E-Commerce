@@ -5,6 +5,7 @@ import {
   isValidAdminTransition,
   isValidTransition,
   requiresCancelReason,
+  requiresTrackingNumber,
 } from "@/lib/order-status-utils";
 
 describe("order status transitions", () => {
@@ -33,5 +34,10 @@ describe("order status transitions", () => {
   it("requires a reason for seller cancellation and hard cancellation", () => {
     expect(requiresCancelReason("CANCEL_APPROVED")).toBe(true);
     expect(requiresCancelReason("DIBATALKAN")).toBe(true);
+  });
+
+  it("does not require tracking numbers for internal courier shipments", () => {
+    expect(requiresTrackingNumber("DIKIRIM", "fedex")).toBe(true);
+    expect(requiresTrackingNumber("DIKIRIM", "internal_courier")).toBe(false);
   });
 });

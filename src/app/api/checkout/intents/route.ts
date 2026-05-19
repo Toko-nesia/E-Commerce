@@ -32,6 +32,7 @@ export async function POST(req: Request) {
         userId: user.id,
         idempotencyKey: body.idempotencyKey,
         addressId: body.addressId,
+        shippingMethod: body.shippingMethod,
         paymentMethod: body.paymentMethod,
         note: body.note,
         items: body.items,

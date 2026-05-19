@@ -25,21 +25,6 @@ export async function POST(req: Request) {
   }
 
   const productById = new Map((data ?? []).map((product) => [Number(product.id), product as any]));
-  const variantIds = [...new Set(parsed.data.items.map((item) => item.variantId).filter((id): id is number => typeof id === "number"))];
-  const variantById = new Map<number, any>();
-  if (variantIds.length > 0) {
-    const { data: variants, error: variantsError } = await (supabase as any)
-      .from("product_variants")
-      .select("*")
-      .in("id", variantIds);
-    if (variantsError) {
-      return NextResponse.json({ error: variantsError.message }, { status: 500 });
-    }
-    for (const variant of variants ?? []) {
-      variantById.set(Number(variant.id), variant);
-    }
-  }
-
   const issues: string[] = [];
   const items = parsed.data.items.flatMap((item) => {
     const product = productById.get(item.productId);
@@ -49,13 +34,8 @@ export async function POST(req: Request) {
     }
 
     const pricingType = product.pricing_type ?? "fixed";
-    const variant = item.variantId ? variantById.get(item.variantId) : null;
-    if (pricingType === "variant" && (!variant || Number(variant.product_id) !== Number(product.id))) {
-      issues.push(`${product.name} variant is no longer available.`);
-      return [];
-    }
-    if (pricingType !== "variant" && item.variantId) {
-      issues.push(`${product.name} does not support that variant.`);
+    if (pricingType === "variant") {
+      issues.push(`${product.name} variants are no longer supported.`);
       return [];
     }
 
@@ -72,7 +52,7 @@ export async function POST(req: Request) {
       return [];
     }
 
-    const stock = Number(variant?.stock ?? product.stock ?? 0);
+    const stock = Number(product.stock ?? 0);
     if (stock <= 0) {
       issues.push(`${product.name} is out of stock.`);
       return [];
@@ -85,7 +65,6 @@ export async function POST(req: Request) {
 
     return [{
       product,
-      variant: variant ?? null,
       customAmountRaw: item.customAmountRaw ?? null,
       buyerNote: item.buyerNote ?? "",
       quantity,

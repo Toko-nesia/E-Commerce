@@ -40,7 +40,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const { data: order, error: orderError } = await serviceClient
       .from("orders")
-      .select("id, status, payment_status, estimated_delivery_at")
+      .select("id, status, payment_status, estimated_delivery_at, shipping_method")
       .eq("id", id)
       .maybeSingle();
     if (orderError) throw new Error(orderError.message);
@@ -53,7 +53,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ error: "Payment must be confirmed before this order can be processed." }, { status: 409 });
     }
 
-    if (requiresTrackingNumber(nextStatus)) {
+    const needsTrackingNumber = requiresTrackingNumber(nextStatus, order.shipping_method);
+
+    if (needsTrackingNumber) {
       if (!body.trackingNumber) {
         return NextResponse.json({ error: "Tracking number is required." }, { status: 400 });
       }
@@ -81,11 +83,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       status: nextStatus,
       updated_at: new Date().toISOString(),
     };
-    if (requiresTrackingNumber(nextStatus)) {
+    if (nextStatus === "DIKIRIM") {
       const shippedAt = new Date();
       const estimatedDeliveryAt = order.estimated_delivery_at ? new Date(order.estimated_delivery_at) : shippedAt;
       const deadlineBase = Number.isNaN(estimatedDeliveryAt.getTime()) ? shippedAt : estimatedDeliveryAt;
-      updates.tracking_number = body.trackingNumber ?? "";
+      updates.tracking_number = needsTrackingNumber ? body.trackingNumber ?? "" : "";
       (updates as any).shipped_at = shippedAt.toISOString();
       (updates as any).completion_deadline_at = new Date(deadlineBase.getTime() + 10 * 24 * 60 * 60 * 1000).toISOString();
     }
@@ -105,10 +107,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         actorUserId: user.id,
         fromStatus: order.status,
         toStatus: nextStatus,
-        title: "Shipment Created",
-        description: "The seller added shipment tracking and marked this order as shipped.",
-        metadata: { trackingNumber: body.trackingNumber ?? "" },
-        dedupeKey: `order:${id}:shipped:${body.trackingNumber ?? ""}`,
+        title: order.shipping_method === "internal_courier" ? "Handed to Internal Courier" : "Shipment Created",
+        description: order.shipping_method === "internal_courier"
+          ? "The seller handed this order to Tokonesia internal courier."
+          : "The seller added shipment tracking and marked this order as shipped.",
+        metadata: { shippingMethod: order.shipping_method, trackingNumber: needsTrackingNumber ? body.trackingNumber ?? "" : null },
+        dedupeKey: `order:${id}:shipped:${order.shipping_method}:${needsTrackingNumber ? body.trackingNumber ?? "" : "internal"}`,
       });
       await notifyOrderEvent({ eventType: "order_shipped", orderId: id });
     } else if (nextStatus === "DIBATALKAN") {

@@ -18,6 +18,7 @@ interface OrderResult {
   total_price: string | null;
   total_price_raw: number | null;
   estimated_delivery: string | null;
+  shipping_method?: string | null;
   payment_status: string;
   order_items?: Array<{
     id: number;
@@ -146,6 +147,10 @@ export default function OrderSuccessPage() {
     };
     return order?.payment_status ? labels[order.payment_status] ?? order.payment_status : "-";
   })();
+  const shippingLabel = order?.shipping_method === "internal_courier" ? "Internal Courier" : "FedEx";
+  const shippingDescription = order?.shipping_method === "internal_courier"
+    ? order.estimated_delivery || "Handled by Tokonesia internal courier"
+    : order?.estimated_delivery || "Calculated by FedEx";
 
   return (
     <div className="min-h-screen bg-[#FDF9F5] flex flex-col">
@@ -215,8 +220,8 @@ export default function OrderSuccessPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
                 <div className="bg-[#f8f8f8] rounded-xl p-4 text-left min-w-0">
                   <p className="text-[11px] text-[#6b6b6b] uppercase tracking-wider mb-1">Shipping</p>
-                  <p className="text-[13px] font-medium text-black">Air Shipping</p>
-                  <p className="text-[12px] text-[#6b6b6b] break-words">{order.estimated_delivery || "Calculated by FedEx"}</p>
+                  <p className="text-[13px] font-medium text-black">{shippingLabel}</p>
+                  <p className="text-[12px] text-[#6b6b6b] break-words">{shippingDescription}</p>
                 </div>
                 <div className="bg-[#f8f8f8] rounded-xl p-4 text-left">
                   <p className="text-[11px] text-[#6b6b6b] uppercase tracking-wider mb-1">Status</p>

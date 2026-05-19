@@ -13,12 +13,6 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 
-CREATE SCHEMA IF NOT EXISTS "app_private";
-
-
-ALTER SCHEMA "app_private" OWNER TO "postgres";
-
-
 CREATE SCHEMA IF NOT EXISTS "public";
 
 
@@ -27,47 +21,6 @@ ALTER SCHEMA "public" OWNER TO "pg_database_owner";
 
 COMMENT ON SCHEMA "public" IS 'standard public schema';
 
-
-
-CREATE OR REPLACE FUNCTION "app_private"."handle_new_user"() RETURNS "trigger"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO ''
-    AS $$
-begin
-  insert into public.profiles (id, email, full_name, avatar_url)
-  values (
-    new.id,
-    new.email,
-    coalesce(new.raw_user_meta_data->>'full_name', ''),
-    coalesce(new.raw_user_meta_data->>'avatar_url', '')
-  )
-  on conflict (id) do update
-  set email = excluded.email,
-      full_name = coalesce(nullif(public.profiles.full_name, ''), excluded.full_name),
-      avatar_url = coalesce(nullif(public.profiles.avatar_url, ''), excluded.avatar_url),
-      updated_at = now();
-  return new;
-end;
-$$;
-
-
-ALTER FUNCTION "app_private"."handle_new_user"() OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "app_private"."is_admin"() RETURNS boolean
-    LANGUAGE "sql" STABLE SECURITY DEFINER
-    SET "search_path" TO ''
-    AS $$
-  select exists (
-    select 1
-    from public.profiles
-    where id = (select auth.uid())
-      and role = 'admin'
-  );
-$$;
-
-
-ALTER FUNCTION "app_private"."is_admin"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."apply_midtrans_payment_event"("p_midtrans_order_id" "text", "p_event_hash" "text", "p_event_type" "text", "p_transaction_status" "text", "p_fraud_status" "text", "p_payment_status" "text", "p_order_status" "text", "p_transaction_id" "text", "p_payload" "jsonb") RETURNS "jsonb"
@@ -241,7 +194,7 @@ $$;
 ALTER FUNCTION "public"."apply_midtrans_payment_event"("p_midtrans_order_id" "text", "p_event_hash" "text", "p_event_type" "text", "p_transaction_status" "text", "p_fraud_status" "text", "p_payment_status" "text", "p_order_status" "text", "p_transaction_id" "text", "p_payload" "jsonb") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."create_checkout_order_with_stock_reservation"("p_order_id" "uuid", "p_user_id" "uuid", "p_midtrans_order_id" "text", "p_idempotency_key" "text", "p_cart_fingerprint" "text", "p_address_id" "uuid", "p_address_snapshot" "jsonb", "p_pricing_snapshot" "jsonb", "p_shipping_snapshot" "jsonb", "p_cart_snapshot" "jsonb", "p_items" "jsonb", "p_total_price_raw" bigint, "p_total_price" "text", "p_shipping_cost" bigint, "p_service_fee" bigint, "p_note" "text") RETURNS "jsonb"
+CREATE OR REPLACE FUNCTION "public"."create_checkout_order_with_stock_reservation"("p_order_id" "uuid", "p_user_id" "uuid", "p_midtrans_order_id" "text", "p_idempotency_key" "text", "p_cart_fingerprint" "text", "p_address_id" "uuid", "p_address_snapshot" "jsonb", "p_pricing_snapshot" "jsonb", "p_shipping_snapshot" "jsonb", "p_cart_snapshot" "jsonb", "p_items" "jsonb", "p_total_price_raw" bigint, "p_total_price" "text", "p_shipping_cost" bigint, "p_service_fee" bigint, "p_note" "text", "p_payment_method" "text" DEFAULT 'bank_transfer'::"text", "p_shipping_method" "text" DEFAULT 'fedex'::"text") RETURNS "jsonb"
     LANGUAGE "plpgsql"
     SET "search_path" TO ''
     AS $$
@@ -249,7 +202,24 @@ declare
   v_item record;
   v_stock integer;
   v_now timestamptz := now();
+  v_estimated_delivery_at timestamptz;
 begin
+  if p_payment_method not in ('bank_transfer', 'credit_card') then
+    raise exception 'Invalid payment method' using errcode = '22023';
+  end if;
+
+  if p_shipping_method not in ('fedex', 'internal_courier') then
+    raise exception 'Invalid shipping method' using errcode = '22023';
+  end if;
+
+  if not exists (
+    select 1
+    from public.shipping_methods
+    where code = p_shipping_method and enabled is true
+  ) then
+    raise exception 'Selected shipping method is not available' using errcode = '22023';
+  end if;
+
   if p_items is null or jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) = 0 then
     raise exception 'Checkout items are required' using errcode = '22023';
   end if;
@@ -258,46 +228,38 @@ begin
     raise exception 'Order total must be positive' using errcode = '22023';
   end if;
 
+  begin
+    v_estimated_delivery_at := nullif(p_shipping_snapshot->>'estimatedDeliveryDate', '')::timestamptz;
+  exception when others then
+    v_estimated_delivery_at := null;
+  end;
+
   for v_item in
     select
       item.product_id::bigint as product_id,
-      nullif(item.product_variant_id, 0)::bigint as product_variant_id,
       sum(item.quantity)::integer as quantity
     from jsonb_to_recordset(p_items) as item(
       product_id bigint,
-      product_variant_id bigint,
       quantity integer,
       price_raw bigint,
       price text,
       custom_amount_raw bigint,
       buyer_note text
     )
-    group by item.product_id, nullif(item.product_variant_id, 0)
-    order by item.product_id, nullif(item.product_variant_id, 0)
+    group by item.product_id
+    order by item.product_id
   loop
     if v_item.product_id is null or v_item.product_id <= 0 or v_item.quantity is null or v_item.quantity <= 0 then
       raise exception 'Invalid checkout item' using errcode = '22023';
     end if;
 
-    if v_item.product_variant_id is not null then
-      select product_variants.stock into v_stock
-      from public.product_variants as product_variants
-      where product_variants.id = v_item.product_variant_id
-        and product_variants.product_id = v_item.product_id
-      for update;
+    select products.stock into v_stock
+    from public.products as products
+    where products.id = v_item.product_id
+    for update;
 
-      if not found then
-        raise exception 'Product variant % is no longer available', v_item.product_variant_id using errcode = 'P0002';
-      end if;
-    else
-      select products.stock into v_stock
-      from public.products as products
-      where products.id = v_item.product_id
-      for update;
-
-      if not found then
-        raise exception 'Product % is no longer available', v_item.product_id using errcode = 'P0002';
-      end if;
+    if not found then
+      raise exception 'Product % is no longer available', v_item.product_id using errcode = 'P0002';
     end if;
 
     if v_stock < v_item.quantity then
@@ -311,6 +273,7 @@ begin
     status,
     payment_status,
     payment_method,
+    shipping_method,
     midtrans_order_id,
     idempotency_key,
     cart_fingerprint,
@@ -325,6 +288,7 @@ begin
     service_fee,
     note,
     estimated_delivery,
+    estimated_delivery_at,
     stock_reserved_at,
     created_at,
     updated_at
@@ -333,7 +297,8 @@ begin
     p_user_id,
     'PAYMENT_PENDING',
     'pending',
-    'bank_transfer',
+    p_payment_method,
+    p_shipping_method,
     p_midtrans_order_id,
     p_idempotency_key,
     p_cart_fingerprint,
@@ -347,7 +312,8 @@ begin
     p_shipping_cost,
     p_service_fee,
     nullif(p_note, ''),
-    nullif(p_shipping_snapshot->>'estimatedDelivery', ''),
+    nullif(coalesce(p_shipping_snapshot->>'estimatedDelivery', p_shipping_snapshot->>'estimated_delivery'), ''),
+    v_estimated_delivery_at,
     v_now,
     v_now,
     v_now
@@ -356,7 +322,6 @@ begin
   insert into public.order_items (
     order_id,
     product_id,
-    product_variant_id,
     quantity,
     price_raw,
     price,
@@ -366,7 +331,6 @@ begin
   select
     p_order_id,
     item.product_id::integer,
-    nullif(item.product_variant_id, 0)::bigint,
     item.quantity::integer,
     item.price_raw::integer,
     item.price,
@@ -374,32 +338,12 @@ begin
     nullif(left(coalesce(item.buyer_note, ''), 2000), '')
   from jsonb_to_recordset(p_items) as item(
     product_id bigint,
-    product_variant_id bigint,
     quantity integer,
     price_raw bigint,
     price text,
     custom_amount_raw bigint,
     buyer_note text
   );
-
-  update public.product_variants as product_variants
-  set stock = product_variants.stock - items.quantity,
-      updated_at = v_now
-  from (
-    select nullif(item.product_variant_id, 0)::bigint as product_variant_id, sum(item.quantity)::integer as quantity
-    from jsonb_to_recordset(p_items) as item(
-      product_id bigint,
-      product_variant_id bigint,
-      quantity integer,
-      price_raw bigint,
-      price text,
-      custom_amount_raw bigint,
-      buyer_note text
-    )
-    where nullif(item.product_variant_id, 0) is not null
-    group by nullif(item.product_variant_id, 0)
-  ) as items
-  where product_variants.id = items.product_variant_id;
 
   update public.products as products
   set stock = products.stock - items.quantity,
@@ -408,14 +352,12 @@ begin
     select item.product_id::bigint as product_id, sum(item.quantity)::integer as quantity
     from jsonb_to_recordset(p_items) as item(
       product_id bigint,
-      product_variant_id bigint,
       quantity integer,
       price_raw bigint,
       price text,
       custom_amount_raw bigint,
       buyer_note text
     )
-    where nullif(item.product_variant_id, 0) is null
     group by item.product_id
   ) as items
   where products.id = items.product_id;
@@ -429,7 +371,7 @@ end;
 $$;
 
 
-ALTER FUNCTION "public"."create_checkout_order_with_stock_reservation"("p_order_id" "uuid", "p_user_id" "uuid", "p_midtrans_order_id" "text", "p_idempotency_key" "text", "p_cart_fingerprint" "text", "p_address_id" "uuid", "p_address_snapshot" "jsonb", "p_pricing_snapshot" "jsonb", "p_shipping_snapshot" "jsonb", "p_cart_snapshot" "jsonb", "p_items" "jsonb", "p_total_price_raw" bigint, "p_total_price" "text", "p_shipping_cost" bigint, "p_service_fee" bigint, "p_note" "text") OWNER TO "postgres";
+ALTER FUNCTION "public"."create_checkout_order_with_stock_reservation"("p_order_id" "uuid", "p_user_id" "uuid", "p_midtrans_order_id" "text", "p_idempotency_key" "text", "p_cart_fingerprint" "text", "p_address_id" "uuid", "p_address_snapshot" "jsonb", "p_pricing_snapshot" "jsonb", "p_shipping_snapshot" "jsonb", "p_cart_snapshot" "jsonb", "p_items" "jsonb", "p_total_price_raw" bigint, "p_total_price" "text", "p_shipping_cost" bigint, "p_service_fee" bigint, "p_note" "text", "p_payment_method" "text", "p_shipping_method" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."custom_access_token_hook"("event" "jsonb") RETURNS "jsonb"
@@ -593,7 +535,7 @@ CREATE TABLE IF NOT EXISTS "public"."products" (
     "max_price_raw" bigint,
     "purchase_instructions" "text",
     CONSTRAINT "products_custom_amount_range_check" CHECK ((("pricing_type" <> 'custom_amount'::"text") OR (("min_price_raw" IS NOT NULL) AND ("max_price_raw" IS NOT NULL) AND ("min_price_raw" > 0) AND ("max_price_raw" >= "min_price_raw")))),
-    CONSTRAINT "products_pricing_type_check" CHECK (("pricing_type" = ANY (ARRAY['fixed'::"text", 'variant'::"text", 'custom_amount'::"text"]))),
+    CONSTRAINT "products_pricing_type_check" CHECK (("pricing_type" = ANY (ARRAY['fixed'::"text", 'custom_amount'::"text"]))),
     CONSTRAINT "products_weight_kg_check" CHECK (("weight_kg" > (0)::numeric))
 );
 
@@ -689,7 +631,12 @@ CREATE OR REPLACE FUNCTION "public"."get_trending_products"("p_limit" integer DE
     stock,
     weight_kg,
     created_at,
-    updated_at
+    updated_at,
+    bootstrap_key,
+    pricing_type,
+    min_price_raw,
+    max_price_raw,
+    purchase_instructions
   from candidates
   order by
     sort_group asc,
@@ -740,12 +687,13 @@ $$;
 ALTER FUNCTION "public"."is_admin"() OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."release_order_stock_once"("p_order_id" "uuid", "p_reason" "text") RETURNS "jsonb"
+CREATE OR REPLACE FUNCTION "public"."release_order_stock_once"("p_order_id" "uuid", "p_reason" "text" DEFAULT 'manual'::"text") RETURNS "jsonb"
     LANGUAGE "plpgsql"
     SET "search_path" TO ''
     AS $$
 declare
   v_order public.orders%rowtype;
+  v_now timestamptz := now();
 begin
   select * into v_order
   from public.orders
@@ -753,53 +701,45 @@ begin
   for update;
 
   if not found then
-    return jsonb_build_object('status', 'order_not_found');
+    raise exception 'Order % not found', p_order_id using errcode = 'P0002';
   end if;
 
   if v_order.stock_released_at is not null then
     return jsonb_build_object(
       'status', 'already_released',
-      'order_id', v_order.id,
-      'released_at', v_order.stock_released_at
+      'order_id', p_order_id,
+      'stock_released_at', v_order.stock_released_at,
+      'reason', v_order.stock_release_reason
     );
   end if;
 
   if v_order.stock_reserved_at is null and v_order.stock_decremented_at is null then
-    return jsonb_build_object('status', 'no_stock_to_release', 'order_id', v_order.id);
+    return jsonb_build_object('status', 'not_reserved', 'order_id', p_order_id);
   end if;
-
-  update public.product_variants as product_variants
-  set stock = product_variants.stock + items.quantity,
-      updated_at = now()
-  from (
-    select order_items.product_variant_id, sum(order_items.quantity)::integer as quantity
-    from public.order_items as order_items
-    where order_items.order_id = v_order.id
-      and order_items.product_variant_id is not null
-    group by order_items.product_variant_id
-  ) as items
-  where product_variants.id = items.product_variant_id;
 
   update public.products as products
   set stock = products.stock + items.quantity,
-      updated_at = now()
+      updated_at = v_now
   from (
     select order_items.product_id, sum(order_items.quantity)::integer as quantity
     from public.order_items as order_items
-    where order_items.order_id = v_order.id
-      and order_items.product_variant_id is null
+    where order_items.order_id = p_order_id
     group by order_items.product_id
   ) as items
   where products.id = items.product_id;
 
   update public.orders
-  set stock_released_at = now(),
-      stock_release_reason = left(coalesce(nullif(p_reason, ''), 'unspecified'), 80),
-      updated_at = now()
-  where id = v_order.id
-    and stock_released_at is null;
+  set stock_released_at = v_now,
+      stock_release_reason = p_reason,
+      updated_at = v_now
+  where id = p_order_id;
 
-  return jsonb_build_object('status', 'released', 'order_id', v_order.id);
+  return jsonb_build_object(
+    'status', 'released',
+    'order_id', p_order_id,
+    'stock_released_at', v_now,
+    'reason', p_reason
+  );
 end;
 $$;
 
@@ -825,32 +765,6 @@ CREATE TABLE IF NOT EXISTS "public"."addresses" (
 
 
 ALTER TABLE "public"."addresses" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."brands" (
-    "id" bigint NOT NULL,
-    "name" "text" NOT NULL,
-    "img" "text" NOT NULL,
-    "width" integer DEFAULT 0,
-    "height" integer DEFAULT 0,
-    "overflow" boolean DEFAULT false,
-    "style" "text" DEFAULT ''::"text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
-);
-
-
-ALTER TABLE "public"."brands" OWNER TO "postgres";
-
-
-ALTER TABLE "public"."brands" ALTER COLUMN "id" ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME "public"."brands_id_seq"
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);
-
 
 
 CREATE TABLE IF NOT EXISTS "public"."categories" (
@@ -942,7 +856,6 @@ CREATE TABLE IF NOT EXISTS "public"."order_items" (
     "price_raw" bigint NOT NULL,
     "price" "text" DEFAULT ''::"text",
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "product_variant_id" bigint,
     "custom_amount_raw" bigint,
     "buyer_note" "text",
     CONSTRAINT "order_items_buyer_note_length_check" CHECK ((("buyer_note" IS NULL) OR ("char_length"("buyer_note") <= 2000))),
@@ -963,6 +876,31 @@ ALTER TABLE "public"."order_items" ALTER COLUMN "id" ADD GENERATED ALWAYS AS IDE
     CACHE 1
 );
 
+
+
+CREATE TABLE IF NOT EXISTS "public"."order_status_events" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "order_id" "uuid" NOT NULL,
+    "event_type" "text" NOT NULL,
+    "actor_type" "text" NOT NULL,
+    "actor_user_id" "uuid",
+    "from_status" "text",
+    "to_status" "text",
+    "from_payment_status" "text",
+    "to_payment_status" "text",
+    "title" "text" NOT NULL,
+    "description" "text" NOT NULL,
+    "reason" "text",
+    "metadata" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "dedupe_key" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "order_status_events_actor_type_check" CHECK (("actor_type" = ANY (ARRAY['buyer'::"text", 'seller'::"text", 'admin'::"text", 'system'::"text", 'payment_provider'::"text"]))),
+    CONSTRAINT "order_status_events_description_length_check" CHECK ((("char_length"("description") >= 1) AND ("char_length"("description") <= 1000))),
+    CONSTRAINT "order_status_events_title_length_check" CHECK ((("char_length"("title") >= 1) AND ("char_length"("title") <= 120)))
+);
+
+
+ALTER TABLE "public"."order_status_events" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."orders" (
@@ -1000,6 +938,12 @@ CREATE TABLE IF NOT EXISTS "public"."orders" (
     "stock_reserved_at" timestamp with time zone,
     "stock_released_at" timestamp with time zone,
     "stock_release_reason" "text",
+    "estimated_delivery_at" timestamp with time zone,
+    "shipped_at" timestamp with time zone,
+    "completion_deadline_at" timestamp with time zone,
+    "shipping_method" "text" DEFAULT 'fedex'::"text" NOT NULL,
+    CONSTRAINT "orders_payment_method_check" CHECK ((("payment_method" IS NULL) OR ("payment_method" = ''::"text") OR ("payment_method" = ANY (ARRAY['bank_transfer'::"text", 'credit_card'::"text"])))),
+    CONSTRAINT "orders_shipping_method_check" CHECK (("shipping_method" = ANY (ARRAY['fedex'::"text", 'internal_courier'::"text"]))),
     CONSTRAINT "orders_status_check" CHECK (("status" = ANY (ARRAY['PAYMENT_PENDING'::"text", 'PAYMENT_EXPIRED'::"text", 'BARU'::"text", 'DIPROSES'::"text", 'DIKIRIM'::"text", 'SELESAI'::"text", 'DIBATALKAN'::"text", 'CANCEL_REQUESTED'::"text", 'CANCEL_APPROVED'::"text", 'REFUND_INFO_SUBMITTED'::"text", 'REFUNDED'::"text"])))
 );
 
@@ -1023,39 +967,6 @@ CREATE TABLE IF NOT EXISTS "public"."payment_events" (
 
 
 ALTER TABLE "public"."payment_events" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."product_variants" (
-    "id" bigint NOT NULL,
-    "product_id" bigint NOT NULL,
-    "name" "text" NOT NULL,
-    "sku" "text",
-    "price" "text" NOT NULL,
-    "price_raw" bigint NOT NULL,
-    "stock" integer DEFAULT 0 NOT NULL,
-    "weight_kg" numeric,
-    "metadata" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
-    "sort_order" integer DEFAULT 0 NOT NULL,
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    CONSTRAINT "product_variants_price_raw_check" CHECK (("price_raw" > 0)),
-    CONSTRAINT "product_variants_stock_check" CHECK (("stock" >= 0)),
-    CONSTRAINT "product_variants_weight_kg_check" CHECK ((("weight_kg" IS NULL) OR ("weight_kg" > (0)::numeric)))
-);
-
-
-ALTER TABLE "public"."product_variants" OWNER TO "postgres";
-
-
-ALTER TABLE "public"."product_variants" ALTER COLUMN "id" ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME "public"."product_variants_id_seq"
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);
-
 
 
 ALTER TABLE "public"."products" ALTER COLUMN "id" ADD GENERATED ALWAYS AS IDENTITY (
@@ -1119,6 +1030,25 @@ CREATE TABLE IF NOT EXISTS "public"."refund_requests" (
 ALTER TABLE "public"."refund_requests" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."shipping_methods" (
+    "code" "text" NOT NULL,
+    "label" "text" NOT NULL,
+    "enabled" boolean DEFAULT false NOT NULL,
+    "price_raw" bigint,
+    "requires_tracking" boolean DEFAULT false NOT NULL,
+    "settings" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "shipping_methods_code_check" CHECK (("code" = ANY (ARRAY['fedex'::"text", 'internal_courier'::"text"]))),
+    CONSTRAINT "shipping_methods_price_raw_check" CHECK ((("price_raw" IS NULL) OR ("price_raw" >= 0))),
+    CONSTRAINT "shipping_methods_tracking_check" CHECK (((("code" = 'fedex'::"text") AND ("requires_tracking" IS TRUE)) OR (("code" = 'internal_courier'::"text") AND ("requires_tracking" IS FALSE))))
+);
+
+
+ALTER TABLE "public"."shipping_methods" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."store_settings" (
     "id" bigint NOT NULL,
     "key" "text" NOT NULL,
@@ -1149,11 +1079,6 @@ ALTER TABLE "public"."addresses"
 
 ALTER TABLE ONLY "public"."addresses"
     ADD CONSTRAINT "addresses_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."brands"
-    ADD CONSTRAINT "brands_pkey" PRIMARY KEY ("id");
 
 
 
@@ -1192,6 +1117,11 @@ ALTER TABLE ONLY "public"."order_items"
 
 
 
+ALTER TABLE ONLY "public"."order_status_events"
+    ADD CONSTRAINT "order_status_events_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."orders"
     ADD CONSTRAINT "orders_midtrans_order_id_key" UNIQUE ("midtrans_order_id");
 
@@ -1209,16 +1139,6 @@ ALTER TABLE ONLY "public"."payment_events"
 
 ALTER TABLE ONLY "public"."payment_events"
     ADD CONSTRAINT "payment_events_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."product_variants"
-    ADD CONSTRAINT "product_variants_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."product_variants"
-    ADD CONSTRAINT "product_variants_product_id_name_key" UNIQUE ("product_id", "name");
 
 
 
@@ -1244,6 +1164,11 @@ ALTER TABLE ONLY "public"."profiles"
 
 ALTER TABLE ONLY "public"."refund_requests"
     ADD CONSTRAINT "refund_requests_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."shipping_methods"
+    ADD CONSTRAINT "shipping_methods_pkey" PRIMARY KEY ("code");
 
 
 
@@ -1285,7 +1210,7 @@ CREATE INDEX "idx_order_items_product_id" ON "public"."order_items" USING "btree
 
 
 
-CREATE INDEX "idx_order_items_product_variant_id" ON "public"."order_items" USING "btree" ("product_variant_id");
+CREATE INDEX "idx_orders_shipping_method" ON "public"."orders" USING "btree" ("shipping_method");
 
 
 
@@ -1294,10 +1219,6 @@ CREATE INDEX "idx_orders_status" ON "public"."orders" USING "btree" ("status");
 
 
 CREATE INDEX "idx_orders_user_id" ON "public"."orders" USING "btree" ("user_id");
-
-
-
-CREATE INDEX "idx_product_variants_product_id" ON "public"."product_variants" USING "btree" ("product_id");
 
 
 
@@ -1310,6 +1231,18 @@ CREATE INDEX "idx_products_pricing_type" ON "public"."products" USING "btree" ("
 
 
 CREATE INDEX "order_items_product_order_idx" ON "public"."order_items" USING "btree" ("product_id", "order_id");
+
+
+
+CREATE INDEX "order_status_events_actor_user_idx" ON "public"."order_status_events" USING "btree" ("actor_user_id", "created_at" DESC) WHERE ("actor_user_id" IS NOT NULL);
+
+
+
+CREATE UNIQUE INDEX "order_status_events_dedupe_key_idx" ON "public"."order_status_events" USING "btree" ("dedupe_key") WHERE ("dedupe_key" IS NOT NULL);
+
+
+
+CREATE INDEX "order_status_events_order_created_idx" ON "public"."order_status_events" USING "btree" ("order_id", "created_at" DESC);
 
 
 
@@ -1403,8 +1336,13 @@ ALTER TABLE ONLY "public"."order_items"
 
 
 
-ALTER TABLE ONLY "public"."order_items"
-    ADD CONSTRAINT "order_items_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "public"."product_variants"("id") ON DELETE SET NULL;
+ALTER TABLE ONLY "public"."order_status_events"
+    ADD CONSTRAINT "order_status_events_actor_user_id_fkey" FOREIGN KEY ("actor_user_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."order_status_events"
+    ADD CONSTRAINT "order_status_events_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE CASCADE;
 
 
 
@@ -1420,11 +1358,6 @@ ALTER TABLE ONLY "public"."orders"
 
 ALTER TABLE ONLY "public"."payment_events"
     ADD CONSTRAINT "payment_events_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY "public"."product_variants"
-    ADD CONSTRAINT "product_variants_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
 
 
 
@@ -1448,14 +1381,6 @@ ALTER TABLE ONLY "public"."refund_requests"
 
 
 
-CREATE POLICY "Admins manage product variants" ON "public"."product_variants" TO "authenticated" USING ((( SELECT (("auth"."jwt"() -> 'app_metadata'::"text") ->> 'role'::"text")) = 'admin'::"text")) WITH CHECK ((( SELECT (("auth"."jwt"() -> 'app_metadata'::"text") ->> 'role'::"text")) = 'admin'::"text"));
-
-
-
-CREATE POLICY "Product variants are publicly readable" ON "public"."product_variants" FOR SELECT TO "authenticated", "anon" USING (true);
-
-
-
 ALTER TABLE "public"."addresses" ENABLE ROW LEVEL SECURITY;
 
 
@@ -1472,25 +1397,6 @@ CREATE POLICY "addresses_select_own_or_admin" ON "public"."addresses" FOR SELECT
 
 
 CREATE POLICY "addresses_update_own_or_admin" ON "public"."addresses" FOR UPDATE TO "authenticated" USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) OR "app_private"."is_admin"())) WITH CHECK ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) OR "app_private"."is_admin"()));
-
-
-
-ALTER TABLE "public"."brands" ENABLE ROW LEVEL SECURITY;
-
-
-CREATE POLICY "brands_admin_delete" ON "public"."brands" FOR DELETE TO "authenticated" USING ("app_private"."is_admin"());
-
-
-
-CREATE POLICY "brands_admin_insert" ON "public"."brands" FOR INSERT TO "authenticated" WITH CHECK ("app_private"."is_admin"());
-
-
-
-CREATE POLICY "brands_admin_update" ON "public"."brands" FOR UPDATE TO "authenticated" USING ("app_private"."is_admin"()) WITH CHECK ("app_private"."is_admin"());
-
-
-
-CREATE POLICY "brands_public_select" ON "public"."brands" FOR SELECT TO "authenticated", "anon" USING (true);
 
 
 
@@ -1550,6 +1456,15 @@ CREATE POLICY "order_items_select_own_or_admin" ON "public"."order_items" FOR SE
 
 
 
+ALTER TABLE "public"."order_status_events" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "order_status_events_select_own_or_admin" ON "public"."order_status_events" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."orders" "o"
+  WHERE (("o"."id" = "order_status_events"."order_id") AND (("o"."user_id" = ( SELECT "auth"."uid"() AS "uid")) OR "app_private"."is_admin"())))));
+
+
+
 ALTER TABLE "public"."orders" ENABLE ROW LEVEL SECURITY;
 
 
@@ -1570,9 +1485,6 @@ ALTER TABLE "public"."payment_events" ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "payment_events_no_client_access" ON "public"."payment_events" AS RESTRICTIVE TO "authenticated", "anon" USING (false) WITH CHECK (false);
 
-
-
-ALTER TABLE "public"."product_variants" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."products" ENABLE ROW LEVEL SECURITY;
@@ -1624,6 +1536,25 @@ CREATE POLICY "refund_requests_update_admin" ON "public"."refund_requests" FOR U
 
 
 
+ALTER TABLE "public"."shipping_methods" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "shipping_methods_admin_delete" ON "public"."shipping_methods" FOR DELETE TO "authenticated" USING ("app_private"."is_admin"());
+
+
+
+CREATE POLICY "shipping_methods_admin_insert" ON "public"."shipping_methods" FOR INSERT TO "authenticated" WITH CHECK ("app_private"."is_admin"());
+
+
+
+CREATE POLICY "shipping_methods_admin_select" ON "public"."shipping_methods" FOR SELECT TO "authenticated" USING ("app_private"."is_admin"());
+
+
+
+CREATE POLICY "shipping_methods_admin_update" ON "public"."shipping_methods" FOR UPDATE TO "authenticated" USING ("app_private"."is_admin"()) WITH CHECK ("app_private"."is_admin"());
+
+
+
 ALTER TABLE "public"."store_settings" ENABLE ROW LEVEL SECURITY;
 
 
@@ -1643,11 +1574,6 @@ CREATE POLICY "store_settings_admin_update" ON "public"."store_settings" FOR UPD
 
 
 
-GRANT USAGE ON SCHEMA "app_private" TO "authenticated";
-GRANT USAGE ON SCHEMA "app_private" TO "service_role";
-
-
-
 GRANT USAGE ON SCHEMA "public" TO "postgres";
 GRANT USAGE ON SCHEMA "public" TO "anon";
 GRANT USAGE ON SCHEMA "public" TO "authenticated";
@@ -1656,23 +1582,13 @@ GRANT USAGE ON SCHEMA "public" TO "supabase_auth_admin";
 
 
 
-REVOKE ALL ON FUNCTION "app_private"."handle_new_user"() FROM PUBLIC;
-
-
-
-REVOKE ALL ON FUNCTION "app_private"."is_admin"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "app_private"."is_admin"() TO "authenticated";
-GRANT ALL ON FUNCTION "app_private"."is_admin"() TO "service_role";
-
-
-
 REVOKE ALL ON FUNCTION "public"."apply_midtrans_payment_event"("p_midtrans_order_id" "text", "p_event_hash" "text", "p_event_type" "text", "p_transaction_status" "text", "p_fraud_status" "text", "p_payment_status" "text", "p_order_status" "text", "p_transaction_id" "text", "p_payload" "jsonb") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."apply_midtrans_payment_event"("p_midtrans_order_id" "text", "p_event_hash" "text", "p_event_type" "text", "p_transaction_status" "text", "p_fraud_status" "text", "p_payment_status" "text", "p_order_status" "text", "p_transaction_id" "text", "p_payload" "jsonb") TO "service_role";
 
 
 
-REVOKE ALL ON FUNCTION "public"."create_checkout_order_with_stock_reservation"("p_order_id" "uuid", "p_user_id" "uuid", "p_midtrans_order_id" "text", "p_idempotency_key" "text", "p_cart_fingerprint" "text", "p_address_id" "uuid", "p_address_snapshot" "jsonb", "p_pricing_snapshot" "jsonb", "p_shipping_snapshot" "jsonb", "p_cart_snapshot" "jsonb", "p_items" "jsonb", "p_total_price_raw" bigint, "p_total_price" "text", "p_shipping_cost" bigint, "p_service_fee" bigint, "p_note" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."create_checkout_order_with_stock_reservation"("p_order_id" "uuid", "p_user_id" "uuid", "p_midtrans_order_id" "text", "p_idempotency_key" "text", "p_cart_fingerprint" "text", "p_address_id" "uuid", "p_address_snapshot" "jsonb", "p_pricing_snapshot" "jsonb", "p_shipping_snapshot" "jsonb", "p_cart_snapshot" "jsonb", "p_items" "jsonb", "p_total_price_raw" bigint, "p_total_price" "text", "p_shipping_cost" bigint, "p_service_fee" bigint, "p_note" "text") TO "service_role";
+REVOKE ALL ON FUNCTION "public"."create_checkout_order_with_stock_reservation"("p_order_id" "uuid", "p_user_id" "uuid", "p_midtrans_order_id" "text", "p_idempotency_key" "text", "p_cart_fingerprint" "text", "p_address_id" "uuid", "p_address_snapshot" "jsonb", "p_pricing_snapshot" "jsonb", "p_shipping_snapshot" "jsonb", "p_cart_snapshot" "jsonb", "p_items" "jsonb", "p_total_price_raw" bigint, "p_total_price" "text", "p_shipping_cost" bigint, "p_service_fee" bigint, "p_note" "text", "p_payment_method" "text", "p_shipping_method" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."create_checkout_order_with_stock_reservation"("p_order_id" "uuid", "p_user_id" "uuid", "p_midtrans_order_id" "text", "p_idempotency_key" "text", "p_cart_fingerprint" "text", "p_address_id" "uuid", "p_address_snapshot" "jsonb", "p_pricing_snapshot" "jsonb", "p_shipping_snapshot" "jsonb", "p_cart_snapshot" "jsonb", "p_items" "jsonb", "p_total_price_raw" bigint, "p_total_price" "text", "p_shipping_cost" bigint, "p_service_fee" bigint, "p_note" "text", "p_payment_method" "text", "p_shipping_method" "text") TO "service_role";
 
 
 
@@ -1721,18 +1637,6 @@ GRANT ALL ON TABLE "public"."addresses" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."brands" TO "anon";
-GRANT ALL ON TABLE "public"."brands" TO "authenticated";
-GRANT ALL ON TABLE "public"."brands" TO "service_role";
-
-
-
-GRANT ALL ON SEQUENCE "public"."brands_id_seq" TO "anon";
-GRANT ALL ON SEQUENCE "public"."brands_id_seq" TO "authenticated";
-GRANT ALL ON SEQUENCE "public"."brands_id_seq" TO "service_role";
-
-
-
 GRANT ALL ON TABLE "public"."categories" TO "anon";
 GRANT ALL ON TABLE "public"."categories" TO "authenticated";
 GRANT ALL ON TABLE "public"."categories" TO "service_role";
@@ -1773,6 +1677,12 @@ GRANT ALL ON SEQUENCE "public"."order_items_id_seq" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."order_status_events" TO "anon";
+GRANT ALL ON TABLE "public"."order_status_events" TO "authenticated";
+GRANT ALL ON TABLE "public"."order_status_events" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."orders" TO "anon";
 GRANT ALL ON TABLE "public"."orders" TO "authenticated";
 GRANT ALL ON TABLE "public"."orders" TO "service_role";
@@ -1780,18 +1690,6 @@ GRANT ALL ON TABLE "public"."orders" TO "service_role";
 
 
 GRANT ALL ON TABLE "public"."payment_events" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."product_variants" TO "anon";
-GRANT ALL ON TABLE "public"."product_variants" TO "authenticated";
-GRANT ALL ON TABLE "public"."product_variants" TO "service_role";
-
-
-
-GRANT ALL ON SEQUENCE "public"."product_variants_id_seq" TO "anon";
-GRANT ALL ON SEQUENCE "public"."product_variants_id_seq" TO "authenticated";
-GRANT ALL ON SEQUENCE "public"."product_variants_id_seq" TO "service_role";
 
 
 
@@ -1810,6 +1708,12 @@ GRANT ALL ON TABLE "public"."profiles" TO "service_role";
 GRANT ALL ON TABLE "public"."refund_requests" TO "anon";
 GRANT ALL ON TABLE "public"."refund_requests" TO "authenticated";
 GRANT ALL ON TABLE "public"."refund_requests" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."shipping_methods" TO "anon";
+GRANT ALL ON TABLE "public"."shipping_methods" TO "authenticated";
+GRANT ALL ON TABLE "public"."shipping_methods" TO "service_role";
 
 
 
@@ -1846,6 +1750,29 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "anon";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "authenticated";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
+
+
+
+
+
+
+
+
+
+--
+-- Canonical system shipping methods for fresh installs.
+--
+
+INSERT INTO "public"."shipping_methods" ("code", "label", "enabled", "price_raw", "requires_tracking", "settings", "sort_order")
+VALUES
+  ('fedex', 'FedEx', true, NULL, true, '{}'::jsonb, 10),
+  ('internal_courier', 'Internal Courier', false, 0, false, '{}'::jsonb, 20)
+ON CONFLICT ("code") DO UPDATE
+SET "label" = EXCLUDED."label",
+    "requires_tracking" = EXCLUDED."requires_tracking",
+    "sort_order" = EXCLUDED."sort_order",
+    "settings" = COALESCE("public"."shipping_methods"."settings", '{}'::jsonb);
+
 --
 -- Auth trigger and Storage baseline additions not included in public/app_private schema dump.
 --
@@ -1939,4 +1866,3 @@ REVOKE ALL ON TABLE "public"."email_events", "public"."payment_events" FROM "ano
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" REVOKE ALL ON FUNCTIONS FROM "anon";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" REVOKE ALL ON FUNCTIONS FROM "authenticated";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" REVOKE ALL ON FUNCTIONS FROM "service_role";
-

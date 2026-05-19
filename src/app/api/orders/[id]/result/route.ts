@@ -26,6 +26,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       total_price,
       total_price_raw,
       shipping_cost,
+      shipping_method,
       service_fee,
       estimated_delivery,
       payment_status,

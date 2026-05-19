@@ -21,7 +21,7 @@ import {
 
 function formatPaymentMethod(method: string | null | undefined): string {
   if (method === "credit_card") return "Debit/Credit Card";
-  if (method === "bank_transfer") return "Virtual Account";
+  if (method === "bank_transfer") return "Bank Payment";
   return "Payment";
 }
 
@@ -74,6 +74,8 @@ export default function OrderDetailPage() {
   const [payoutError, setPayoutError] = useState<string | null>(null);
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
+  const trackingNumber = order?.tracking_number ?? null;
+  const trackingShippingMethod = order?.shipping_method ?? null;
 
   useEffect(() => {
     fetch("/api/exchange-rate")
@@ -85,7 +87,7 @@ export default function OrderDetailPage() {
   }, []);
 
   useEffect(() => {
-    if (!order?.tracking_number) {
+    if (!trackingNumber || trackingShippingMethod === "internal_courier") {
       setTrackingState("idle");
       return;
     }
@@ -94,7 +96,7 @@ export default function OrderDetailPage() {
     setTrackingState("loading");
     setTrackingSteps([]);
     
-    fetch(`/api/shipping/track?tracking_number=${order.tracking_number}`)
+    fetch(`/api/shipping/track?tracking_number=${trackingNumber}`)
       .then((res) => {
          if (!res.ok) throw new Error("Tracking fetch failed");
          return res.json();
@@ -119,7 +121,7 @@ export default function OrderDetailPage() {
       .catch(() => {
          setTrackingState("not_found");
       });
-  }, [order?.tracking_number]);
+  }, [trackingNumber, trackingShippingMethod]);
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -343,11 +345,13 @@ export default function OrderDetailPage() {
   }
 
   const displayId = order.midtrans_order_id ? `#${order.midtrans_order_id}` : `#${order.id.slice(0, 8).toUpperCase()}`;
+  const shippingMethod = (order as any).shipping_method as string | null | undefined;
+  const shippingMethodLabel = shippingMethod === "internal_courier" ? "Internal Courier" : "FedEx";
   const isPendingPayment = isPendingPaymentOrder({ status: order.status, paymentStatus: order.payment_status });
   const showTrackingCard = shouldShowTrackingCard({
     status: order.status,
     paymentStatus: order.payment_status,
-    trackingNumber: order.tracking_number,
+    trackingNumber: shippingMethod === "internal_courier" ? "" : order.tracking_number,
   });
   const lifecycleEvents = getOrderDetailLifecycleEvents({
     status: order.status,
@@ -425,6 +429,8 @@ export default function OrderDetailPage() {
                   <p className="text-[18px] md:text-[24px] font-normal italic font-['EB_Garamond'] opacity-100 leading-[1.2] break-all">
                     {showTrackingCard
                       ? order.tracking_number || "Tracking will be available soon"
+                      : shippingMethod === "internal_courier" && order.status === "DIKIRIM"
+                        ? "Handled by Internal Courier"
                       : isPendingPayment
                         ? "Awaiting Payment"
                         : order.status === "BARU"
@@ -537,7 +543,7 @@ export default function OrderDetailPage() {
                   <span className="pr-2">{order.total_price_raw && order.shipping_cost !== undefined ? `Rp ${(order.total_price_raw - (order.shipping_cost || 0) - (order.service_fee || 0)).toLocaleString("id-ID")}` : "-"}</span>
                </div>
                <div className="flex justify-between items-center text-[#3a302a] text-[14px]">
-                  <span className="ml-2">Shipping Information</span>
+                  <span className="ml-2">Shipping Information ({shippingMethodLabel})</span>
                   <span className="pr-2">{order.shipping_cost ? `Rp ${order.shipping_cost.toLocaleString("id-ID")}` : "Rp 0"}</span>
                </div>
                <div className="flex justify-between items-center text-[#3a302a] text-[14px]">

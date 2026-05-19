@@ -143,30 +143,12 @@ for (const product of products) {
     updated_at: new Date().toISOString(),
   };
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("products")
     .upsert(payload, { onConflict: "bootstrap_key" })
     .select("id")
     .single();
   if (error) throw new Error(`Failed to upsert product ${product.bootstrap_key}: ${error.message}`);
-
-  for (const [index, variant] of (product.variants ?? []).entries()) {
-    const { error: variantError } = await supabase
-      .from("product_variants")
-      .upsert({
-        product_id: data.id,
-        name: variant.name,
-        sku: variant.sku ?? null,
-        price: variant.price,
-        price_raw: variant.price_raw,
-        stock: variant.stock,
-        weight_kg: variant.weight_kg ?? null,
-        metadata: variant.metadata ?? {},
-        sort_order: variant.sort_order ?? index,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "product_id,name" });
-    if (variantError) throw new Error(`Failed to upsert variant for ${product.bootstrap_key}: ${variantError.message}`);
-  }
 
   console.log(`bootstrapped ${product.bootstrap_key}`);
 }

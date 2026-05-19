@@ -9,9 +9,14 @@ import {
   type CheckoutItemInput,
   type CheckoutPricing,
   type CheckoutProduct,
-  type ShippingCommodity,
-  type ShippingDestination,
 } from "@/domain/checkout";
+import {
+  buildShippingRateOptions,
+  normalizeShippingMethodCode,
+  type ExternalShippingRateProvider,
+  type ShippingMethodCode,
+  type ShippingMethodConfig,
+} from "@/domain/shipping";
 
 export interface CheckoutAddress {
   id: string;
@@ -48,7 +53,6 @@ export interface CreateCheckoutOrderInput {
   address: CheckoutAddress;
   items: Array<{
     productId: number;
-    productVariantId?: number | null;
     quantity: number;
     priceRaw: number;
     price: string;
@@ -60,12 +64,14 @@ export interface CreateCheckoutOrderInput {
   cartSnapshot: unknown;
   shippingSnapshot: unknown;
   paymentMethod: "bank_transfer" | "credit_card";
+  shippingMethod: ShippingMethodCode;
 }
 
 export interface CheckoutRepository {
   findOrderByIdempotency(userId: string, idempotencyKey: string): Promise<ExistingCheckoutOrder | null>;
   getAddressForUser(userId: string, addressId: string): Promise<CheckoutAddress | null>;
   getProductsByIds(productIds: number[]): Promise<CheckoutProduct[]>;
+  getShippingMethods(): Promise<ShippingMethodConfig[]>;
   createPendingOrder(input: CreateCheckoutOrderInput): Promise<CreatedCheckoutOrder>;
   attachSnapToken(input: {
     orderId: string;
@@ -75,21 +81,7 @@ export interface CheckoutRepository {
   }): Promise<void>;
 }
 
-export interface ShippingRateProvider {
-  getShippingRate(input: {
-    destination: ShippingDestination;
-    commodities: ShippingCommodity[];
-  }): Promise<{
-    shippingCost: number;
-    serviceName: string;
-    estimatedDelivery: string;
-    estimatedDeliveryDate?: string;
-    rateType?: "ACCOUNT";
-    currency?: "IDR";
-    totalDeclaredValue?: number;
-    totalWeightKg?: number;
-  }>;
-}
+export type ShippingRateProvider = ExternalShippingRateProvider;
 
 export interface PaymentGateway {
   createSnapTransaction(input: {
@@ -107,6 +99,7 @@ export interface CreateCheckoutIntentInput {
   userId: string;
   idempotencyKey: string;
   addressId: string;
+  shippingMethod: ShippingMethodCode;
   paymentMethod: "bank_transfer" | "credit_card";
   note: string;
   items: CheckoutItemInput[];
@@ -180,16 +173,29 @@ export async function createCheckoutIntent(
   const products = await deps.repository.getProductsByIds(normalizedItems.map((item) => item.productId));
   const pricedItems = priceCheckoutItems(normalizedItems, products);
   calculateCheckoutPricing(pricedItems, 0);
-  const shippingRate = await deps.shipping.getShippingRate({
+  const shippingMethod = normalizeShippingMethodCode(input.shippingMethod);
+  const shippingMethods = await deps.repository.getShippingMethods();
+  const selectedShippingMethods = shippingMethods.filter((method) => method.code === shippingMethod);
+  const { rates, warnings } = await buildShippingRateOptions({
+    methods: selectedShippingMethods,
     destination: {
       postalCode: address.postalCode,
       countryCode: address.countryCode,
     },
     commodities: buildShippingCommodities(pricedItems),
+    fedex: deps.shipping,
   });
+  const shippingRate = rates.find((rate) => rate.method === shippingMethod);
+  if (!shippingRate) {
+    if (!selectedShippingMethods.some((method) => method.enabled)) {
+      throw new Error("Selected shipping method is not available.");
+    }
+    throw new Error(warnings[0] ?? "Selected shipping method is unavailable.");
+  }
   const pricing = calculateCheckoutPricing(pricedItems, shippingRate.shippingCost);
   const cartFingerprint = createCartFingerprint({
     addressId: input.addressId,
+    shippingMethod,
     items: normalizedItems,
     pricing,
   });
@@ -209,7 +215,6 @@ export async function createCheckoutIntent(
       address,
       items: pricedItems.map((item) => ({
         productId: item.product.id,
-        productVariantId: item.variant?.id ?? null,
         quantity: item.quantity,
         priceRaw: item.unitPriceRaw,
         price: item.price,
@@ -221,16 +226,15 @@ export async function createCheckoutIntent(
       cartSnapshot: pricedItems.map((item) => ({
         product_id: item.product.id,
         name: item.product.name,
-        variant_id: item.variant?.id ?? null,
-        variant_name: item.variant?.name ?? null,
         quantity: item.quantity,
         price_raw: item.unitPriceRaw,
         custom_amount_raw: item.customAmountRaw ?? null,
         weight_kg: item.lineWeightKg / item.quantity,
         buyer_note: item.buyerNote ?? null,
       })),
-      shippingSnapshot: shippingRate,
+      shippingSnapshot: shippingRate.snapshot,
       paymentMethod: input.paymentMethod,
+      shippingMethod,
     });
   } catch (error) {
     if (error instanceof DuplicateCheckoutRequestError) {

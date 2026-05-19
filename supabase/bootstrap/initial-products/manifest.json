@@ -19,8 +19,7 @@
       },
       "pricing_type": "custom_amount",
       "min_price_raw": 500000,
-      "max_price_raw": 10000000,
-      "variants": []
+      "max_price_raw": 10000000
     },
     {
       "bootstrap_key": "initial:28f92eb02cc11b77",
@@ -38,8 +37,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:88ad98bc6806fcf5",
@@ -57,8 +55,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:ed864418945dc6cc",
@@ -76,8 +73,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:22ed5e218ee0422e",
@@ -95,8 +91,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:5f6daaee5ee4d03f",
@@ -114,8 +109,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:9c81824d1e06fb4a",
@@ -133,8 +127,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:7c793f5b4c155527",
@@ -152,8 +145,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:d6ba3e6c0d0b593f",
@@ -171,8 +163,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:80b7bb7a9c460872",
@@ -190,8 +181,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:70d3676bf89df6c4",
@@ -209,8 +199,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:b6589fe6301b8580",
@@ -228,8 +217,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:1462ddaf6d723c9c",
@@ -247,8 +235,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:1f505f76bfca7136",
@@ -266,8 +253,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:915c61f429628f99",
@@ -285,8 +271,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:b5219706071e1f1b",
@@ -304,8 +289,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:a8fcec213d66c746",
@@ -323,8 +307,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:c2fc8c7b0e172116",
@@ -342,8 +325,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:9e845acf2a7f6e3d",
@@ -361,8 +343,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:2363ee92169b0271",
@@ -380,8 +361,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:8352e865c6b14d5e",
@@ -399,8 +379,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:678ec6fda27a4cd1",
@@ -418,8 +397,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:4ccea25b726b2efc",
@@ -437,8 +415,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:cbf56b5e958d0d7d",
@@ -456,8 +433,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:8a4c296ad00ec4f6",
@@ -475,8 +451,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:a39f5e46f620517c",
@@ -494,8 +469,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:08f1620c32403d22",
@@ -513,8 +487,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:9240586e46f1e0aa",
@@ -532,8 +505,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:a7cc4d0f7fd419f6",
@@ -551,8 +523,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:dccaf0ad999d2d72",
@@ -570,8 +541,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:10db3d20200e0dcf",
@@ -589,8 +559,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:69695c0b41bc1c57",
@@ -608,8 +577,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:cbc784e043daec1e",
@@ -627,8 +595,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:a5e3b0d862e3eccf",
@@ -646,8 +613,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:b9df60c6f00f19b0",
@@ -665,8 +631,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:93ddb1055178cdb5",
@@ -684,8 +649,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:87c1cb73b984e577",
@@ -703,8 +667,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:eafb30895fc23a61",
@@ -722,8 +685,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:35f512b2f5da5061",
@@ -741,8 +703,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:c5585eb424d8c84b",
@@ -760,8 +721,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:55001745cd2dfb57",
@@ -779,8 +739,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:42bdcb24891be141",
@@ -798,8 +757,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:d104b838a2697132",
@@ -817,8 +775,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:e3b7fa2e17f7c10b",
@@ -836,8 +793,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:77338d8f715184c9",
@@ -855,8 +811,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:ac90165b0c20dc93",
@@ -874,8 +829,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:6465f75c3bef5a8a",
@@ -893,8 +847,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:6197ab8b9aee8527",
@@ -912,8 +865,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:4102dc96fdddc554",
@@ -931,8 +883,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:3a6c67ef6379c774",
@@ -950,8 +901,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:8234dffdb517c627",
@@ -969,8 +919,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:0e5781095562c7d5",
@@ -988,8 +937,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:4d7900a7ec66738c",
@@ -1007,8 +955,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:e913a58b759576c0",
@@ -1026,8 +973,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:0a0c77bd06c1cbc7",
@@ -1045,8 +991,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:06213a9a0c899ac0",
@@ -1064,8 +1009,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:b585ba17adbdc34f",
@@ -1083,8 +1027,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:658a9d9c11d84e44",
@@ -1102,8 +1045,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:d1a9f974c0cf4d99",
@@ -1121,8 +1063,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:e987512a927fa4fd",
@@ -1141,8 +1082,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:24d421988775dc4a",
@@ -1161,8 +1101,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:d0c405451843d6e2",
@@ -1181,8 +1120,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:a8e690cdcd5788f5",
@@ -1201,8 +1139,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:2cfd7cc5c014edf6",
@@ -1221,8 +1158,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:aff42d4fa7acca53",
@@ -1241,8 +1177,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:10f6f3549c5531dc",
@@ -1261,8 +1196,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:c8f8493d2c17282c",
@@ -1281,8 +1215,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:1261ab27279c5844",
@@ -1301,8 +1234,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:c3c647f63981ab6d",
@@ -1321,8 +1253,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:bb695cb888fe6c3a",
@@ -1341,8 +1272,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:a1e9d2959fdc00fe",
@@ -1361,8 +1291,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:0ab9b1d6aaf44406",
@@ -1381,8 +1310,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:d6a72688c44eda8f",
@@ -1401,8 +1329,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:c10e5780c7c337c5",
@@ -1421,8 +1348,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:44bcf6394739dc38",
@@ -1441,8 +1367,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:252fbb3035017ad8",
@@ -1461,8 +1386,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:ff70b9c94d3a6b43",
@@ -1481,8 +1405,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:c514633b21e3d23d",
@@ -1501,8 +1424,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:9bf43722bf382c38",
@@ -1521,8 +1443,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:f15b6231dc548d2c",
@@ -1541,8 +1462,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:1542b7d684050ba6",
@@ -1561,8 +1481,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:1963560fcbf0931c",
@@ -1581,8 +1500,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:2742e1084616b600",
@@ -1601,8 +1519,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:5001e865870ad9e5",
@@ -1621,8 +1538,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:d0ea156763f7d02e",
@@ -1641,8 +1557,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:ee438b34d3ad149e",
@@ -1661,8 +1576,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:520945163ce7b0fa",
@@ -1681,8 +1595,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:c80aad4be54d1c95",
@@ -1701,8 +1614,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:c01d2eed0a99a53b",
@@ -1721,8 +1633,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:112032ad5997052d",
@@ -1741,8 +1652,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:ac7d8711da58a47e",
@@ -1761,8 +1671,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:cd178ae1637397ab",
@@ -1781,8 +1690,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:5a8d2c3cd33a7c65",
@@ -1801,8 +1709,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:10eca8538d404ae0",
@@ -1821,8 +1728,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:41ebbfa710d413b9",
@@ -1841,8 +1747,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:25c99c83920d6e57",
@@ -1861,8 +1766,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:1551baf8cd969dae",
@@ -1881,8 +1785,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:c810156da6b21a27",
@@ -1901,8 +1804,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:0715139c9776af4e",
@@ -1921,8 +1823,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:7deb014815311cac",
@@ -1941,8 +1842,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:1daec127e38e9126",
@@ -1961,8 +1861,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:9c1a92a9b920081b",
@@ -1981,8 +1880,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:785fdef99b94d6b2",
@@ -2001,8 +1899,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:e89cb871a32ea2a9",
@@ -2021,8 +1918,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:d1c0041d25756eb0",
@@ -2041,8 +1937,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:2e857bb294fc9e2f",
@@ -2061,8 +1956,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:4184cdbcda5b07c8",
@@ -2081,8 +1975,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:411d73c6fb500511",
@@ -2101,8 +1994,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:8098605497adfeda",
@@ -2121,8 +2013,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:64e8f1b585a8577b",
@@ -2141,8 +2032,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:a1fe3b1d0897a700",
@@ -2161,8 +2051,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:ca5939edfb699b1c",
@@ -2181,8 +2070,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:2648fe4c2727e983",
@@ -2201,8 +2089,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:3530cad3092839c8",
@@ -2221,8 +2108,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:556f31d46cb3ae62",
@@ -2241,8 +2127,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:8ca8c908d6dc1650",
@@ -2261,8 +2146,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:925df8fe239932a1",
@@ -2281,8 +2165,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:6d6c88642d2ceef7",
@@ -2301,8 +2184,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:c5b8fe0bd9f372f8",
@@ -2321,8 +2203,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:5e5f1c3835e44c7f",
@@ -2341,8 +2222,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:a15297a2f528e452",
@@ -2361,8 +2241,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:6e5a333de47120d1",
@@ -2381,8 +2260,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:9d6e99be45d59d3d",
@@ -2401,8 +2279,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:d3235686f6515f51",
@@ -2421,8 +2298,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:bf6d97592b442265",
@@ -2441,8 +2317,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:b0abf2b04228bc51",
@@ -2461,8 +2336,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:28fac8ea05f0d0c0",
@@ -2481,8 +2355,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:ab5b84d6b96c3d08",
@@ -2501,8 +2374,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:71041bc9ed66d141",
@@ -2521,8 +2393,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:6b782b666589f512",
@@ -2541,8 +2412,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:c19463016eab674e",
@@ -2561,8 +2431,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:8682bcc37d61e7f1",
@@ -2581,8 +2450,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:447f587b08e7426e",
@@ -2601,8 +2469,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:e886aeddc4ed3a68",
@@ -2621,8 +2488,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:4862da8bcbb1a9ba",
@@ -2641,8 +2507,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:a6a335a89d2fc5fd",
@@ -2661,8 +2526,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:3a2b42722609ce57",
@@ -2681,8 +2545,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:53a118c3f5935825",
@@ -2701,8 +2564,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:83a30b95f469214c",
@@ -2721,8 +2583,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:6d367f804c862236",
@@ -2741,8 +2602,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:83777669b5d71490",
@@ -2761,8 +2621,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:67393e7e8792f8c3",
@@ -2781,8 +2640,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:a67f940cc2a10483",
@@ -2801,8 +2659,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:2fa8a4d8b84ec328",
@@ -2821,8 +2678,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:7328e9be606faea4",
@@ -2841,8 +2697,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:c8e5897769b3697e",
@@ -2861,8 +2716,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:1435299b299a4ceb",
@@ -2881,8 +2735,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:9779aa3e4ad1d915",
@@ -2901,8 +2754,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:96a2bb8003d898e6",
@@ -2921,8 +2773,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:bedfa9185dff344a",
@@ -2941,8 +2792,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:76f96ba98e715ce3",
@@ -2961,8 +2811,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:974bd2779d6ff6a2",
@@ -2981,8 +2830,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:f1a095c4568676d6",
@@ -3001,8 +2849,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:d78f72e05c54af62",
@@ -3021,8 +2868,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:3754fe8d5771e8ae",
@@ -3041,8 +2887,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:328d495f91316cba",
@@ -3061,8 +2906,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:bc97e3cfa113d888",
@@ -3081,8 +2925,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:5bcb899a1424c32f",
@@ -3101,8 +2944,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:3c78740559be2720",
@@ -3121,8 +2963,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:9a194f60b6f2fe2d",
@@ -3141,8 +2982,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:6a55dea6c417ac5f",
@@ -3161,8 +3001,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:be556df94c914bcd",
@@ -3181,8 +3020,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:79e04416afceebdf",
@@ -3201,8 +3039,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:8b83f4986d3d4d39",
@@ -3221,8 +3058,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:e59c53ace7a20d3d",
@@ -3241,8 +3077,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:6c8efefe4a49a51a",
@@ -3261,8 +3096,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:150a291fc05f537c",
@@ -3281,8 +3115,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:238b142c14a2042c",
@@ -3301,8 +3134,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:0b615e7256261732",
@@ -3321,8 +3153,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:f07207e80312be6a",
@@ -3341,8 +3172,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:0bfa3b93a2d25430",
@@ -3361,8 +3191,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:dd4efcdd4f05b38b",
@@ -3381,8 +3210,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:639d9784efc8baec",
@@ -3401,8 +3229,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:2e53b35c7d7f5c50",
@@ -3421,8 +3248,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:7d57ed4ef4c31a12",
@@ -3441,8 +3267,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:f4a2fb25a7456f80",
@@ -3461,8 +3286,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:6c8743c25dfa3c8d",
@@ -3481,8 +3305,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:33db59a4ae71460a",
@@ -3501,8 +3324,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:28948958b87e5ffe",
@@ -3521,8 +3343,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:0d1b56b5a2801900",
@@ -3541,8 +3362,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:8478a92c336c17bc",
@@ -3561,8 +3381,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:1b8b743fb0f5fa28",
@@ -3581,8 +3400,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:ed981beeb8a335a8",
@@ -3601,8 +3419,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:a52ce9b9ddbd829d",
@@ -3621,8 +3438,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:152e2de63404d35c",
@@ -3641,8 +3457,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:be68fe1bf722f461",
@@ -3661,8 +3476,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:0564d24291d197fe",
@@ -3681,8 +3495,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:73083d21202a7a89",
@@ -3701,8 +3514,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:a6148371e00fd7cf",
@@ -3721,8 +3533,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:bd1802d0f5ee5167",
@@ -3741,8 +3552,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:fd16528779aa7ef1",
@@ -3761,8 +3571,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:eba36f0dc91c31e6",
@@ -3781,8 +3590,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:6209d3b3091489b7",
@@ -3801,8 +3609,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:e18f016d7effe03e",
@@ -3821,8 +3628,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:f323c6488357033c",
@@ -3841,8 +3647,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:a7a4bb1e8bb01449",
@@ -3861,8 +3666,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:7036299aa4a3ac1e",
@@ -3881,8 +3685,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:9bcaebb9d2fe6f80",
@@ -3901,8 +3704,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:2f71b318b3abc857",
@@ -3921,8 +3723,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:fff43e56079af8d8",
@@ -3941,8 +3742,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:2e42381590a3a11b",
@@ -3961,8 +3761,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     },
     {
       "bootstrap_key": "initial:d55ee6cc8bb7cc51",
@@ -3981,8 +3780,7 @@
       },
       "pricing_type": "fixed",
       "min_price_raw": null,
-      "max_price_raw": null,
-      "variants": []
+      "max_price_raw": null
     }
   ]
 }

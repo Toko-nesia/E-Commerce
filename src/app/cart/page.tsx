@@ -64,7 +64,7 @@ export default function CartPage() {
                 </div>
               )}
               {items.map((item) => {
-                const { product, qty, variant } = item;
+                const { product, qty } = item;
                 const itemKey = getCartItemKey(item);
                 const isCustomBox = product.pricing_type === "custom_amount" && product.category === "Jastip Box";
                 return (
@@ -82,7 +82,7 @@ export default function CartPage() {
 
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-[15px] text-black leading-snug line-clamp-2">{product.name}</p>
-                      <p className="text-[13px] text-[#6b6b6b] mt-0.5">{product.category}{variant ? ` / ${variant.name}` : ""}</p>
+                      <p className="text-[13px] text-[#6b6b6b] mt-0.5">{product.category}</p>
                       <p className="font-bold text-[15px] text-[#511e0b] mt-1">{getCartItemPrice(item)}</p>
                       <label className="mt-3 block text-[12px] font-semibold text-[#511e0b]" htmlFor={`item-note-${itemKey}`}>
                         Item note (optional)
@@ -117,7 +117,7 @@ export default function CartPage() {
                             const result = updateQty(itemKey, qty + 1);
                             setStockMessages(result.message ? [result.message] : []);
                           }}
-                          disabled={qty >= (variant?.stock ?? product.stock ?? 0)}
+                          disabled={qty >= (product.stock ?? 0)}
                           className="bg-transparent border-none cursor-pointer text-[#511e0b] p-0 hover:text-black transition-colors"
                           aria-label="Increase quantity"
                         >
@@ -146,7 +146,7 @@ export default function CartPage() {
                 {items.map((item) => (
                   <div key={getCartItemKey(item)} className="flex justify-between text-[13px]">
                     <span className="text-[#6b6b6b] line-clamp-1 max-w-[160px]">
-                      {(item.variant ? `${item.product.name} (${item.variant.name})` : item.product.name)} x{item.qty}
+                      {item.product.name} x{item.qty}
                     </span>
                     <span className="text-black font-medium shrink-0 ml-2">{formatRp(getCartItemUnitPrice(item) * item.qty)}</span>
                   </div>

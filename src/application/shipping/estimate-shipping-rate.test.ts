@@ -39,6 +39,10 @@ function createDeps(overrides: {
     findOrderByIdempotency: vi.fn(async () => null),
     getAddressForUser: vi.fn(async () => addressResult),
     getProductsByIds: vi.fn(async () => overrides.products ?? [product]),
+    getShippingMethods: vi.fn(async () => [
+      { code: "fedex" as const, label: "FedEx", enabled: true, priceRaw: null, requiresTracking: true, settings: {} },
+      { code: "internal_courier" as const, label: "Internal Courier", enabled: true, priceRaw: 50_000, requiresTracking: false, settings: {} },
+    ]),
     createPendingOrder: vi.fn(),
     attachSnapToken: vi.fn(),
   };
@@ -70,7 +74,7 @@ describe("estimateShippingRate", () => {
   it("builds shipping input from server-side address and product data", async () => {
     const deps = createDeps();
 
-    await estimateShippingRate(
+    const result = await estimateShippingRate(
       {
         userId: "user-1",
         addressId: address.id,
@@ -79,6 +83,12 @@ describe("estimateShippingRate", () => {
       deps,
     );
 
+    expect(result.rates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ method: "fedex", shippingCost: 25_000 }),
+        expect.objectContaining({ method: "internal_courier", shippingCost: 50_000, requiresTracking: false }),
+      ]),
+    );
     expect(deps.repository.getAddressForUser).toHaveBeenCalledWith("user-1", address.id);
     expect(deps.shipping.getShippingRate).toHaveBeenCalledWith({
       destination: { postalCode: "1000001", countryCode: "JP" },

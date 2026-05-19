@@ -54,6 +54,24 @@ function createDeps(options: {
     }),
     getAddressForUser: vi.fn(async () => address),
     getProductsByIds: vi.fn(async () => [product]),
+    getShippingMethods: vi.fn(async () => [
+      {
+        code: "fedex" as const,
+        label: "FedEx",
+        enabled: true,
+        priceRaw: null,
+        requiresTracking: true,
+        settings: {},
+      },
+      {
+        code: "internal_courier" as const,
+        label: "Internal Courier",
+        enabled: true,
+        priceRaw: 50_000,
+        requiresTracking: false,
+        settings: {},
+      },
+    ]),
     createPendingOrder: vi.fn(async (input) => {
       if (options.createError) {
         throw options.createError;
@@ -86,6 +104,7 @@ const input = {
   userId: "user-1",
   idempotencyKey: "checkout-key",
   addressId: "addr-1",
+  shippingMethod: "fedex" as const,
   paymentMethod: "credit_card" as const,
   note: "Careful packing",
   items: [{ productId: 1, quantity: 1, buyerNote: "Grind medium, please." }],
@@ -172,6 +191,7 @@ describe("createCheckoutIntent", () => {
         idempotencyKey: "checkout-key",
         address,
         paymentMethod: "credit_card",
+        shippingMethod: "fedex",
         pricing: expect.objectContaining({
           subtotal: 100_000,
           shippingCost: 25_000,
@@ -199,6 +219,30 @@ describe("createCheckoutIntent", () => {
         paymentMethod: "credit_card",
         createdAt: now,
         expiresAt: new Date("2026-05-15T00:00:00.000Z"),
+      }),
+    );
+  });
+
+  it("uses internal courier price without calling FedEx", async () => {
+    const deps = createDeps();
+
+    await createCheckoutIntent(
+      { ...input, shippingMethod: "internal_courier" },
+      {
+        ...deps,
+        now: () => now,
+        createOrderId: () => "order-1",
+      },
+    );
+
+    expect(deps.shipping.getShippingRate).not.toHaveBeenCalled();
+    expect(deps.repository.createPendingOrder).toHaveBeenCalledWith(
+      expect.objectContaining({
+        shippingMethod: "internal_courier",
+        pricing: expect.objectContaining({
+          shippingCost: 50_000,
+          grandTotal: 151_000,
+        }),
       }),
     );
   });

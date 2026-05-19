@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { resolveImagePath } from "@/lib/image-paths";
 import { useCart } from "@/contexts/cart-context";
 import { formatJpyFromIdr } from "@/domain/formatters";
-import type { Product, ProductVariant } from "@/types/database";
+import type { Product } from "@/types/database";
 
 function normalizeSpec([label, value]: [string, string]): [string, string] {
   const labels: Record<string, string> = {
@@ -33,8 +33,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [showShippingModal, setShowShippingModal] = useState(false);
   const [cartMessage, setCartMessage] = useState<string | null>(null);
   const [exchangeRate, setExchangeRate] = useState<number | null>(null);
-  const [variants, setVariants] = useState<ProductVariant[]>([]);
-  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const [customAmountRaw, setCustomAmountRaw] = useState(500_000);
 
   const [product, setProduct] = useState<Product | null>(null);
@@ -58,20 +56,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         if (!data) throw new Error("Product not found");
 
         setProduct(data as Product);
-        const { data: variantRows, error: variantError } = await (supabase as any)
-          .from("product_variants")
-          .select("*")
-          .eq("product_id", Number(id))
-          .order("sort_order", { ascending: true })
-          .order("id", { ascending: true });
-        if (variantError) throw new Error(variantError.message);
-        const nextVariants = (variantRows ?? []) as ProductVariant[];
-        setVariants(nextVariants);
-        setSelectedVariantId((current) =>
-          current && nextVariants.some((variant) => variant.id === current)
-            ? current
-            : nextVariants[0]?.id ?? null
-        );
         if ((data as Product).pricing_type === "custom_amount") {
           setCustomAmountRaw((current) => {
             const min = Number((data as Product).min_price_raw ?? 500_000);
@@ -79,8 +63,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             return Math.min(max, Math.max(min, current || min));
           });
         }
-        const stockSource = nextVariants[0] ?? data;
-        setQty((current) => Math.max(1, Math.min(current, Number(stockSource.stock ?? 0) || 1)));
+        setQty((current) => Math.max(1, Math.min(current, Number(data.stock ?? 0) || 1)));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load product");
       } finally {
@@ -145,17 +128,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   const stock = Number(product.stock ?? 0);
   const pricingType = product.pricing_type ?? "fixed";
-  const selectedVariant = variants.find((variant) => variant.id === selectedVariantId) ?? variants[0] ?? null;
-  const activeVariant = pricingType === "variant" ? selectedVariant : null;
-  const activeStock = Number(activeVariant?.stock ?? stock);
+  const activeStock = stock;
   const minCustomAmount = Number(product.min_price_raw ?? 500_000);
   const maxCustomAmount = Number(product.max_price_raw ?? 10_000_000);
   const activePriceRaw = pricingType === "custom_amount"
     ? customAmountRaw
-    : activeVariant?.price_raw ?? product.price_raw;
+    : product.price_raw;
   const activePrice = pricingType === "custom_amount"
     ? `Rp${customAmountRaw.toLocaleString("id-ID")}`
-    : activeVariant?.price ?? product.price;
+    : product.price;
   const specifications: [string, string][] = product.specifications
     ? Object.entries(product.specifications).map(normalizeSpec)
     : [
@@ -206,7 +187,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       },
       qty,
       {
-        variant: activeVariant,
         customAmountRaw: pricingType === "custom_amount" ? customAmountRaw : null,
       },
     );
@@ -240,28 +220,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <p className="text-[14px] text-[#6b6b6b] mt-1">
               Stock: <span className="text-[#511e0b] font-medium">{activeStock}</span>
             </p>
-
-            {pricingType === "variant" && variants.length > 0 && (
-              <div className="mt-5">
-                <label className="block text-[12px] text-[#6b6b6b] tracking-widest uppercase mb-1.5">Variant</label>
-                <select
-                  value={selectedVariant?.id ?? ""}
-                  onChange={(event) => {
-                    const nextId = Number(event.target.value);
-                    const next = variants.find((variant) => variant.id === nextId) ?? null;
-                    setSelectedVariantId(next?.id ?? null);
-                    setQty((current) => Math.max(1, Math.min(current, Number(next?.stock ?? stock) || 1)));
-                  }}
-                  className="w-full md:w-[360px] border border-[#b0b0b0] rounded-lg px-4 py-3 text-[14px] text-black outline-none focus:border-[#511e0b]"
-                >
-                  {variants.map((variant) => (
-                    <option key={variant.id} value={variant.id}>
-                      {variant.name} - {variant.price}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
 
             {pricingType === "custom_amount" && (
               <div className="mt-5 max-w-[440px]">

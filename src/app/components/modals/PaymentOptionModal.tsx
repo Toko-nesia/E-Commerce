@@ -5,7 +5,7 @@ import { Building2, CreditCard } from "lucide-react";
 import type { MidtransPaymentType, PaymentMethod } from "@/types/database";
 
 const paymentMethods: PaymentMethod[] = [
-  { id: "bank_transfer", name: "Virtual Account", type: "bank_transfer", description: "Pay through supported bank channels." },
+  { id: "bank_transfer", name: "Bank Payment", type: "bank_transfer", description: "Pay through supported bank channels." },
   { id: "credit_card", name: "Debit/Credit Card", type: "credit_card", description: "Pay securely with supported card networks." },
 ];
 

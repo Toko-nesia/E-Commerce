@@ -47,8 +47,8 @@ export function getValidAdminNextStatuses(current: OrderStatus): OrderStatus[] {
   return ADMIN_TRANSITIONS[current] ?? [];
 }
 
-export function requiresTrackingNumber(to: OrderStatus): boolean {
-  return to === 'DIKIRIM';
+export function requiresTrackingNumber(to: OrderStatus, shippingMethod?: string | null): boolean {
+  return to === "DIKIRIM" && shippingMethod !== "internal_courier";
 }
 
 export function requiresCancelReason(to: OrderStatus): boolean {
