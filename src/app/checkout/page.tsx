@@ -545,11 +545,6 @@ export default function CheckoutPage() {
                             Estimated delivery: {option.estimatedDelivery}
                           </span>
                         )}
-                        {!option.requiresTracking && (
-                          <span className="block text-[12px] text-[#6b6b6b] mt-0.5">
-                            Tracking number is not required for this method.
-                          </span>
-                        )}
                       </span>
                     </span>
                     <span className="text-[14px] font-bold text-[#511e0b] shrink-0">{formatRp(option.shippingCost)}</span>
