@@ -125,7 +125,7 @@ Auth and email:
 
 Payments:
 
-- Checkout supports Bank Payment and Debit/Credit Card through Midtrans Snap. The checkout selector passes the selected payment method to the Snap payload.
+- Checkout supports Virtual Account and Debit/Credit Card through Midtrans Snap. The checkout selector passes the selected payment method to the Snap payload.
 - Closing the Snap popup leaves the order in pending payment state and redirects to `/order-pending?orderId=...`.
 - Customers can continue the same pending payment until `snap_token_expires_at`; expired unpaid orders move to failed/expired state and release reserved stock.
 - The success and pending pages call the server-side payment sync endpoint to avoid the Midtrans webhook race where Snap returns success before the database has received the webhook.

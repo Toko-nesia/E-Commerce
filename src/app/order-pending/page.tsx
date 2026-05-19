@@ -68,7 +68,7 @@ function formatRemaining(ms: number): string {
 
 function formatPaymentMethod(method: string | null | undefined): string {
   if (method === "credit_card") return "Debit/Credit Card";
-  if (method === "bank_transfer") return "Bank Payment";
+  if (method === "bank_transfer") return "Virtual Account";
   return "Payment";
 }
 

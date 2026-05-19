@@ -17,7 +17,7 @@ import type { Address } from "@/types/database";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 
 const paymentMethods = [
-  { id: "bank_transfer", name: "Bank Payment" },
+  { id: "bank_transfer", name: "Virtual Account" },
   { id: "credit_card", name: "Debit/Credit Card" },
 ];
 

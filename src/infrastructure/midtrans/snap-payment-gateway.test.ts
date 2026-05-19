@@ -23,7 +23,7 @@ describe("MidtransSnapPaymentGateway", () => {
     });
   });
 
-  it("limits Snap to the selected bank payment method", async () => {
+  it("limits Snap to the selected virtual account method", async () => {
     const { MidtransSnapPaymentGateway } = await import("./snap-payment-gateway");
     const gateway = new MidtransSnapPaymentGateway();
 
