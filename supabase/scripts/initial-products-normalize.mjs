@@ -5,7 +5,7 @@ export const CUSTOM_BOX_PURCHASE_INSTRUCTIONS = [
   "Choose your request budget with the slider.",
   "Add the box to cart.",
   "In the item note, paste product links or write the item list with quantity, size, color, flavor, and any replacement preferences.",
-  "Checkout and pay by Virtual Account.",
+  "Checkout and complete payment.",
   "Tokonesia reviews the request, buys or collects the items, packs them into one box up to 21kg, and ships to the selected address.",
 ].join("\n");
 export const CUSTOM_BOX_BOOTSTRAP_KEY = neutralBootstrapKey("custom-box-jastip-21kg");

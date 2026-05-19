@@ -115,8 +115,11 @@ export interface Order {
   stock_released_at?: string | null;
   stock_release_reason?: string | null;
   paid_at?: string | null;
+  shipped_at?: string | null;
   tracking_number?: string | null;
   estimated_delivery?: string | null;
+  estimated_delivery_at?: string | null;
+  completion_deadline_at?: string | null;
   cancel_reason?: string | null;
   // Midtrans payment fields
   payment_method?: MidtransPaymentType | string | null;

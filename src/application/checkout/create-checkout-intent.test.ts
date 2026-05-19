@@ -86,6 +86,7 @@ const input = {
   userId: "user-1",
   idempotencyKey: "checkout-key",
   addressId: "addr-1",
+  paymentMethod: "credit_card" as const,
   note: "Careful packing",
   items: [{ productId: 1, quantity: 1, buyerNote: "Grind medium, please." }],
 };
@@ -170,6 +171,7 @@ describe("createCheckoutIntent", () => {
         userId: "user-1",
         idempotencyKey: "checkout-key",
         address,
+        paymentMethod: "credit_card",
         pricing: expect.objectContaining({
           subtotal: 100_000,
           shippingCost: 25_000,
@@ -194,6 +196,7 @@ describe("createCheckoutIntent", () => {
       expect.objectContaining({
         midtransOrderId: "ZB-ORDER-1",
         grossAmount: 126_000,
+        paymentMethod: "credit_card",
         createdAt: now,
         expiresAt: new Date("2026-05-15T00:00:00.000Z"),
       }),

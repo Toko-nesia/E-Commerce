@@ -59,6 +59,7 @@ export interface CreateCheckoutOrderInput {
   note: string;
   cartSnapshot: unknown;
   shippingSnapshot: unknown;
+  paymentMethod: "bank_transfer" | "credit_card";
 }
 
 export interface CheckoutRepository {
@@ -82,6 +83,7 @@ export interface ShippingRateProvider {
     shippingCost: number;
     serviceName: string;
     estimatedDelivery: string;
+    estimatedDeliveryDate?: string;
     rateType?: "ACCOUNT";
     currency?: "IDR";
     totalDeclaredValue?: number;
@@ -93,6 +95,7 @@ export interface PaymentGateway {
   createSnapTransaction(input: {
     midtransOrderId: string;
     grossAmount: number;
+    paymentMethod: "bank_transfer" | "credit_card";
     customer: { name: string; phone: string };
     itemDetails: Array<{ id: string; price: number; quantity: number; name: string }>;
     expiresAt: Date;
@@ -104,6 +107,7 @@ export interface CreateCheckoutIntentInput {
   userId: string;
   idempotencyKey: string;
   addressId: string;
+  paymentMethod: "bank_transfer" | "credit_card";
   note: string;
   items: CheckoutItemInput[];
 }
@@ -226,6 +230,7 @@ export async function createCheckoutIntent(
         buyer_note: item.buyerNote ?? null,
       })),
       shippingSnapshot: shippingRate,
+      paymentMethod: input.paymentMethod,
     });
   } catch (error) {
     if (error instanceof DuplicateCheckoutRequestError) {
@@ -249,6 +254,7 @@ export async function createCheckoutIntent(
   const snap = await deps.paymentGateway.createSnapTransaction({
     midtransOrderId: created.midtransOrderId,
     grossAmount: pricing.grandTotal,
+    paymentMethod: input.paymentMethod,
     customer: { name: address.name, phone: address.phone },
     itemDetails: buildMidtransItemDetails(pricedItems, pricing),
     expiresAt,

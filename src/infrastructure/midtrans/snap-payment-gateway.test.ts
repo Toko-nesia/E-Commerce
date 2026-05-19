@@ -23,13 +23,14 @@ describe("MidtransSnapPaymentGateway", () => {
     });
   });
 
-  it("limits Snap to Virtual Account bank transfer", async () => {
+  it("limits Snap to the selected bank payment method", async () => {
     const { MidtransSnapPaymentGateway } = await import("./snap-payment-gateway");
     const gateway = new MidtransSnapPaymentGateway();
 
     await gateway.createSnapTransaction({
       midtransOrderId: "ZB-1",
       grossAmount: 100_000,
+      paymentMethod: "bank_transfer",
       customer: { name: "Buyer", phone: "+628111111111" },
       itemDetails: [{ id: "1", price: 100_000, quantity: 1, name: "Product" }],
       createdAt: new Date("2026-05-16T00:00:00.000Z"),
@@ -44,5 +45,25 @@ describe("MidtransSnapPaymentGateway", () => {
       }),
     }));
     expect(createTransactionMock.mock.calls[0][0].enabled_payments).not.toContain("credit_card");
+  });
+
+  it("enables secure card settings for card payments", async () => {
+    const { MidtransSnapPaymentGateway } = await import("./snap-payment-gateway");
+    const gateway = new MidtransSnapPaymentGateway();
+
+    await gateway.createSnapTransaction({
+      midtransOrderId: "ZB-2",
+      grossAmount: 100_000,
+      paymentMethod: "credit_card",
+      customer: { name: "Buyer", phone: "+628111111111" },
+      itemDetails: [{ id: "1", price: 100_000, quantity: 1, name: "Product" }],
+      createdAt: new Date("2026-05-16T00:00:00.000Z"),
+      expiresAt: new Date("2026-05-17T00:00:00.000Z"),
+    });
+
+    expect(createTransactionMock).toHaveBeenCalledWith(expect.objectContaining({
+      enabled_payments: ["credit_card"],
+      credit_card: { secure: true },
+    }));
   });
 });

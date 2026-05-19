@@ -10,6 +10,7 @@ export class FedExShippingRateProvider implements ShippingRateProvider {
     shippingCost: number;
     serviceName: string;
     estimatedDelivery: string;
+    estimatedDeliveryDate?: string;
     rateType?: "ACCOUNT";
     currency?: "IDR";
     totalDeclaredValue?: number;

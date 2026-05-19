@@ -11,6 +11,7 @@ export const checkoutIntentItemSchema = z.object({
 export const createCheckoutIntentSchema = z.object({
   idempotencyKey: z.string().trim().min(16).max(128),
   addressId: z.string().uuid(),
+  paymentMethod: z.enum(["bank_transfer", "credit_card"]).default("bank_transfer"),
   note: z.string().trim().max(500).optional().default(""),
   items: z.array(checkoutIntentItemSchema).min(1).max(100),
 });

@@ -1,15 +1,17 @@
 "use client";
 
 import { Modal } from "./Modal";
-import { Building2 } from "lucide-react";
+import { Building2, CreditCard } from "lucide-react";
 import type { MidtransPaymentType, PaymentMethod } from "@/types/database";
 
 const paymentMethods: PaymentMethod[] = [
-  { id: "bank_transfer", name: "Virtual Account", type: "bank_transfer", description: "Pay by bank virtual account through Midtrans" },
+  { id: "bank_transfer", name: "Bank Payment", type: "bank_transfer", description: "Pay through supported bank channels." },
+  { id: "credit_card", name: "Debit/Credit Card", type: "credit_card", description: "Pay securely with supported card networks." },
 ];
 
 const PAYMENT_ICONS: Partial<Record<MidtransPaymentType, typeof Building2>> = {
   bank_transfer: Building2,
+  credit_card: CreditCard,
 };
 
 interface PaymentOptionModalProps {
@@ -55,7 +57,7 @@ export function PaymentOptionModal({ isOpen, onClose, selected, onSelect }: Paym
           })}
         </div>
         <p className="text-[11px] text-[#6b6b6b] text-center mt-4">
-          Only Virtual Account is available for this checkout.
+          Available methods depend on your Midtrans merchant configuration.
         </p>
       </div>
     </Modal>

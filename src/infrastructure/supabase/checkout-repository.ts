@@ -181,6 +181,7 @@ export class SupabaseCheckoutRepository implements CheckoutRepository {
       p_shipping_cost: input.pricing.shippingCost,
       p_service_fee: input.pricing.serviceFee,
       p_note: input.note || "",
+      p_payment_method: input.paymentMethod,
     });
 
     if (error) {

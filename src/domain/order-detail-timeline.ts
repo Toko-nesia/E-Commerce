@@ -152,7 +152,7 @@ export function getOrderDetailLifecycleEvents(input: OrderDetailStateInput): Ord
       {
         key: "awaiting-payment",
         label: "Awaiting Payment",
-        description: "Complete your Virtual Account payment before the payment window expires.",
+        description: "Complete your payment before the payment window expires.",
         tone: "active",
       },
       {
@@ -215,8 +215,43 @@ export function getOrderDetailLifecycleEvents(input: OrderDetailStateInput): Ord
     ];
   }
 
-  if (input.status === "DIKIRIM" || input.status === "SELESAI") {
+  if (input.status === "SELESAI") {
     return [
+      {
+        key: "order-completed",
+        label: "Order Completed",
+        description: "This order has been marked as completed.",
+        tone: "active",
+      },
+      {
+        key: "order-shipped",
+        label: "Order Shipped",
+        description: "The seller added shipment tracking and shipped the package.",
+        tone: "muted",
+      },
+      {
+        key: "order-processing",
+        label: "Order Processing",
+        description: "The seller prepared your package for shipment.",
+        tone: "muted",
+      },
+      {
+        key: "order-created",
+        label: "Order Created",
+        description: "Payment received, waiting for seller fulfillment.",
+        tone: "muted",
+      },
+    ];
+  }
+
+  if (input.status === "DIKIRIM") {
+    return [
+      {
+        key: "order-shipped",
+        label: "Order Shipped",
+        description: "The seller added shipment tracking and shipped the package.",
+        tone: "active",
+      },
       {
         key: "order-processing",
         label: "Order Processing",

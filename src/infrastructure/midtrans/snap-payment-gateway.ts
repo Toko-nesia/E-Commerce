@@ -16,12 +16,13 @@ export class MidtransSnapPaymentGateway implements PaymentGateway {
   async createSnapTransaction(input: {
     midtransOrderId: string;
     grossAmount: number;
+    paymentMethod: "bank_transfer" | "credit_card";
     customer: { name: string; phone: string };
     itemDetails: Array<{ id: string; price: number; quantity: number; name: string }>;
     expiresAt: Date;
     createdAt: Date;
   }): Promise<{ token: string; redirectUrl: string }> {
-    const parameter = {
+    const parameter: Record<string, unknown> = {
       transaction_details: {
         order_id: input.midtransOrderId,
         gross_amount: input.grossAmount,
@@ -31,13 +32,16 @@ export class MidtransSnapPaymentGateway implements PaymentGateway {
         phone: input.customer.phone,
       },
       item_details: input.itemDetails,
-      enabled_payments: ["bank_transfer"],
+      enabled_payments: [input.paymentMethod],
       expiry: {
         start_time: formatMidtransExpiryStart(input.createdAt),
         unit: "hours",
         duration: Math.max(1, Math.ceil((input.expiresAt.getTime() - input.createdAt.getTime()) / (60 * 60 * 1000))),
       },
     };
+    if (input.paymentMethod === "credit_card") {
+      parameter.credit_card = { secure: true };
+    }
 
     const transaction = await snap.createTransaction(parameter as any);
 

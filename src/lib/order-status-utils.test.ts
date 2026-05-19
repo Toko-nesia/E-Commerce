@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { getValidNextStatuses, isValidTransition, requiresCancelReason } from "@/lib/order-status-utils";
+import {
+  getValidAdminNextStatuses,
+  getValidNextStatuses,
+  isValidAdminTransition,
+  isValidTransition,
+  requiresCancelReason,
+} from "@/lib/order-status-utils";
 
 describe("order status transitions", () => {
   it("does not let pending-payment orders enter seller processing", () => {
@@ -15,6 +21,13 @@ describe("order status transitions", () => {
     expect(getValidNextStatuses("DIPROSES")).toContain("CANCEL_APPROVED");
     expect(isValidTransition("CANCEL_APPROVED", "REFUND_INFO_SUBMITTED")).toBe(true);
     expect(isValidTransition("REFUND_INFO_SUBMITTED", "REFUNDED")).toBe(true);
+  });
+
+  it("keeps admin fulfillment actions separate from buyer refund flow", () => {
+    expect(getValidAdminNextStatuses("DIPROSES")).toEqual(["DIKIRIM", "CANCEL_APPROVED"]);
+    expect(getValidAdminNextStatuses("DIKIRIM")).toEqual([]);
+    expect(isValidAdminTransition("DIKIRIM", "SELESAI")).toBe(false);
+    expect(isValidAdminTransition("DIPROSES", "CANCEL_REQUESTED")).toBe(false);
   });
 
   it("requires a reason for seller cancellation and hard cancellation", () => {

@@ -4,9 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { isOrderStatus, type OrderStatus } from "@/domain/order-status";
 import { assertAdmin, createSellerCancellation } from "@/application/refunds/refund-flow";
-import { isValidTransition, requiresCancelReason, requiresTrackingNumber } from "@/lib/order-status-utils";
+import { isValidAdminTransition, requiresCancelReason, requiresTrackingNumber } from "@/lib/order-status-utils";
 import { validateTrackingNumber } from "@/lib/fedex/service";
 import { notifyOrderEvent } from "@/infrastructure/notifications/notify-order-event";
+import { recordOrderHistoryEvent } from "@/application/orders/order-history";
 import type { TablesUpdate } from "@/types/supabase";
 
 const updateOrderStatusSchema = z.object({
@@ -39,13 +40,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const { data: order, error: orderError } = await serviceClient
       .from("orders")
-      .select("id, status, payment_status")
+      .select("id, status, payment_status, estimated_delivery_at")
       .eq("id", id)
       .maybeSingle();
     if (orderError) throw new Error(orderError.message);
     if (!order) return NextResponse.json({ error: "Order not found." }, { status: 404 });
 
-    if (!isOrderStatus(order.status) || !isValidTransition(order.status, nextStatus)) {
+    if (!isOrderStatus(order.status) || !isValidAdminTransition(order.status, nextStatus)) {
       return NextResponse.json({ error: "Invalid order status transition" }, { status: 400 });
     }
     if (!["settlement", "capture", "refund"].includes(order.payment_status ?? "")) {
@@ -80,7 +81,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       status: nextStatus,
       updated_at: new Date().toISOString(),
     };
-    if (requiresTrackingNumber(nextStatus)) updates.tracking_number = body.trackingNumber ?? "";
+    if (requiresTrackingNumber(nextStatus)) {
+      const shippedAt = new Date();
+      const estimatedDeliveryAt = order.estimated_delivery_at ? new Date(order.estimated_delivery_at) : shippedAt;
+      const deadlineBase = Number.isNaN(estimatedDeliveryAt.getTime()) ? shippedAt : estimatedDeliveryAt;
+      updates.tracking_number = body.trackingNumber ?? "";
+      (updates as any).shipped_at = shippedAt.toISOString();
+      (updates as any).completion_deadline_at = new Date(deadlineBase.getTime() + 10 * 24 * 60 * 60 * 1000).toISOString();
+    }
     if (requiresCancelReason(nextStatus)) updates.cancel_reason = body.cancelReason ?? "";
 
     const { error: updateError } = await serviceClient
@@ -90,16 +98,50 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (updateError) throw new Error(updateError.message);
 
     if (nextStatus === "DIKIRIM") {
+      await recordOrderHistoryEvent(serviceClient, {
+        orderId: id,
+        eventType: "order_shipped",
+        actorType: "admin",
+        actorUserId: user.id,
+        fromStatus: order.status,
+        toStatus: nextStatus,
+        title: "Shipment Created",
+        description: "The seller added shipment tracking and marked this order as shipped.",
+        metadata: { trackingNumber: body.trackingNumber ?? "" },
+        dedupeKey: `order:${id}:shipped:${body.trackingNumber ?? ""}`,
+      });
       await notifyOrderEvent({ eventType: "order_shipped", orderId: id });
-    } else if (nextStatus === "SELESAI") {
-      await notifyOrderEvent({ eventType: "order_completed", orderId: id });
     } else if (nextStatus === "DIBATALKAN") {
       const { error: releaseError } = await (serviceClient as any).rpc("release_order_stock_once", {
         p_order_id: id,
         p_reason: "admin_order_cancelled",
       });
       if (releaseError) throw new Error(releaseError.message);
+      await recordOrderHistoryEvent(serviceClient, {
+        orderId: id,
+        eventType: "order_cancelled",
+        actorType: "admin",
+        actorUserId: user.id,
+        fromStatus: order.status,
+        toStatus: nextStatus,
+        title: "Order Cancelled",
+        description: "The seller cancelled this order and reserved stock was returned.",
+        reason: body.cancelReason ?? "",
+        dedupeKey: `order:${id}:admin-cancelled:${nextStatus}`,
+      });
       await notifyOrderEvent({ eventType: "order_cancelled", orderId: id });
+    } else if (nextStatus === "DIPROSES") {
+      await recordOrderHistoryEvent(serviceClient, {
+        orderId: id,
+        eventType: "order_processing",
+        actorType: "admin",
+        actorUserId: user.id,
+        fromStatus: order.status,
+        toStatus: nextStatus,
+        title: "Order Processing",
+        description: "The seller started preparing this order.",
+        dedupeKey: `order:${id}:processing`,
+      });
     }
 
     return NextResponse.json({ success: true });

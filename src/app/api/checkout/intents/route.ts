@@ -11,6 +11,8 @@ import { SupabaseCheckoutRepository } from "@/infrastructure/supabase/checkout-r
 import { FedExShippingRateProvider } from "@/infrastructure/fedex/shipping-rate-provider";
 import { MidtransSnapPaymentGateway } from "@/infrastructure/midtrans/snap-payment-gateway";
 import { notifyOrderEvent } from "@/infrastructure/notifications/notify-order-event";
+import { createServiceClient } from "@/lib/supabase/service";
+import { paymentHistoryCopy, recordOrderHistoryEvent } from "@/application/orders/order-history";
 
 export async function POST(req: Request) {
   try {
@@ -30,6 +32,7 @@ export async function POST(req: Request) {
         userId: user.id,
         idempotencyKey: body.idempotencyKey,
         addressId: body.addressId,
+        paymentMethod: body.paymentMethod,
         note: body.note,
         items: body.items,
       },
@@ -41,6 +44,18 @@ export async function POST(req: Request) {
     );
 
     await notifyOrderEvent({ eventType: "payment_pending", orderId: result.orderId });
+    const copy = paymentHistoryCopy("pending");
+    await recordOrderHistoryEvent(createServiceClient(), {
+      orderId: result.orderId,
+      eventType: "payment_pending",
+      actorType: "buyer",
+      actorUserId: user.id,
+      toStatus: "PAYMENT_PENDING",
+      toPaymentStatus: "pending",
+      title: copy.title,
+      description: copy.description,
+      dedupeKey: `checkout:payment_pending:${result.orderId}`,
+    });
 
     return NextResponse.json(result);
   } catch (error) {

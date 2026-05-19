@@ -31,6 +31,17 @@ describe("order detail lifecycle", () => {
     expect(shouldShowTrackingCard({ status: "DIKIRIM", trackingNumber: "123456789012" })).toBe(true);
   });
 
+  it("shows shipped and completed fallback events when persisted history is missing", () => {
+    expect(getOrderDetailLifecycleEvents({ status: "DIKIRIM", paymentStatus: "settlement" })[0]).toMatchObject({
+      key: "order-shipped",
+      label: "Order Shipped",
+    });
+    expect(getOrderDetailLifecycleEvents({ status: "SELESAI", paymentStatus: "settlement" })[0]).toMatchObject({
+      key: "order-completed",
+      label: "Order Completed",
+    });
+  });
+
   it("shows expired payments as a terminal stock-release state", () => {
     const events = getOrderDetailLifecycleEvents({ status: "PAYMENT_EXPIRED", paymentStatus: "expire" });
 

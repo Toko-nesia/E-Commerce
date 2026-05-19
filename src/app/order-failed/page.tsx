@@ -41,6 +41,7 @@ export default function OrderFailedPage() {
   const orderId = searchParams.get("orderId");
   const [order, setOrder] = useState<PaymentOrder | null>(null);
   const [loading, setLoading] = useState(Boolean(orderId));
+  const [exchangeRate, setExchangeRate] = useState(0.0093);
   const isExpired = order?.payment_status === "expire" || order?.status === "PAYMENT_EXPIRED";
 
   useEffect(() => {
@@ -54,6 +55,15 @@ export default function OrderFailedPage() {
       .finally(() => setLoading(false));
   }, [orderId]);
 
+  useEffect(() => {
+    fetch("/api/exchange-rate")
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data?.rate) setExchangeRate(data.rate);
+      })
+      .catch(() => undefined);
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#FDF9F5] flex items-center justify-center px-4 py-16">
       <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-10 max-w-[460px] w-full text-center">
@@ -66,7 +76,7 @@ export default function OrderFailedPage() {
         <p className="text-[14px] text-[#6b6b6b] mb-6">
           {isExpired
             ? "The payment window has expired. This transaction was cancelled and reserved stock has been returned."
-            : "We could not complete the payment. If the order is still pending, you can continue the same Virtual Account payment."}
+            : "We could not complete the payment. If the order is still pending, you can continue the same payment."}
         </p>
         {loading && (
           <div className="flex justify-center py-4">
@@ -81,6 +91,11 @@ export default function OrderFailedPage() {
               <>
                 <p className="text-[12px] text-[#6b6b6b] mt-2">Payment status: {formatPaymentStatus(order.payment_status)}</p>
                 <p className="text-[13px] font-semibold text-[#511e0b] mt-1">{formatRp(order.total_price_raw, order.total_price)}</p>
+                {order.total_price_raw && (
+                  <p className="text-[12px] font-semibold text-[#df0000] mt-0.5">
+                    ≈ ¥{Math.round(order.total_price_raw * exchangeRate).toLocaleString("ja-JP")}
+                  </p>
+                )}
               </>
             )}
           </div>
@@ -88,7 +103,7 @@ export default function OrderFailedPage() {
         <div className="flex flex-col gap-3">
           {order?.canContinuePayment ? (
             <Link href={`/order-pending?orderId=${order.id}`} className="w-full bg-[#511e0b] text-white rounded-xl py-3.5 font-bold text-[15px] no-underline hover:bg-[#3d1608] transition-colors">
-              Continue Virtual Account Payment
+              Continue Payment
             </Link>
           ) : order?.id ? (
             <Link href={`/profile/orders/${order.id}`} className="w-full bg-[#511e0b] text-white rounded-xl py-3.5 font-bold text-[15px] no-underline hover:bg-[#3d1608] transition-colors flex items-center justify-center gap-2">

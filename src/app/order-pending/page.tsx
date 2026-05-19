@@ -21,6 +21,7 @@ interface PendingOrder {
   id: string;
   midtrans_order_id: string | null;
   payment_status: string;
+  payment_method?: string | null;
   status: string;
   total_price: string | null;
   total_price_raw: number | null;
@@ -65,6 +66,12 @@ function formatRemaining(ms: number): string {
   return [hours, minutes, seconds].map((value) => String(value).padStart(2, "0")).join(":");
 }
 
+function formatPaymentMethod(method: string | null | undefined): string {
+  if (method === "credit_card") return "Debit/Credit Card";
+  if (method === "bank_transfer") return "Bank Payment";
+  return "Payment";
+}
+
 async function loadSnapScript() {
   if (window.snap) return;
   await new Promise<void>((resolve, reject) => {
@@ -98,6 +105,7 @@ export default function OrderPendingPage() {
   const [expiring, setExpiring] = useState(false);
   const [error, setError] = useState<string | null>(orderId ? null : "Order ID is missing.");
   const [now, setNow] = useState(() => Date.now());
+  const [exchangeRate, setExchangeRate] = useState(0.0093);
 
   const fetchOrder = useCallback(async () => {
     if (!orderId) return;
@@ -151,6 +159,15 @@ export default function OrderPendingPage() {
   useEffect(() => {
     clearCart();
   }, [clearCart]);
+
+  useEffect(() => {
+    fetch("/api/exchange-rate")
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data?.rate) setExchangeRate(data.rate);
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     fetchOrder();
@@ -212,7 +229,7 @@ export default function OrderPendingPage() {
             </div>
             <h1 className="font-bold text-[26px] text-[#511e0b] mb-2">Payment Pending</h1>
             <p className="text-[14px] text-[#6b6b6b] mb-6">
-              Your order has been reserved. Complete the Virtual Account payment before the timer expires.
+              Your order has been reserved. Complete your payment before the timer expires.
             </p>
           </div>
 
@@ -273,9 +290,14 @@ export default function OrderPendingPage() {
                   <span className="text-[14px] text-[#6b6b6b]">Total Payment</span>
                   <span className="font-bold text-[18px] text-[#511e0b]">{formatRp(order.total_price_raw, order.total_price)}</span>
                 </div>
+                {order.total_price_raw && (
+                  <p className="text-right text-[13px] font-bold text-[#df0000] mt-1">
+                    ≈ ¥{Math.round(order.total_price_raw * exchangeRate).toLocaleString("ja-JP")}
+                  </p>
+                )}
                 <div className="flex items-center gap-2 mt-2 text-[13px] text-[#6b6b6b]">
                   <CreditCard size={15} />
-                  Virtual Account
+                  {formatPaymentMethod(order.payment_method)}
                 </div>
               </div>
 
@@ -286,7 +308,7 @@ export default function OrderPendingPage() {
                   disabled={!order.canContinuePayment || expired || processing}
                   className="w-full bg-[#511e0b] text-white rounded-xl py-3.5 font-bold text-[15px] border-none cursor-pointer hover:bg-[#3d1608] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  {processing ? <LoadingSpinner label="Opening payment..." /> : "Continue Virtual Account Payment"}
+                  {processing ? <LoadingSpinner label="Opening payment..." /> : "Continue Payment"}
                 </button>
                 <Link href={`/profile/orders/${order.id}`} className="w-full border border-[#511e0b] text-[#511e0b] rounded-xl py-3.5 font-bold text-[15px] no-underline hover:bg-[#faf5ee] transition-colors flex items-center justify-center gap-2">
                   <Package size={18} />

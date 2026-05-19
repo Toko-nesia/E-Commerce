@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { validateTrackingNumber } from "@/lib/fedex/service";
 import {
   type OrderStatus,
-  getValidNextStatuses,
+  getValidAdminNextStatuses,
   requiresTrackingNumber,
   requiresCancelReason,
 } from "@/lib/order-status-utils";
@@ -21,6 +21,7 @@ interface OrderRow {
   cancel_reason?: string | null;
   profiles: { full_name: string | null; email: string | null } | null;
   order_items: Array<{ quantity: number; buyer_note?: string | null; products: { name: string } | null }>;
+  order_status_events?: Array<{ id: string; title: string; description: string; actor_type: string; created_at: string }>;
 }
 
 const STATUS_OPTIONS = [
@@ -32,6 +33,12 @@ const PAGE_SIZE = 20;
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function adminActionLabel(status: OrderStatus): string {
+  if (status === "CANCEL_APPROVED") return "Cancel with reason";
+  if (status === "DIKIRIM") return "Set shipment";
+  return ORDER_STATUS_LABEL[status] ?? status;
 }
 
 export default function OrdersPage() {
@@ -56,10 +63,11 @@ export default function OrdersPage() {
     setLoading(true);
     setError(null);
     try {
+      await fetch("/api/admin/orders/complete-overdue", { method: "POST" }).catch(() => undefined);
       const supabase = createClient();
       let query = supabase
         .from("orders")
-        .select("id, created_at, status, total_price, tracking_number, cancel_reason, profiles(full_name, email), order_items(quantity, buyer_note, products(name))")
+        .select("id, created_at, status, total_price, tracking_number, cancel_reason, profiles(full_name, email), order_items(quantity, buyer_note, products(name)), order_status_events(id, title, description, actor_type, created_at)")
         .order("created_at", { ascending: false })
         .range(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE);
 
@@ -89,7 +97,7 @@ export default function OrdersPage() {
     }
   }, [selectedOrder]);
 
-  const validNextStatuses = useMemo(() => selectedOrder ? getValidNextStatuses(selectedOrder.status) : [], [selectedOrder]);
+  const validNextStatuses = useMemo(() => selectedOrder ? getValidAdminNextStatuses(selectedOrder.status) : [], [selectedOrder]);
   const showTrackingInput = requiresTrackingNumber(newStatus);
   const showCancelReason = requiresCancelReason(newStatus);
 
@@ -245,19 +253,41 @@ export default function OrdersPage() {
               </div>
             )}
 
+            {selectedOrder.order_status_events && selectedOrder.order_status_events.length > 0 && (
+              <div className="mt-4">
+                <p className="font-bold text-[13px] mb-2">Order History</p>
+                <div className="max-h-[160px] overflow-y-auto space-y-2 pr-1">
+                  {[...selectedOrder.order_status_events]
+                    .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime())
+                    .map((event) => (
+                      <div key={event.id} className="rounded border border-[#e0e0e0] p-3 text-[12px]">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-semibold text-black">{event.title}</span>
+                          <span className="text-[#6b6b6b] shrink-0 capitalize">{event.actor_type.replace("_", " ")}</span>
+                        </div>
+                        <p className="text-[#6b6b6b] mt-1">{event.description}</p>
+                        <p className="text-[#9a9a9a] mt-1">
+                          {new Date(event.created_at).toLocaleString("en-US", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
             <div className="border-t border-[#d0d0d0] my-4" />
 
             {selectedOrder.status === "PAYMENT_PENDING" ? (
               <p className="text-[13px] text-[#6b6b6b]">Payment is still pending. Seller actions are unavailable until the payment is confirmed.</p>
             ) : validNextStatuses.length === 0 ? (
-              <p className="text-[13px] text-[#6b6b6b]">This order is in a terminal state (<strong>{ORDER_STATUS_LABEL[selectedOrder.status] ?? selectedOrder.status}</strong>) and cannot be updated.</p>
+              <p className="text-[13px] text-[#6b6b6b]">No seller action is available for this state (<strong>{ORDER_STATUS_LABEL[selectedOrder.status] ?? selectedOrder.status}</strong>).</p>
             ) : (
               <>
                 <p className="font-bold text-[13px] mb-2">Change Status</p>
                 <select value={newStatus} onChange={(e) => { setNewStatus(e.target.value as OrderStatus); setTrackingError(""); setCancelReasonError(""); }}
                   className="border border-[#d0d0d0] rounded px-3 py-2 text-[13px] w-full outline-none focus:border-[#511E0B] bg-white cursor-pointer">
                   <option value={selectedOrder.status}>{ORDER_STATUS_LABEL[selectedOrder.status] ?? selectedOrder.status} (current)</option>
-                  {validNextStatuses.map((s) => <option key={s} value={s}>{ORDER_STATUS_LABEL[s] ?? s}</option>)}
+                  {validNextStatuses.map((s) => <option key={s} value={s}>{adminActionLabel(s)}</option>)}
                 </select>
 
                 {showTrackingInput && (

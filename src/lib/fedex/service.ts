@@ -113,6 +113,7 @@ export interface ShippingRateResult {
   shippingCost: number;
   serviceName: string;
   estimatedDelivery: string;
+  estimatedDeliveryDate?: string;
   rateType: "ACCOUNT";
   currency: "IDR";
   totalDeclaredValue: number;
@@ -250,17 +251,22 @@ function formatFedExDate(raw: string): string {
   }).format(parsed);
 }
 
+function toIsoDateOrUndefined(raw: string): string | undefined {
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return undefined;
+  return parsed.toISOString();
+}
+
 type RateReplyDetail = NonNullable<NonNullable<FedExRatesResponse["output"]>["rateReplyDetails"]>[number];
 
-function readEstimatedDelivery(detail: RateReplyDetail | undefined): string {
-  const raw =
+function readEstimatedDeliveryRaw(detail: RateReplyDetail | undefined): string {
+  return (
     detail?.operationalDetail?.deliveryDate ||
     detail?.operationalDetail?.commitDate ||
     detail?.commit?.commitTimestamp ||
     (detail?.commit?.dateDetail as { day?: string } | undefined)?.day ||
-    "";
-
-  return raw ? formatFedExDate(raw) : "";
+    ""
+  );
 }
 
 function assertOriginAddressConfigured(input: { postalCode?: string; countryCode?: string }) {
@@ -371,7 +377,8 @@ export async function getShippingRate(
   }
 
   // ── Step 2: Fetch real estimated delivery from /availability/v1/transittimes ──
-  let estimatedDelivery = readEstimatedDelivery(preferred);
+  let estimatedDeliveryRaw = readEstimatedDeliveryRaw(preferred);
+  let estimatedDelivery = estimatedDeliveryRaw ? formatFedExDate(estimatedDeliveryRaw) : "";
   try {
     if (!estimatedDelivery) {
       const transitBody = buildFedExTransitTimesRequest({
@@ -396,6 +403,7 @@ export async function getShippingRate(
 
         const ieDetail = details.find((d) => d.serviceType === "INTERNATIONAL_ECONOMY") ?? details[0];
         const rawDay = ieDetail?.commit?.dateDetail?.day ?? "";
+        estimatedDeliveryRaw = rawDay || estimatedDeliveryRaw;
         estimatedDelivery = rawDay ? formatFedExDate(rawDay) : "";
       }
     }
@@ -407,6 +415,7 @@ export async function getShippingRate(
     shippingCost,
     serviceName: preferred.serviceName ?? preferred.serviceType,
     estimatedDelivery,
+    estimatedDeliveryDate: estimatedDeliveryRaw ? toIsoDateOrUndefined(estimatedDeliveryRaw) : undefined,
     rateType: "ACCOUNT",
     currency: "IDR",
     totalDeclaredValue: totals.totalDeclaredValue,

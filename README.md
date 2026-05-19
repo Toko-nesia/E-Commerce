@@ -105,7 +105,7 @@ Important database guarantees:
 - `orders(user_id, idempotency_key)` prevents duplicate checkout intents.
 - `payment_events.event_hash` deduplicates repeated payment webhooks.
 - `email_events.dedupe_key` prevents duplicate transactional emails for the same event and recipient.
-- Checkout order creation reserves stock immediately through an atomic RPC, so pending Virtual Account orders cannot oversell inventory.
+- Checkout order creation reserves stock immediately through an atomic RPC, so pending-payment orders cannot oversell inventory.
 - Stock release is idempotent and runs once when an unpaid payment expires/fails, an order is cancelled, or a refund flow completes.
 - New checkout orders start as `PAYMENT_PENDING` with `payment_status = "pending"`; they cannot enter seller processing until Midtrans confirms `settlement` or accepted `capture`.
 - RLS policies use explicit roles and `(select auth.uid())` patterns where applicable.
@@ -125,7 +125,7 @@ Auth and email:
 
 Payments:
 
-- Checkout supports Virtual Account only. The checkout selector and Midtrans Snap payload both use Midtrans bank transfer (`enabled_payments: ["bank_transfer"]`).
+- Checkout supports Bank Payment and Debit/Credit Card through Midtrans Snap. The checkout selector passes the selected payment method to the Snap payload.
 - Closing the Snap popup leaves the order in pending payment state and redirects to `/order-pending?orderId=...`.
 - Customers can continue the same pending payment until `snap_token_expires_at`; expired unpaid orders move to failed/expired state and release reserved stock.
 - The success and pending pages call the server-side payment sync endpoint to avoid the Midtrans webhook race where Snap returns success before the database has received the webhook.

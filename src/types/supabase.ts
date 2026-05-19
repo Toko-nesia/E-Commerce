@@ -318,6 +318,75 @@ export type Database = {
           },
         ]
       }
+      order_status_events: {
+        Row: {
+          actor_type: string
+          actor_user_id: string | null
+          created_at: string
+          dedupe_key: string | null
+          description: string
+          event_type: string
+          from_payment_status: string | null
+          from_status: string | null
+          id: string
+          metadata: Json
+          order_id: string
+          reason: string | null
+          title: string
+          to_payment_status: string | null
+          to_status: string | null
+        }
+        Insert: {
+          actor_type: string
+          actor_user_id?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          description: string
+          event_type: string
+          from_payment_status?: string | null
+          from_status?: string | null
+          id?: string
+          metadata?: Json
+          order_id: string
+          reason?: string | null
+          title: string
+          to_payment_status?: string | null
+          to_status?: string | null
+        }
+        Update: {
+          actor_type?: string
+          actor_user_id?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          description?: string
+          event_type?: string
+          from_payment_status?: string | null
+          from_status?: string | null
+          id?: string
+          metadata?: Json
+          order_id?: string
+          reason?: string | null
+          title?: string
+          to_payment_status?: string | null
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_events_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_status_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           address_id: string | null
@@ -325,8 +394,10 @@ export type Database = {
           cancel_reason: string | null
           cart_fingerprint: string | null
           cart_snapshot: Json
+          completion_deadline_at: string | null
           created_at: string
           estimated_delivery: string | null
+          estimated_delivery_at: string | null
           id: string
           idempotency_key: string | null
           midtrans_order_id: string | null
@@ -338,6 +409,7 @@ export type Database = {
           payment_url: string | null
           pricing_snapshot: Json
           service_fee: number | null
+          shipped_at: string | null
           shipping_cost: number | null
           shipping_snapshot: Json
           snap_redirect_url: string | null
@@ -361,8 +433,10 @@ export type Database = {
           cancel_reason?: string | null
           cart_fingerprint?: string | null
           cart_snapshot?: Json
+          completion_deadline_at?: string | null
           created_at?: string
           estimated_delivery?: string | null
+          estimated_delivery_at?: string | null
           id?: string
           idempotency_key?: string | null
           midtrans_order_id?: string | null
@@ -374,6 +448,7 @@ export type Database = {
           payment_url?: string | null
           pricing_snapshot?: Json
           service_fee?: number | null
+          shipped_at?: string | null
           shipping_cost?: number | null
           shipping_snapshot?: Json
           snap_redirect_url?: string | null
@@ -397,8 +472,10 @@ export type Database = {
           cancel_reason?: string | null
           cart_fingerprint?: string | null
           cart_snapshot?: Json
+          completion_deadline_at?: string | null
           created_at?: string
           estimated_delivery?: string | null
+          estimated_delivery_at?: string | null
           id?: string
           idempotency_key?: string | null
           midtrans_order_id?: string | null
@@ -410,6 +487,7 @@ export type Database = {
           payment_url?: string | null
           pricing_snapshot?: Json
           service_fee?: number | null
+          shipped_at?: string | null
           shipping_cost?: number | null
           shipping_snapshot?: Json
           snap_redirect_url?: string | null
@@ -812,6 +890,7 @@ export type Database = {
           p_midtrans_order_id: string
           p_note: string
           p_order_id: string
+          p_payment_method?: string
           p_pricing_snapshot: Json
           p_service_fee: number
           p_shipping_cost: number

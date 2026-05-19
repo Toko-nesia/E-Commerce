@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { notifyOrderEvent } from "@/infrastructure/notifications/notify-order-event";
+import { paymentHistoryCopy, recordOrderHistoryEvent } from "@/application/orders/order-history";
 
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -31,6 +32,17 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   }
 
   if (result.status === "expired") {
+    const copy = paymentHistoryCopy("expire");
+    await recordOrderHistoryEvent(service, {
+      orderId: id,
+      eventType: "payment_expired",
+      actorType: "system",
+      toStatus: "PAYMENT_EXPIRED",
+      toPaymentStatus: "expire",
+      title: copy.title,
+      description: copy.description,
+      dedupeKey: `payment:${id}:expire`,
+    });
     await notifyOrderEvent({ eventType: "payment_expired", orderId: id });
   }
 

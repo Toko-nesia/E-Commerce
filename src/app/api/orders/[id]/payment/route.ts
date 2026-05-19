@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { notifyOrderEvent } from "@/infrastructure/notifications/notify-order-event";
+import { paymentHistoryCopy, recordOrderHistoryEvent } from "@/application/orders/order-history";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -23,6 +24,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       midtrans_order_id,
       status,
       payment_status,
+      payment_method,
       total_price,
       total_price_raw,
       shipping_cost,
@@ -70,6 +72,17 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       return NextResponse.json({ error: expireError.message }, { status: 500 });
     }
     if ((expireResult as { status?: string } | null)?.status === "expired") {
+      const copy = paymentHistoryCopy("expire");
+      await recordOrderHistoryEvent(service, {
+        orderId: id,
+        eventType: "payment_expired",
+        actorType: "system",
+        toStatus: "PAYMENT_EXPIRED",
+        toPaymentStatus: "expire",
+        title: copy.title,
+        description: copy.description,
+        dedupeKey: `payment:${id}:expire`,
+      });
       await notifyOrderEvent({ eventType: "payment_expired", orderId: id });
     }
 

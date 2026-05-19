@@ -17,7 +17,8 @@ import type { Address } from "@/types/database";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 
 const paymentMethods = [
-  { id: "bank_transfer", name: "Virtual Account" },
+  { id: "bank_transfer", name: "Bank Payment" },
+  { id: "credit_card", name: "Debit/Credit Card" },
 ];
 
 declare global {
@@ -336,6 +337,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           idempotencyKey,
           addressId: currentAddress.id,
+          paymentMethod: selectedPayment,
           note,
           cartItems: items.map(({ product, qty, variant, customAmountRaw, buyerNote }) => ({
             productId: product.id,

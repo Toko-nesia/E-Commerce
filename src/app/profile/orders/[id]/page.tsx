@@ -16,7 +16,14 @@ import {
   getOrderDetailLifecycleEvents,
   isPendingPaymentOrder,
   shouldShowTrackingCard,
+  type OrderDetailLifecycleEvent,
 } from "@/domain/order-detail-timeline";
+
+function formatPaymentMethod(method: string | null | undefined): string {
+  if (method === "credit_card") return "Debit/Credit Card";
+  if (method === "bank_transfer") return "Bank Payment";
+  return "Payment";
+}
 
 export default function OrderDetailPage() {
   const params = useParams();
@@ -29,6 +36,9 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expiringPayment, setExpiringPayment] = useState(false);
+  const [completingOrder, setCompletingOrder] = useState(false);
+  const [completeError, setCompleteError] = useState<string | null>(null);
+  const [exchangeRate, setExchangeRate] = useState(0.0093);
 
   // Cancellation
   const [showCancelInput, setShowCancelInput] = useState(false);
@@ -39,6 +49,7 @@ export default function OrderDetailPage() {
   // Tracking / FedEx State
   const [trackingState, setTrackingState] = useState<"loading" | "found" | "not_found" | "idle">("idle");
   const [trackingSteps, setTrackingSteps] = useState<TimelineStep[]>([]);
+  const [historyEvents, setHistoryEvents] = useState<Array<OrderDetailLifecycleEvent & { timestamp?: string; actor?: string }>>([]);
   const [refundRequest, setRefundRequest] = useState<{
     id: string;
     status: RefundStatus;
@@ -63,6 +74,15 @@ export default function OrderDetailPage() {
   const [payoutError, setPayoutError] = useState<string | null>(null);
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/exchange-rate")
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data?.rate) setExchangeRate(data.rate);
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     if (!order?.tracking_number) {
@@ -113,6 +133,13 @@ export default function OrderDetailPage() {
           .from("orders")
           .select(`
             *,
+            history:order_status_events (
+              id,
+              title,
+              description,
+              actor_type,
+              created_at
+            ),
             items:order_items (
               id,
               quantity,
@@ -129,7 +156,22 @@ export default function OrderDetailPage() {
           .single();
 
         if (dbError) throw dbError;
+        const deadline = (data as any).completion_deadline_at ? new Date((data as any).completion_deadline_at).getTime() : null;
+        if (data.status === "DIKIRIM" && deadline && deadline <= Date.now()) {
+          await fetch(`/api/orders/${data.id}/auto-complete`, { method: "POST" }).catch(() => undefined);
+          data.status = "SELESAI";
+        }
         setOrder(data);
+        setHistoryEvents(((data as any).history ?? [])
+          .sort((left: any, right: any) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime())
+          .map((event: any, index: number) => ({
+          key: event.id,
+          label: event.title,
+          description: event.description,
+          tone: index === 0 ? "active" : "muted",
+          timestamp: event.created_at,
+          actor: event.actor_type,
+        })));
         const snapshot = data.address_snapshot as Partial<Address> | null;
         setAddress(snapshot?.name ? snapshot as Address : null);
 
@@ -247,6 +289,33 @@ export default function OrderDetailPage() {
     }
   };
 
+  const handleCompleteOrder = async () => {
+    if (!order || completingOrder) return;
+    setCompletingOrder(true);
+    setCompleteError(null);
+    try {
+      const res = await fetch(`/api/orders/${order.id}/complete`, { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Failed to complete order.");
+      setOrder({ ...order, status: "SELESAI" });
+      setHistoryEvents((current) => [
+        {
+          key: `completed-${Date.now()}`,
+          label: "Order Completed",
+          description: "The buyer confirmed that this order was received and completed.",
+          tone: "active",
+          timestamp: new Date().toISOString(),
+          actor: "buyer",
+        },
+        ...current,
+      ]);
+    } catch (error) {
+      setCompleteError(error instanceof Error ? error.message : "Failed to complete order.");
+    } finally {
+      setCompletingOrder(false);
+    }
+  };
+
   if (loading) {
     return (
       <PageWrapper>
@@ -301,6 +370,19 @@ export default function OrderDetailPage() {
         minute: "2-digit",
       })
     : null;
+  const completionDeadline = (order as any).completion_deadline_at ? new Date((order as any).completion_deadline_at) : null;
+  const completionDeadlineLabel = completionDeadline && !Number.isNaN(completionDeadline.getTime())
+    ? completionDeadline.toLocaleString("en-US", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
+  const canBuyerComplete = order.status === "DIKIRIM" && !isPendingPayment;
+  const timelineEvents: Array<OrderDetailLifecycleEvent & { timestamp?: string; actor?: string }> =
+    historyEvents.length > 0 ? historyEvents : lifecycleEvents;
 
   return (
     <PageWrapper>
@@ -391,7 +473,7 @@ export default function OrderDetailPage() {
                           <Receipt size={18} className="text-[#511e0b]" />
                           <h3 className="font-bold text-[16px] text-[#3a302a]">Payment Option</h3>
                         </div>
-                        <p className="text-[14px] text-[#6b6b6b] capitalize">{order.payment_method.replace('_', ' ')}</p>
+                        <p className="text-[14px] text-[#6b6b6b]">{formatPaymentMethod(order.payment_method)}</p>
                       </div>
                     )}
                     {order.note && order.note.trim() !== '' && (
@@ -467,13 +549,18 @@ export default function OrderDetailPage() {
                   <span className="text-[16px] ml-2 font-bold">Total Payment</span>
                   <span className="text-[24px] font-bold pr-2 text-[#511e0b]">{order.total_price}</span>
                </div>
+               {order.total_price_raw && (
+                 <p className="text-right text-[13px] font-bold text-[#df0000] pr-2">
+                   ≈ ¥{Math.round(order.total_price_raw * exchangeRate).toLocaleString("ja-JP")}
+                 </p>
+               )}
             </div>
 
             {isPendingPayment && (
               <div className="bg-amber-50 border text-left border-amber-200 rounded-xl p-6 mt-4">
                 <h2 className="font-bold text-[18px] text-amber-900 mb-2">Payment Pending</h2>
                 <p className="text-[13px] text-amber-800 mb-4">
-                  Your items are reserved, but this order cannot be processed until the Virtual Account payment is completed.
+                  Your items are reserved, but this order cannot be processed until payment is completed.
                 </p>
                 {paymentExpiryLabel && (
                   <p className="text-[13px] text-amber-800 mb-4">
@@ -484,8 +571,28 @@ export default function OrderDetailPage() {
                   href={`/order-pending?orderId=${order.id}`}
                   className="inline-flex w-full sm:w-auto items-center justify-center bg-[#511e0b] text-white rounded-lg px-5 py-3 font-bold text-[14px] no-underline hover:bg-[#3d1608] transition-colors"
                 >
-                  Continue Virtual Account Payment
+                  Continue Payment
                 </Link>
+              </div>
+            )}
+
+            {canBuyerComplete && (
+              <div className="bg-white border text-left border-[#d5d5d5] rounded-xl p-6 mt-4">
+                <h2 className="font-bold text-[18px] text-[#3a302a] mb-2">Confirm Receipt</h2>
+                <p className="text-[13px] text-[#6b6b6b] mb-4">
+                  Mark this order as completed after you receive the package.
+                  {completionDeadlineLabel ? ` The system will auto-complete it after ${completionDeadlineLabel}.` : ""}
+                </p>
+                {completeError && <p className="text-[12px] text-[#df0000] mb-3">{completeError}</p>}
+                <button
+                  type="button"
+                  onClick={handleCompleteOrder}
+                  disabled={completingOrder}
+                  className="w-full bg-[#511e0b] text-white rounded-lg py-3 font-bold text-[14px] border-none cursor-pointer hover:bg-[#3d1608] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {completingOrder && <Loader2 size={14} className="animate-spin" />}
+                  Mark as Completed
+                </button>
               </div>
             )}
 
@@ -661,7 +768,7 @@ export default function OrderDetailPage() {
                   </>
                 )}
 
-                {lifecycleEvents.map((event, index) => {
+                {timelineEvents.map((event, index) => {
                   const hasTrackingActivity = trackingSteps.length > 0 || trackingState === "loading";
                   const highlighted = !hasTrackingActivity && index === 0 && event.tone === "active";
                   const muted = hasTrackingActivity || index > 0 || event.tone === "muted";
@@ -673,7 +780,13 @@ export default function OrderDetailPage() {
                       <div className={`absolute left-[-40px] top-[4px] size-[22px] rounded-full border-4 border-[#faf5ee] z-10 ${markerColor}`} />
                       <div className={highlighted ? "bg-[#faf5ee] border border-[rgba(194,101,42,0.2)] rounded-[8px] p-[17px] shadow-sm" : ""}>
                         <p className={`text-[10px] tracking-[1px] uppercase font-['Manrope'] mb-1.5 ${labelColor}`}>
-                          {highlighted ? "LATEST" : index === lifecycleEvents.length - 1 ? new Date(order.created_at || new Date().toISOString()).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" }) : "PREVIOUS"}
+                          {event.timestamp
+                            ? new Date(event.timestamp).toLocaleString("en-US", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
+                            : highlighted
+                              ? "LATEST"
+                              : index === timelineEvents.length - 1
+                                ? new Date(order.created_at || new Date().toISOString()).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })
+                                : "PREVIOUS"}
                         </p>
                         <p className={`text-[18px] font-normal leading-snug mb-1 font-['EB_Garamond'] ${event.tone === "danger" ? "text-[#df0000]" : "text-[#3a302a]"}`}>
                           {event.label}

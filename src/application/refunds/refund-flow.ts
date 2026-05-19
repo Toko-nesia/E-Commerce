@@ -1,4 +1,5 @@
 import type { EmailEventType } from "@/domain/notifications";
+import { recordOrderHistoryEvent } from "@/application/orders/order-history";
 
 type ServiceClient = any;
 type RefundNotificationSender = (input: {
@@ -116,6 +117,18 @@ export async function createBuyerCancellationRequest(input: {
     .update({ status: "CANCEL_REQUESTED", cancel_reason: input.reason, updated_at: new Date().toISOString() })
     .eq("id", input.orderId);
   if (updateError) throw new Error(updateError.message);
+  await recordOrderHistoryEvent(input.supabase, {
+    orderId: input.orderId,
+    eventType: "buyer_cancellation_requested",
+    actorType: "buyer",
+    actorUserId: input.userId,
+    fromStatus: order.status,
+    toStatus: "CANCEL_REQUESTED",
+    title: "Cancellation Requested",
+    description: "The buyer requested order cancellation and is waiting for seller review.",
+    reason: input.reason,
+    dedupeKey: `order:${input.orderId}:buyer-cancellation-requested`,
+  });
 
   await notifyRefundEvents(input.notify, [
     "buyer_cancellation_requested",
@@ -174,6 +187,17 @@ export async function cancelBuyerCancellationRequest(input: {
     .eq("id", input.orderId)
     .eq("user_id", input.userId);
   if (orderError) throw new Error(orderError.message);
+  await recordOrderHistoryEvent(input.supabase, {
+    orderId: input.orderId,
+    eventType: "buyer_cancellation_withdrawn",
+    actorType: "buyer",
+    actorUserId: input.userId,
+    fromStatus: "CANCEL_REQUESTED",
+    toStatus: nextOrderStatus,
+    title: "Cancellation Request Withdrawn",
+    description: "The buyer withdrew the cancellation request. This order cannot be requested for cancellation again.",
+    dedupeKey: `order:${input.orderId}:buyer-cancellation-withdrawn`,
+  });
 
   await notifyRefundEvents(input.notify, [
     "buyer_cancellation_withdrawn",
@@ -228,6 +252,18 @@ export async function createSellerCancellation(input: {
     .eq("id", input.orderId);
   if (updateError) throw new Error(updateError.message);
   await releaseOrderStockOnce(input.supabase, input.orderId, "seller_cancellation_approved");
+  await recordOrderHistoryEvent(input.supabase, {
+    orderId: input.orderId,
+    eventType: "seller_cancellation_started",
+    actorType: "admin",
+    actorUserId: input.adminUserId,
+    fromStatus: order.status,
+    toStatus: "CANCEL_APPROVED",
+    title: "Order Cancelled by Seller",
+    description: "The seller cancelled this order and requested buyer payout details.",
+    reason: input.reason,
+    dedupeKey: `order:${input.orderId}:seller-cancellation-started`,
+  });
 
   await notifyRefundEvents(input.notify, ["seller_cancellation_approved"], input.orderId, refund.id);
 
@@ -273,6 +309,18 @@ export async function reviewRefundRequest(input: {
       .update({ status: refund.previous_order_status || "DIPROSES", updated_at: new Date().toISOString() })
       .eq("id", refund.order_id);
     if (orderError) throw new Error(orderError.message);
+    await recordOrderHistoryEvent(input.supabase, {
+      orderId: refund.order_id,
+      eventType: "buyer_cancellation_rejected",
+      actorType: "admin",
+      actorUserId: input.adminUserId,
+      fromStatus: "CANCEL_REQUESTED",
+      toStatus: refund.previous_order_status || "DIPROSES",
+      title: "Cancellation Rejected",
+      description: "The seller rejected the cancellation request and the order returned to its previous status.",
+      reason: input.rejectionReason,
+      dedupeKey: `order:${refund.order_id}:buyer-cancellation-rejected:${input.refundId}`,
+    });
     await notifyRefundEvents(input.notify, ["buyer_cancellation_rejected"], refund.order_id, input.refundId);
     return { status: "rejected" };
   }
@@ -295,6 +343,18 @@ export async function reviewRefundRequest(input: {
     .eq("id", refund.order_id);
   if (orderError) throw new Error(orderError.message);
   await releaseOrderStockOnce(input.supabase, refund.order_id, "buyer_cancellation_approved");
+  await recordOrderHistoryEvent(input.supabase, {
+    orderId: refund.order_id,
+    eventType: "buyer_cancellation_approved",
+    actorType: "admin",
+    actorUserId: input.adminUserId,
+    fromStatus: "CANCEL_REQUESTED",
+    toStatus: "CANCEL_APPROVED",
+    title: "Cancellation Approved",
+    description: "The seller approved the cancellation request and requested buyer payout details.",
+    reason: input.note,
+    dedupeKey: `order:${refund.order_id}:buyer-cancellation-approved:${input.refundId}`,
+  });
   await notifyRefundEvents(input.notify, ["seller_cancellation_approved"], refund.order_id, input.refundId);
   return { status: "approved" };
 }
@@ -340,6 +400,17 @@ export async function submitRefundPayout(input: {
     .update({ status: "REFUND_INFO_SUBMITTED", updated_at: new Date().toISOString() })
     .eq("id", refund.order_id);
   if (orderError) throw new Error(orderError.message);
+  await recordOrderHistoryEvent(input.supabase, {
+    orderId: refund.order_id,
+    eventType: "refund_payout_submitted",
+    actorType: "buyer",
+    actorUserId: input.userId,
+    fromStatus: "CANCEL_APPROVED",
+    toStatus: "REFUND_INFO_SUBMITTED",
+    title: "Refund Details Submitted",
+    description: "The buyer submitted payout details for manual refund.",
+    dedupeKey: `order:${refund.order_id}:refund-payout-submitted:${input.refundId}`,
+  });
 
   await notifyRefundEvents(input.notify, [
     "buyer_payout_submitted",
@@ -385,6 +456,19 @@ export async function markRefunded(input: {
     .eq("id", refund.order_id);
   if (orderError) throw new Error(orderError.message);
   await releaseOrderStockOnce(input.supabase, refund.order_id, "refund_completed");
+  await recordOrderHistoryEvent(input.supabase, {
+    orderId: refund.order_id,
+    eventType: "refund_completed",
+    actorType: "admin",
+    actorUserId: input.adminUserId,
+    fromStatus: "REFUND_INFO_SUBMITTED",
+    toStatus: "REFUNDED",
+    toPaymentStatus: "refund",
+    title: "Refund Completed",
+    description: "The seller marked the manual refund transfer as completed.",
+    reason: input.transferNote,
+    dedupeKey: `order:${refund.order_id}:refund-completed:${input.refundId}`,
+  });
 
   await notifyRefundEvents(input.notify, ["refund_completed"], refund.order_id, input.refundId);
 

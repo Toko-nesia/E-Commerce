@@ -3,6 +3,8 @@ import MidtransClient from "midtrans-client";
 import { applyMidtransNotification } from "@/application/payments/apply-midtrans-notification";
 import { SupabasePaymentEventRepository } from "@/infrastructure/supabase/payment-event-repository";
 import { notifyOrderEvent } from "@/infrastructure/notifications/notify-order-event";
+import { createServiceClient } from "@/lib/supabase/service";
+import { paymentHistoryCopy, recordOrderHistoryEvent } from "@/application/orders/order-history";
 
 const coreApi = new MidtransClient.CoreApi({
   isProduction: process.env.MIDTRANS_IS_PRODUCTION === "true",
@@ -16,6 +18,18 @@ export async function POST(req: Request) {
     const verified = await (coreApi as any).transaction.notification(notification);
     const result = await applyMidtransNotification(verified, new SupabasePaymentEventRepository());
     if (result.status === "processed" && result.orderId) {
+      const copy = paymentHistoryCopy(result.paymentStatus);
+      await recordOrderHistoryEvent(createServiceClient(), {
+        orderId: result.orderId,
+        eventType: `payment_${result.paymentStatus ?? "updated"}`,
+        actorType: "payment_provider",
+        toStatus: result.orderStatus,
+        toPaymentStatus: result.paymentStatus,
+        title: copy.title,
+        description: copy.description,
+        metadata: { midtransOrderId: verified.order_id, transactionStatus: result.transactionStatus },
+        dedupeKey: `payment:${verified.order_id}:${result.paymentStatus}`,
+      });
       if (result.paymentStatus === "settlement" || result.paymentStatus === "capture") {
         await notifyOrderEvent({ eventType: "payment_succeeded", orderId: result.orderId });
         await notifyOrderEvent({ eventType: "admin_new_paid_order", orderId: result.orderId });

@@ -16,6 +16,7 @@ interface OrderResult {
   midtrans_order_id: string | null;
   status: string;
   total_price: string | null;
+  total_price_raw: number | null;
   estimated_delivery: string | null;
   payment_status: string;
   order_items?: Array<{
@@ -38,6 +39,16 @@ export default function OrderSuccessPage() {
   const [confirming, setConfirming] = useState(false);
   const [confirmationTimedOut, setConfirmationTimedOut] = useState(false);
   const [error, setError] = useState<string | null>(orderId ? null : "Order ID is missing.");
+  const [exchangeRate, setExchangeRate] = useState(0.0093);
+
+  useEffect(() => {
+    fetch("/api/exchange-rate")
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data?.rate) setExchangeRate(data.rate);
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     if (!orderId) return;
@@ -219,6 +230,14 @@ export default function OrderSuccessPage() {
               <div className="bg-[#f8f8f8] rounded-xl p-4 text-left mb-6">
                 <p className="text-[11px] text-[#6b6b6b] uppercase tracking-wider mb-2">Payment</p>
                 <p className="text-[13px] text-[#6b6b6b]">Payment status: <span className="font-semibold">{paymentStatusLabel}</span></p>
+                {order.total_price && (
+                  <p className="text-[13px] font-semibold text-[#511e0b] mt-2">{order.total_price}</p>
+                )}
+                {order.total_price_raw && (
+                  <p className="text-[12px] font-semibold text-[#df0000] mt-0.5">
+                    ≈ ¥{Math.round(order.total_price_raw * exchangeRate).toLocaleString("ja-JP")}
+                  </p>
+                )}
               </div>
 
               {order.order_items?.some((item) => item.buyer_note) && (
