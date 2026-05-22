@@ -14,6 +14,9 @@ export const ORDER_STATUSES = [
 
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
+export const BUYER_CANCELLATION_REQUESTABLE_STATUSES = ["BARU", "DIPROSES"] as const satisfies readonly OrderStatus[];
+export type BuyerCancellationRequestableStatus = (typeof BUYER_CANCELLATION_REQUESTABLE_STATUSES)[number];
+
 export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   PAYMENT_PENDING: "Pending payment",
   PAYMENT_EXPIRED: "Payment expired",
@@ -66,6 +69,12 @@ export type RefundInitiator = "buyer" | "seller";
 
 export function isOrderStatus(value: string | null | undefined): value is OrderStatus {
   return ORDER_STATUSES.includes(value as OrderStatus);
+}
+
+export function canBuyerRequestCancellation(
+  status: string | null | undefined,
+): status is BuyerCancellationRequestableStatus {
+  return BUYER_CANCELLATION_REQUESTABLE_STATUSES.includes(status as BuyerCancellationRequestableStatus);
 }
 
 export function formatOrderStatus(value: string | null | undefined): string | null {

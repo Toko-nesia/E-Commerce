@@ -1,4 +1,5 @@
 import type { EmailEventType } from "@/domain/notifications";
+import { canBuyerRequestCancellation } from "@/domain/order-status";
 import { recordOrderHistoryEvent } from "@/application/orders/order-history";
 
 type ServiceClient = any;
@@ -8,7 +9,6 @@ type RefundNotificationSender = (input: {
   refundRequestId: string;
 }) => Promise<void>;
 
-const BUYER_REQUESTABLE_STATUSES = new Set(["BARU", "DIPROSES", "DIKIRIM"]);
 const ACTIVE_CANCELLATION_STATUSES = [
   "awaiting_seller_review",
   "awaiting_buyer_payout",
@@ -65,7 +65,7 @@ export async function createBuyerCancellationRequest(input: {
     .maybeSingle();
   if (orderError) throw new Error(orderError.message);
   if (!order) throw new Error("Order not found.");
-  if (!BUYER_REQUESTABLE_STATUSES.has(order.status)) {
+  if (!canBuyerRequestCancellation(order.status)) {
     throw new Error("This order cannot be cancelled by buyer request.");
   }
 
@@ -159,7 +159,7 @@ export async function cancelBuyerCancellationRequest(input: {
     throw new Error("Cancellation request can no longer be cancelled.");
   }
 
-  const nextOrderStatus = BUYER_REQUESTABLE_STATUSES.has(refund.previous_order_status)
+  const nextOrderStatus = canBuyerRequestCancellation(refund.previous_order_status)
     ? refund.previous_order_status
     : "DIPROSES";
   const now = new Date().toISOString();

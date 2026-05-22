@@ -10,7 +10,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Order, FedExLatestStatus, Address } from "@/types/database";
 import { mapScanEventsToTimeline, TimelineStep } from "@/app/components/modals/trackingUtils";
-import { ORDER_STATUS_COLOR, ORDER_STATUS_LABEL, REFUND_STATUS_LABEL, type RefundStatus } from "@/domain/order-status";
+import { canBuyerRequestCancellation, ORDER_STATUS_COLOR, ORDER_STATUS_LABEL, REFUND_STATUS_LABEL, type RefundStatus } from "@/domain/order-status";
 import { resolveImagePath } from "@/lib/image-paths";
 import {
   getOrderDetailLifecycleEvents,
@@ -217,7 +217,7 @@ export default function OrderDetailPage() {
   }, [expiringPayment, order]);
 
   const handleCancelOrder = async () => {
-    if (!order || !cancelReason.trim() || !["BARU", "DIPROSES", "DIKIRIM"].includes(order.status)) return;
+    if (!order || !cancelReason.trim() || !canBuyerRequestCancellation(order.status)) return;
     setCancelLoading(true);
     setCancelError(null);
     try {
@@ -385,6 +385,7 @@ export default function OrderDetailPage() {
       })
     : null;
   const canBuyerComplete = order.status === "DIKIRIM" && !isPendingPayment;
+  const canRequestCancellation = canBuyerRequestCancellation(order.status);
   const timelineEvents: Array<OrderDetailLifecycleEvent & { timestamp?: string; actor?: string }> =
     historyEvents.length > 0 ? historyEvents : lifecycleEvents;
 
@@ -603,7 +604,7 @@ export default function OrderDetailPage() {
             )}
 
             {/* Cancel Section */}
-            {!isPendingPayment && ["BARU", "DIPROSES", "DIKIRIM"].includes(order.status) && refundRequest?.initiated_by !== "buyer" && (
+            {!isPendingPayment && canRequestCancellation && refundRequest?.initiated_by !== "buyer" && (
               <div className="bg-white border text-center border-[#d5d5d5] rounded-xl p-6 mt-4">
                 {!showCancelInput ? (
                   <button
