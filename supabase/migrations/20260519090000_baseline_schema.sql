@@ -792,7 +792,27 @@ begin
     return jsonb_build_object('status', 'not_pending', 'order_id', v_order.id, 'payment_status', v_order.payment_status);
   end if;
 
-  if v_order.snap_token_expires_at is null or v_order.snap_token_expires_at > now() then
+  if v_order.snap_token_expires_at is null then
+
+    if v_order.snap_token is null and v_order.created_at <= now() - interval '5 minutes' then
+
+      return public.mark_checkout_payment_setup_failed(v_order.id, 'payment_setup_stale', now());
+
+    end if;
+
+    return jsonb_build_object(
+
+      'status', 'active',
+
+      'order_id', v_order.id,
+
+      'expires_at', v_order.snap_token_expires_at
+
+    );
+
+  end if;
+
+  if v_order.snap_token_expires_at > now() then
     return jsonb_build_object(
       'status', 'active',
       'order_id', v_order.id,
@@ -818,7 +838,107 @@ begin
 end;
 $$;
 
-CREATE OR REPLACE FUNCTION "public"."get_trending_products"("p_limit" integer DEFAULT 4, "p_now" timestamp with time zone DEFAULT "now"()) RETURNS SETOF "public"."products"
+CREATE OR REPLACE FUNCTION "public"."mark_checkout_payment_setup_failed"("p_order_id" "uuid", "p_reason" "text" DEFAULT 'payment_setup_failed'::"text", "p_failed_at" timestamp with time zone DEFAULT "now"()) RETURNS "jsonb"
+
+    LANGUAGE "plpgsql"
+
+    SET "search_path" TO ''
+
+    AS $$
+
+declare
+
+  v_order public.orders%rowtype;
+
+  v_failed_at timestamptz := coalesce(p_failed_at, now());
+
+  v_release jsonb;
+
+begin
+
+  select * into v_order
+
+  from public.orders
+
+  where id = p_order_id
+
+  for update;
+
+
+
+  if not found then
+
+    return jsonb_build_object('status', 'order_not_found');
+
+  end if;
+
+
+
+  if v_order.payment_status in ('settlement', 'capture') or v_order.paid_at is not null then
+
+    return jsonb_build_object('status', 'already_paid', 'order_id', v_order.id);
+
+  end if;
+
+
+
+  if v_order.snap_token is not null then
+
+    return jsonb_build_object('status', 'has_snap_token', 'order_id', v_order.id);
+
+  end if;
+
+
+
+  if v_order.payment_status <> 'pending' or v_order.status <> 'PAYMENT_PENDING' then
+
+    return jsonb_build_object('status', 'not_pending', 'order_id', v_order.id, 'payment_status', v_order.payment_status);
+
+  end if;
+
+
+
+  update public.orders
+
+  set payment_status = 'failure',
+
+      status = 'DIBATALKAN',
+
+      payment_url = '',
+
+      snap_token = null,
+
+      snap_redirect_url = null,
+
+      snap_token_expires_at = null,
+
+      idempotency_key = null,
+
+      updated_at = v_failed_at
+
+  where id = v_order.id;
+
+
+
+  v_release := public.release_order_stock_once(v_order.id, p_reason);
+
+
+
+  return jsonb_build_object(
+
+    'status', 'failed',
+
+    'order_id', v_order.id,
+
+    'release', v_release
+
+  );
+
+end;
+
+$$;
+
+CREATE OR REPLACE FUNCTION "public"."get_trending_products"("p_limit" integer DEFAULT 4, "p_now" timestamp with time zone DEFAULT "now"()) RETURNS SETOF "public"."products"
     LANGUAGE "sql" STABLE
     SET "search_path" TO 'public'
     AS $$
@@ -1068,6 +1188,31 @@ begin
     raise exception 'This order cannot be cancelled by buyer request.';
   end if;
 
+  if new.previous_order_status is not null and new.previous_order_status not in ('BARU', 'DIPROSES') then
+    raise exception 'This order cannot be restored to the recorded previous status.';
+  end if;
+
+  return new;
+end;
+$$;
+
+CREATE OR REPLACE FUNCTION "public"."guard_order_status_transition"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+begin
+  if old.status is not distinct from new.status then
+    return new;
+  end if;
+
+  if new.status = 'CANCEL_REQUESTED' and old.status not in ('BARU', 'DIPROSES') then
+    raise exception 'Buyer cancellation can only be requested from BARU or DIPROSES.';
+  end if;
+
+  if old.status = 'CANCEL_REQUESTED' and new.status not in ('BARU', 'DIPROSES', 'CANCEL_APPROVED') then
+    raise exception 'Buyer cancellation requests must be reviewed before fulfillment continues.';
+  end if;
+
   return new;
 end;
 $$;
@@ -1129,6 +1274,8 @@ CREATE INDEX "payment_events_midtrans_order_id_idx" ON "public"."payment_events"
 CREATE INDEX "payment_events_order_id_idx" ON "public"."payment_events" USING "btree" ("order_id", "created_at" DESC);
 
 CREATE UNIQUE INDEX "refund_requests_one_buyer_request_per_order_idx" ON "public"."refund_requests" USING "btree" ("order_id", "user_id") WHERE ("initiated_by" = 'buyer'::"text");
+
+CREATE UNIQUE INDEX "refund_requests_one_active_per_order_idx" ON "public"."refund_requests" USING "btree" ("order_id") WHERE ("status" IN ('awaiting_seller_review'::"text", 'awaiting_buyer_payout'::"text", 'awaiting_manual_transfer'::"text"));
 
 CREATE INDEX "refund_requests_order_id_idx" ON "public"."refund_requests" USING "btree" ("order_id");
 
@@ -1343,6 +1490,11 @@ CREATE TRIGGER "guard_buyer_cancellation_request_status"
   WHEN ((new."initiated_by" = 'buyer'::"text"))
   EXECUTE FUNCTION "public"."guard_buyer_cancellation_request_status"();
 
+CREATE TRIGGER "guard_order_status_transition"
+  BEFORE UPDATE OF "status" ON "public"."orders"
+  FOR EACH ROW
+  EXECUTE FUNCTION "public"."guard_order_status_transition"();
+
 
 
 -- Grants
@@ -1376,7 +1528,11 @@ GRANT ALL ON FUNCTION "public"."decrement_stock"("p_product_id" bigint, "p_quant
 
 
 REVOKE ALL ON FUNCTION "public"."expire_pending_payment_order"("p_order_id" "uuid", "p_user_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."expire_pending_payment_order"("p_order_id" "uuid", "p_user_id" "uuid") TO "service_role";
+GRANT ALL ON FUNCTION "public"."expire_pending_payment_order"("p_order_id" "uuid", "p_user_id" "uuid") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."mark_checkout_payment_setup_failed"("p_order_id" "uuid", "p_reason" "text", "p_failed_at" timestamp with time zone) FROM PUBLIC;
+
+GRANT ALL ON FUNCTION "public"."mark_checkout_payment_setup_failed"("p_order_id" "uuid", "p_reason" "text", "p_failed_at" timestamp with time zone) TO "service_role";
 
 
 
@@ -1500,6 +1656,16 @@ GRANT ALL ON SEQUENCE "public"."store_settings_id_seq" TO "anon";
 GRANT ALL ON SEQUENCE "public"."store_settings_id_seq" TO "authenticated";
 GRANT ALL ON SEQUENCE "public"."store_settings_id_seq" TO "service_role";
 
+REVOKE INSERT, UPDATE, DELETE ON TABLE "public"."orders" FROM "anon", "authenticated";
+
+REVOKE INSERT, UPDATE, DELETE ON TABLE "public"."order_items" FROM "anon", "authenticated";
+
+REVOKE INSERT, UPDATE, DELETE ON TABLE "public"."refund_requests" FROM "anon", "authenticated";
+
+REVOKE INSERT, UPDATE, DELETE ON TABLE "public"."profiles" FROM "anon", "authenticated";
+
+GRANT UPDATE ("full_name", "phone", "avatar_url", "updated_at") ON TABLE "public"."profiles" TO "authenticated";
+
 
 
 GRANT USAGE ON SCHEMA "app_private" TO "authenticated";
@@ -1513,6 +1679,8 @@ GRANT EXECUTE ON FUNCTION "app_private"."is_admin"() TO "service_role";
 REVOKE ALL ON FUNCTION "app_private"."handle_new_user"() FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION "public"."guard_buyer_cancellation_request_status"() FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION "public"."guard_order_status_transition"() FROM PUBLIC;
 
 
 

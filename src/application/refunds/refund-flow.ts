@@ -1,5 +1,6 @@
 import type { EmailEventType } from "@/domain/notifications";
 import { canBuyerRequestCancellation } from "@/domain/order-status";
+import { isPaidPaymentStatus } from "@/domain/payment";
 import { recordOrderHistoryEvent } from "@/application/orders/order-history";
 
 type ServiceClient = any;
@@ -14,6 +15,8 @@ const ACTIVE_CANCELLATION_STATUSES = [
   "awaiting_buyer_payout",
   "awaiting_manual_transfer",
 ];
+
+const SELLER_CANCELLABLE_ORDER_STATUSES = new Set(["BARU", "DIPROSES"]);
 
 async function getUserRole(supabase: ServiceClient, userId: string): Promise<string> {
   const { data, error } = await supabase
@@ -115,7 +118,10 @@ export async function createBuyerCancellationRequest(input: {
   const { error: updateError } = await input.supabase
     .from("orders")
     .update({ status: "CANCEL_REQUESTED", cancel_reason: input.reason, updated_at: new Date().toISOString() })
-    .eq("id", input.orderId);
+    .eq("id", input.orderId)
+    .eq("status", order.status)
+    .select("id")
+    .single();
   if (updateError) throw new Error(updateError.message);
   await recordOrderHistoryEvent(input.supabase, {
     orderId: input.orderId,
@@ -185,7 +191,10 @@ export async function cancelBuyerCancellationRequest(input: {
       updated_at: now,
     })
     .eq("id", input.orderId)
-    .eq("user_id", input.userId);
+    .eq("user_id", input.userId)
+    .eq("status", "CANCEL_REQUESTED")
+    .select("id")
+    .single();
   if (orderError) throw new Error(orderError.message);
   await recordOrderHistoryEvent(input.supabase, {
     orderId: input.orderId,
@@ -217,13 +226,28 @@ export async function createSellerCancellation(input: {
   await assertAdmin(input.supabase, input.adminUserId);
   const { data: order, error: orderError } = await input.supabase
     .from("orders")
-    .select("id, user_id, status, total_price_raw")
+    .select("id, user_id, status, payment_status, total_price_raw")
     .eq("id", input.orderId)
     .maybeSingle();
   if (orderError) throw new Error(orderError.message);
   if (!order) throw new Error("Order not found.");
-  if (["PAYMENT_EXPIRED", "DIBATALKAN", "REFUNDED", "SELESAI"].includes(order.status)) {
+  if (!SELLER_CANCELLABLE_ORDER_STATUSES.has(order.status)) {
     throw new Error("This order cannot be seller-cancelled.");
+  }
+  if (!isPaidPaymentStatus(order.payment_status)) {
+    throw new Error("Payment must be confirmed before seller cancellation.");
+  }
+
+  const { data: existingCancellation, error: existingCancellationError } = await input.supabase
+    .from("refund_requests")
+    .select("id")
+    .eq("order_id", input.orderId)
+    .in("status", ACTIVE_CANCELLATION_STATUSES)
+    .limit(1)
+    .maybeSingle();
+  if (existingCancellationError) throw new Error(existingCancellationError.message);
+  if (existingCancellation) {
+    throw new Error("A cancellation request is already active for this order.");
   }
 
   const { data: refund, error: refundError } = await input.supabase
@@ -282,7 +306,7 @@ export async function reviewRefundRequest(input: {
   await assertAdmin(input.supabase, input.adminUserId);
   const { data: refund, error } = await input.supabase
     .from("refund_requests")
-    .select("id, order_id, status, previous_order_status")
+    .select("id, order_id, status, previous_order_status, initiated_by")
     .eq("id", input.refundId)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -290,6 +314,24 @@ export async function reviewRefundRequest(input: {
   if (refund.status !== "awaiting_seller_review") {
     throw new Error("Refund request is not awaiting seller review.");
   }
+  if (refund.initiated_by !== "buyer") {
+    throw new Error("Only buyer cancellation requests can be reviewed here.");
+  }
+
+  const { data: order, error: orderLoadError } = await input.supabase
+    .from("orders")
+    .select("id, status")
+    .eq("id", refund.order_id)
+    .maybeSingle();
+  if (orderLoadError) throw new Error(orderLoadError.message);
+  if (!order) throw new Error("Order not found.");
+  if (order.status !== "CANCEL_REQUESTED") {
+    throw new Error("Buyer cancellation requests must be reviewed before fulfillment continues.");
+  }
+
+  const restoredOrderStatus = canBuyerRequestCancellation(refund.previous_order_status)
+    ? refund.previous_order_status
+    : "DIPROSES";
 
   if (input.action === "reject") {
     const { error: refundError } = await input.supabase
@@ -306,8 +348,11 @@ export async function reviewRefundRequest(input: {
 
     const { error: orderError } = await input.supabase
       .from("orders")
-      .update({ status: refund.previous_order_status || "DIPROSES", updated_at: new Date().toISOString() })
-      .eq("id", refund.order_id);
+      .update({ status: restoredOrderStatus, updated_at: new Date().toISOString() })
+      .eq("id", refund.order_id)
+      .eq("status", "CANCEL_REQUESTED")
+      .select("id")
+      .single();
     if (orderError) throw new Error(orderError.message);
     await recordOrderHistoryEvent(input.supabase, {
       orderId: refund.order_id,
@@ -315,7 +360,7 @@ export async function reviewRefundRequest(input: {
       actorType: "admin",
       actorUserId: input.adminUserId,
       fromStatus: "CANCEL_REQUESTED",
-      toStatus: refund.previous_order_status || "DIPROSES",
+      toStatus: restoredOrderStatus,
       title: "Cancellation Rejected",
       description: "The seller rejected the cancellation request and the order returned to its previous status.",
       reason: input.rejectionReason,
@@ -340,7 +385,10 @@ export async function reviewRefundRequest(input: {
   const { error: orderError } = await input.supabase
     .from("orders")
     .update({ status: "CANCEL_APPROVED", updated_at: new Date().toISOString() })
-    .eq("id", refund.order_id);
+    .eq("id", refund.order_id)
+    .eq("status", "CANCEL_REQUESTED")
+    .select("id")
+    .single();
   if (orderError) throw new Error(orderError.message);
   await releaseOrderStockOnce(input.supabase, refund.order_id, "buyer_cancellation_approved");
   await recordOrderHistoryEvent(input.supabase, {

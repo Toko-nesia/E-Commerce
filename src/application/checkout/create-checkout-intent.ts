@@ -35,9 +35,13 @@ export interface ExistingCheckoutOrder {
   midtransOrderId: string;
   idempotencyKey: string | null;
   cartFingerprint: string | null;
+  status: string;
+  paymentStatus: string;
   snapToken: string | null;
   snapRedirectUrl: string | null;
   snapTokenExpiresAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreatedCheckoutOrder {
@@ -78,6 +82,11 @@ export interface CheckoutRepository {
     token: string;
     redirectUrl: string;
     expiresAt: Date;
+  }): Promise<void>;
+  markPaymentSetupFailed(input: {
+    orderId: string;
+    reason: string;
+    failedAt: Date;
   }): Promise<void>;
 }
 
@@ -132,6 +141,18 @@ export class DuplicateCheckoutRequestError extends Error {
   }
 }
 
+const CHECKOUT_INTENT_PREPARATION_TIMEOUT_MS = 5 * 60 * 1000;
+
+function isSnaplessPendingCheckoutStale(existing: ExistingCheckoutOrder, now: Date): boolean {
+  if (existing.snapToken || existing.paymentStatus !== "pending" || existing.status !== "PAYMENT_PENDING") {
+    return false;
+  }
+
+  const lastTouchedAt = new Date(existing.updatedAt || existing.createdAt);
+  return Number.isFinite(lastTouchedAt.getTime())
+    && now.getTime() - lastTouchedAt.getTime() >= CHECKOUT_INTENT_PREPARATION_TIMEOUT_MS;
+}
+
 export async function createCheckoutIntent(
   input: CreateCheckoutIntentInput,
   deps: {
@@ -161,6 +182,18 @@ export async function createCheckoutIntent(
   }
 
   if (existing && !existing.snapToken) {
+    if (isSnaplessPendingCheckoutStale(existing, now)) {
+      await deps.repository.markPaymentSetupFailed({
+        orderId: existing.id,
+        reason: "payment_setup_stale",
+        failedAt: now,
+      });
+    } else {
+      throw new CheckoutIntentInProgressError();
+    }
+  }
+
+  if (existing && !existing.snapToken && !isSnaplessPendingCheckoutStale(existing, now)) {
     throw new CheckoutIntentInProgressError();
   }
 
@@ -255,22 +288,32 @@ export async function createCheckoutIntent(
   }
 
   const expiresAt = new Date(now.getTime() + SNAP_TOKEN_TTL_MS);
-  const snap = await deps.paymentGateway.createSnapTransaction({
-    midtransOrderId: created.midtransOrderId,
-    grossAmount: pricing.grandTotal,
-    paymentMethod: input.paymentMethod,
-    customer: { name: address.name, phone: address.phone },
-    itemDetails: buildMidtransItemDetails(pricedItems, pricing),
-    expiresAt,
-    createdAt: now,
-  });
+  let snap: { token: string; redirectUrl: string };
+  try {
+    snap = await deps.paymentGateway.createSnapTransaction({
+      midtransOrderId: created.midtransOrderId,
+      grossAmount: pricing.grandTotal,
+      paymentMethod: input.paymentMethod,
+      customer: { name: address.name, phone: address.phone },
+      itemDetails: buildMidtransItemDetails(pricedItems, pricing),
+      expiresAt,
+      createdAt: now,
+    });
 
-  await deps.repository.attachSnapToken({
-    orderId: created.id,
-    token: snap.token,
-    redirectUrl: snap.redirectUrl,
-    expiresAt,
-  });
+    await deps.repository.attachSnapToken({
+      orderId: created.id,
+      token: snap.token,
+      redirectUrl: snap.redirectUrl,
+      expiresAt,
+    });
+  } catch (error) {
+    await deps.repository.markPaymentSetupFailed({
+      orderId: created.id,
+      reason: "payment_setup_failed",
+      failedAt: deps.now?.() ?? new Date(),
+    });
+    throw error;
+  }
 
   return {
     orderId: created.id,

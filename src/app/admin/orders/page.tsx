@@ -281,6 +281,8 @@ export default function OrdersPage() {
 
             {selectedOrder.status === "PAYMENT_PENDING" ? (
               <p className="text-[13px] text-[#6b6b6b]">Payment is still pending. Seller actions are unavailable until the payment is confirmed.</p>
+            ) : selectedOrder.status === "CANCEL_REQUESTED" ? (
+              <p className="text-[13px] text-[#6b6b6b]">Review this buyer cancellation request from Refunds before continuing fulfillment.</p>
             ) : validNextStatuses.length === 0 ? (
               <p className="text-[13px] text-[#6b6b6b]">No seller action is available for this state (<strong>{ORDER_STATUS_LABEL[selectedOrder.status] ?? selectedOrder.status}</strong>).</p>
             ) : (

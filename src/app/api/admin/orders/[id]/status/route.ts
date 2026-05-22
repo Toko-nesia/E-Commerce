@@ -46,7 +46,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (orderError) throw new Error(orderError.message);
     if (!order) return NextResponse.json({ error: "Order not found." }, { status: 404 });
 
-    if (!isOrderStatus(order.status) || !isValidAdminTransition(order.status, nextStatus)) {
+    if (!isOrderStatus(order.status)) {
+      return NextResponse.json({ error: "Invalid order status transition" }, { status: 400 });
+    }
+    if (order.status === "CANCEL_REQUESTED") {
+      return NextResponse.json({ error: "Buyer cancellation requests must be reviewed from the refund review flow." }, { status: 409 });
+    }
+    if (!isValidAdminTransition(order.status, nextStatus)) {
       return NextResponse.json({ error: "Invalid order status transition" }, { status: 400 });
     }
     if (!["settlement", "capture", "refund"].includes(order.payment_status ?? "")) {

@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -887,6 +887,10 @@ export type Database = {
         }
       }
       is_admin: { Args: never; Returns: boolean }
+      mark_checkout_payment_setup_failed: {
+        Args: { p_failed_at?: string; p_order_id: string; p_reason?: string }
+        Returns: Json
+      }
       release_order_stock_once: {
         Args: { p_order_id: string; p_reason?: string }
         Returns: Json

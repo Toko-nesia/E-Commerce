@@ -49,9 +49,13 @@ function toExistingOrder(row: Record<string, any>): ExistingCheckoutOrder {
     midtransOrderId: row.midtrans_order_id,
     idempotencyKey: row.idempotency_key,
     cartFingerprint: row.cart_fingerprint,
+    status: row.status,
+    paymentStatus: row.payment_status,
     snapToken: row.snap_token,
     snapRedirectUrl: row.snap_redirect_url,
     snapTokenExpiresAt: row.snap_token_expires_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
@@ -68,7 +72,7 @@ export class SupabaseCheckoutRepository implements CheckoutRepository {
   ): Promise<ExistingCheckoutOrder | null> {
     const { data, error } = await this.supabase
       .from("orders")
-      .select("id, midtrans_order_id, idempotency_key, cart_fingerprint, snap_token, snap_redirect_url, snap_token_expires_at")
+      .select("id, midtrans_order_id, idempotency_key, cart_fingerprint, status, payment_status, snap_token, snap_redirect_url, snap_token_expires_at, created_at, updated_at")
       .eq("user_id", userId)
       .eq("idempotency_key", idempotencyKey)
       .maybeSingle();
@@ -208,6 +212,22 @@ export class SupabaseCheckoutRepository implements CheckoutRepository {
         updated_at: new Date().toISOString(),
       })
       .eq("id", input.orderId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  async markPaymentSetupFailed(input: {
+    orderId: string;
+    reason: string;
+    failedAt: Date;
+  }): Promise<void> {
+    const { error } = await (this.supabase as any).rpc("mark_checkout_payment_setup_failed", {
+      p_order_id: input.orderId,
+      p_reason: input.reason,
+      p_failed_at: input.failedAt.toISOString(),
+    });
 
     if (error) {
       throw new Error(error.message);
