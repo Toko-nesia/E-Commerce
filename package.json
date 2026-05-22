@@ -18,7 +18,8 @@
     "supabase:bootstrap-assets": "node supabase/scripts/bootstrap-site-assets.mjs",
     "initial-products:collect": "node supabase/scripts/collect-initial-products.mjs",
     "supabase:bootstrap-products": "node supabase/scripts/bootstrap-initial-products.mjs",
-    "supabase:bootstrap-admin": "node supabase/scripts/bootstrap-admin.mjs"
+    "supabase:bootstrap-admin": "node supabase/scripts/bootstrap-admin.mjs",
+    "supabase:bootstrap-exchange-rate": "node supabase/scripts/bootstrap-exchange-rate.mjs"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
